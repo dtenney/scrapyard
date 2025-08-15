@@ -36,3 +36,7 @@ A comprehensive web-based Point of Sale system for scrap metal yards with hardwa
 - [Implementation Plan](docs/IMPLEMENTATION.md)
 - [Hardware Setup](docs/HARDWARE.md)
 - [Compliance Guide](docs/COMPLIANCE.md)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
