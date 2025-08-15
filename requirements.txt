@@ -12,7 +12,6 @@ alembic==1.12.0
 # Hardware Integration
 pyserial==3.5
 requests==2.31.0
-opencv-python==4.8.1.78
 Pillow==10.0.1
 
 # Network Communication
@@ -25,7 +24,6 @@ bcrypt==4.0.1
 PyJWT==2.8.0
 
 # Printing
-pycups==2.0.1
 reportlab==4.0.4
 
 # Utilities

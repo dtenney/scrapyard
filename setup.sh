@@ -26,6 +26,8 @@ sudo apt-get install -y \
     libapache2-mod-wsgi-py3 \
     cups \
     cups-client \
+    libcups2-dev \
+    python3-opencv \
     git \
     nginx \
     redis-server \
