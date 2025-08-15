@@ -8,6 +8,7 @@
 </div>
 
 <div class="row g-4">
+    {% if current_user.has_permission('transaction') %}
     <div class="col-md-6 col-lg-4">
         <div class="card touch-card h-100">
             <div class="card-body d-flex flex-column justify-content-center text-center">
@@ -18,7 +19,9 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
+    {% if current_user.has_permission('customer_lookup') %}
     <div class="col-md-6 col-lg-4">
         <div class="card touch-card h-100">
             <div class="card-body d-flex flex-column justify-content-center text-center">
@@ -29,7 +32,9 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
+    {% if current_user.has_permission('reports') %}
     <div class="col-md-6 col-lg-4">
         <div class="card touch-card h-100">
             <div class="card-body d-flex flex-column justify-content-center text-center">
@@ -40,6 +45,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
     {% if current_user.is_admin %}
     <div class="col-md-6 col-lg-4">

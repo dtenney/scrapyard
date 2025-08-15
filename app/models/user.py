@@ -24,6 +24,21 @@ class User(UserMixin, db.Model):
     
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+    def has_permission(self, permission_name):
+        if self.is_admin:
+            return True
+        
+        from app.models.permissions import Permission, GroupPermission
+        
+        for group in self.groups:
+            permissions = db.session.query(Permission).join(GroupPermission).filter(
+                GroupPermission.group_id == group.id,
+                Permission.name == permission_name
+            ).first()
+            if permissions:
+                return True
+        return False
 
 class UserGroup(db.Model):
     __tablename__ = 'user_groups'
