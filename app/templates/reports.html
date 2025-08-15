@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>Reports & Analytics</h2>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>Daily Report</h5>
+                <button class="btn btn-primary">Generate</button>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>Monthly Report</h5>
+                <button class="btn btn-info">Generate</button>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>Compliance Report</h5>
+                <button class="btn btn-warning">Generate</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

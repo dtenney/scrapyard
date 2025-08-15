@@ -32,3 +32,15 @@ def capture_photo(camera_id):
 def print_receipt():
     """Print transaction receipt"""
     return jsonify({'success': True})
+
+@main_bp.route('/customer_lookup')
+@login_required
+def customer_lookup():
+    """Customer lookup and ID scanning page"""
+    return render_template('customer_lookup.html')
+
+@main_bp.route('/reports')
+@login_required
+def reports():
+    """Reports and analytics page"""
+    return render_template('reports.html')
