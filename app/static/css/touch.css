@@ -1,0 +1,60 @@
+/* Touch-screen optimized styles */
+
+.touch-card {
+    min-height: 250px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.touch-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.btn-lg {
+    padding: 15px 30px;
+    font-size: 1.25rem;
+    min-height: 60px;
+    min-width: 150px;
+}
+
+.btn-xl {
+    padding: 20px 40px;
+    font-size: 1.5rem;
+    min-height: 80px;
+    min-width: 200px;
+}
+
+.form-control {
+    min-height: 50px;
+    font-size: 1.1rem;
+}
+
+.weight-display {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #28a745;
+    text-align: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-radius: 10px;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+}
+
+@media (max-width: 768px) {
+    .touch-card {
+        min-height: 200px;
+    }
+    
+    .btn-lg {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
