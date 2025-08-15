@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>Group Management</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>User Groups</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Group Name</th>
+                            <th>Description</th>
+                            <th>Members</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for group in groups %}
+                        <tr>
+                            <td>{{ group.name }}</td>
+                            <td>{{ group.description }}</td>
+                            <td>{{ group.users|length }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-warning">Edit</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <button class="btn btn-primary btn-lg">Add Group</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
