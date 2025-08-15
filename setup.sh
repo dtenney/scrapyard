@@ -80,6 +80,7 @@ sudo a2dissite 000-default
 sudo a2enmod wsgi
 sudo a2enmod ssl
 sudo a2enmod rewrite
+sudo a2enmod headers
 
 # Create SSL certificate (self-signed for development)
 echo "Creating SSL certificate..."
