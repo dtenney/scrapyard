@@ -205,10 +205,7 @@ def list_customers():
         results.append({
             'id': customer.id,
             'name': customer.name,
-            'street_address': customer.street_address,
-            'city': customer.city,
-            'state': customer.state,
-            'zip_code': customer.zip_code,
+            'address': customer.address,
             'phone': customer.phone,
             'drivers_license_number': customer.drivers_license_number
         })
@@ -228,10 +225,7 @@ def get_customer(customer_id):
         'customer': {
             'id': customer.id,
             'name': customer.name,
-            'street_address': customer.street_address,
-            'city': customer.city,
-            'state': customer.state,
-            'zip_code': customer.zip_code,
+            'address': customer.address,
             'phone': customer.phone,
             'email': customer.email,
             'drivers_license_number': customer.drivers_license_number
@@ -250,10 +244,7 @@ def update_customer(customer_id):
         customer = Customer.query.get_or_404(customer_id)
         
         customer.name = request.form['name']
-        customer.street_address = request.form.get('street_address', '')
-        customer.city = request.form.get('city', '')
-        customer.state = request.form.get('state', '')
-        customer.zip_code = request.form.get('zip_code', '')
+        customer.address = f"{request.form.get('street_address', '')} {request.form.get('city', '')} {request.form.get('state', '')} {request.form.get('zip_code', '')}".strip()
         customer.phone = request.form.get('phone', '')
         customer.email = request.form.get('email', '')
         customer.drivers_license_number = request.form.get('drivers_license_number', '')
