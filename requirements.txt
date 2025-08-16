@@ -13,6 +13,7 @@ alembic==1.12.0
 pyserial==3.5
 requests==2.31.0
 Pillow==10.0.1
+beautifulsoup4==4.12.2
 
 # Network Communication
 websockets==11.0.3

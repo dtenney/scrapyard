@@ -11,6 +11,7 @@
     <div class="col-12">
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMaterialModal">Add Material</button>
         <button class="btn btn-success" onclick="loadFromCSV()">Load from CSV</button>
+        <button class="btn btn-warning" onclick="updatePrices()">Update Prices</button>
     </div>
 </div>
 
@@ -147,6 +148,21 @@ function saveMaterial() {
 function editMaterial(id) {
     // Edit functionality would go here
     alert('Edit functionality coming soon');
+}
+
+function updatePrices() {
+    if (confirm('Update material prices from SGT Scrap and COMEX Live?')) {
+        fetch('/admin/materials/update_prices', {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Updated prices for ${data.updated} materials`);
+                location.reload();
+            } else {
+                alert('Error updating prices: ' + data.error);
+            }
+        });
+    }
 }
 </script>
 {% endblock %}

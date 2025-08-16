@@ -127,6 +127,11 @@ sudo chmod -R 755 /var/www/scrapyard
 sudo chmod -R 644 /var/www/scrapyard/app/static
 sudo chmod +x /var/www/scrapyard/app.py
 
+# Start Celery services
+echo "Starting Celery services..."
+sudo chmod +x /var/www/scrapyard/scripts/start_celery.sh
+sudo -u scrapyard /var/www/scrapyard/scripts/start_celery.sh
+
 # Restart services
 echo "Restarting services..."
 sudo systemctl restart apache2

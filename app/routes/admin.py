@@ -149,3 +149,15 @@ def load_materials_csv():
     
     db.session.commit()
     return jsonify({'success': True, 'count': count})
+
+@admin_bp.route('/materials/update_prices', methods=['POST'])
+def update_prices():
+    """Manually trigger price update"""
+    from app.services.price_scraper import PriceScraper
+    
+    try:
+        scraper = PriceScraper()
+        updated_count = scraper.update_material_prices()
+        return jsonify({'success': True, 'updated': updated_count})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
