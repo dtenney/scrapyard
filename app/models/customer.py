@@ -6,7 +6,10 @@ class Customer(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    address = db.Column(db.Text)
+    street_address = db.Column(db.String(200))
+    city = db.Column(db.String(100))
+    state = db.Column(db.String(2))
+    zip_code = db.Column(db.String(10))
     phone = db.Column(db.String(20))
     email = db.Column(db.String(100))
     drivers_license_number = db.Column(db.String(50))

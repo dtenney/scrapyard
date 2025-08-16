@@ -55,14 +55,20 @@ def create_customer():
     
     try:
         name = request.form['name']
-        address = request.form.get('address', '')
+        street_address = request.form.get('street_address', '')
+        city = request.form.get('city', '')
+        state = request.form.get('state', '')
+        zip_code = request.form.get('zip_code', '')
         phone = request.form.get('phone', '')
         email = request.form.get('email', '')
         license_number = request.form.get('drivers_license_number', '')
         
         customer = Customer(
             name=name,
-            address=address,
+            street_address=street_address,
+            city=city,
+            state=state,
+            zip_code=zip_code,
             phone=phone,
             email=email,
             drivers_license_number=license_number
@@ -117,7 +123,10 @@ def search_customers():
         results.append({
             'id': customer.id,
             'name': customer.name,
-            'address': customer.address,
+            'street_address': customer.street_address,
+            'city': customer.city,
+            'state': customer.state,
+            'zip_code': customer.zip_code,
             'phone': customer.phone,
             'drivers_license_number': customer.drivers_license_number
         })
@@ -173,3 +182,91 @@ def customer_lookup():
 def reports():
     """Reports and analytics page"""
     return render_template('reports.html')
+
+@main_bp.route('/api/customers/list')
+@login_required
+@require_permission('customer_lookup')
+def list_customers():
+    """Get all customers"""
+    from app.models.customer import Customer
+    
+    customers = Customer.query.filter_by(is_active=True).order_by(Customer.name).all()
+    
+    results = []
+    for customer in customers:
+        results.append({
+            'id': customer.id,
+            'name': customer.name,
+            'street_address': customer.street_address,
+            'city': customer.city,
+            'state': customer.state,
+            'zip_code': customer.zip_code,
+            'phone': customer.phone,
+            'drivers_license_number': customer.drivers_license_number
+        })
+    
+    return jsonify({'customers': results})
+
+@main_bp.route('/api/customers/<int:customer_id>')
+@login_required
+@require_permission('customer_lookup')
+def get_customer(customer_id):
+    """Get single customer details"""
+    from app.models.customer import Customer
+    
+    customer = Customer.query.get_or_404(customer_id)
+    
+    return jsonify({
+        'customer': {
+            'id': customer.id,
+            'name': customer.name,
+            'street_address': customer.street_address,
+            'city': customer.city,
+            'state': customer.state,
+            'zip_code': customer.zip_code,
+            'phone': customer.phone,
+            'email': customer.email,
+            'drivers_license_number': customer.drivers_license_number
+        }
+    })
+
+@main_bp.route('/api/customers/update/<int:customer_id>', methods=['POST'])
+@login_required
+@require_permission('customer_lookup')
+def update_customer(customer_id):
+    """Update customer details"""
+    from app.models.customer import Customer
+    import os
+    
+    try:
+        customer = Customer.query.get_or_404(customer_id)
+        
+        customer.name = request.form['name']
+        customer.street_address = request.form.get('street_address', '')
+        customer.city = request.form.get('city', '')
+        customer.state = request.form.get('state', '')
+        customer.zip_code = request.form.get('zip_code', '')
+        customer.phone = request.form.get('phone', '')
+        customer.email = request.form.get('email', '')
+        customer.drivers_license_number = request.form.get('drivers_license_number', '')
+        
+        # Handle license photo upload
+        if 'license_photo' in request.files:
+            file = request.files['license_photo']
+            if file and file.filename:
+                photo_dir = '/var/www/scrapyard/static/customer_photos'
+                os.makedirs(photo_dir, exist_ok=True)
+                
+                import uuid
+                filename = f"license_{uuid.uuid4().hex}.jpg"
+                filepath = os.path.join(photo_dir, filename)
+                
+                file.save(filepath)
+                customer.drivers_license_photo = filename
+        
+        db.session.commit()
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500

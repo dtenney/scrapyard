@@ -44,6 +44,34 @@
     </div>
 </div>
 
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Customer List</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="customerTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>License #</th>
+                                <th>City, State</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerTableBody">
+                            <!-- Customers loaded via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Add Customer Modal -->
 <div class="modal fade" id="addCustomerModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -75,8 +103,28 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Address</label>
-                                <textarea class="form-control" name="address" rows="3"></textarea>
+                                <label class="form-label">Street Address</label>
+                                <input type="text" class="form-control" name="street_address">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">City</label>
+                                        <input type="text" class="form-control" name="city">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="form-label">State</label>
+                                        <input type="text" class="form-control" name="state" maxlength="2">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="form-label">ZIP Code</label>
+                                        <input type="text" class="form-control" name="zip_code">
+                                    </div>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Driver's License Photo</label>
@@ -93,6 +141,78 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="saveCustomer()">Save Customer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Customer Modal -->
+<div class="modal fade" id="editCustomerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editCustomerForm" enctype="multipart/form-data">
+                    <input type="hidden" id="editCustomerId" name="customer_id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Full Name *</label>
+                                <input type="text" class="form-control" name="name" id="editName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Phone</label>
+                                <input type="tel" class="form-control" name="phone" id="editPhone">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="email" id="editEmail">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Driver's License Number</label>
+                                <input type="text" class="form-control" name="drivers_license_number" id="editLicense">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Street Address</label>
+                                <input type="text" class="form-control" name="street_address" id="editStreet">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">City</label>
+                                        <input type="text" class="form-control" name="city" id="editCity">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="form-label">State</label>
+                                        <input type="text" class="form-control" name="state" id="editState" maxlength="2">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="form-label">ZIP Code</label>
+                                        <input type="text" class="form-control" name="zip_code" id="editZip">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Driver's License Photo</label>
+                                <input type="file" class="form-control" name="license_photo" accept="image/*">
+                                <div class="form-text">Upload new photo (optional)</div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updateCustomer()">Update Customer</button>
             </div>
         </div>
     </div>
@@ -115,8 +235,74 @@ function saveCustomer() {
             alert('Customer added successfully');
             bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
             form.reset();
+            loadCustomerList();
         } else {
             alert('Error adding customer: ' + data.error);
+        }
+    });
+}
+
+function loadCustomerList() {
+    fetch('/api/customers/list')
+    .then(response => response.json())
+    .then(data => {
+        const tbody = document.getElementById('customerTableBody');
+        tbody.innerHTML = '';
+        
+        data.customers.forEach(customer => {
+            const row = `
+                <tr>
+                    <td>${customer.name}</td>
+                    <td>${customer.phone || 'N/A'}</td>
+                    <td>${customer.drivers_license_number || 'N/A'}</td>
+                    <td>${customer.city || ''}, ${customer.state || ''}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="selectCustomer(${customer.id})">Select</button>
+                        <button class="btn btn-sm btn-warning" onclick="editCustomer(${customer.id})">Edit</button>
+                    </td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+    });
+}
+
+function editCustomer(customerId) {
+    fetch(`/api/customers/${customerId}`)
+    .then(response => response.json())
+    .then(data => {
+        const customer = data.customer;
+        document.getElementById('editCustomerId').value = customer.id;
+        document.getElementById('editName').value = customer.name;
+        document.getElementById('editPhone').value = customer.phone || '';
+        document.getElementById('editEmail').value = customer.email || '';
+        document.getElementById('editLicense').value = customer.drivers_license_number || '';
+        document.getElementById('editStreet').value = customer.street_address || '';
+        document.getElementById('editCity').value = customer.city || '';
+        document.getElementById('editState').value = customer.state || '';
+        document.getElementById('editZip').value = customer.zip_code || '';
+        
+        new bootstrap.Modal(document.getElementById('editCustomerModal')).show();
+    });
+}
+
+function updateCustomer() {
+    const form = document.getElementById('editCustomerForm');
+    const formData = new FormData(form);
+    const customerId = document.getElementById('editCustomerId').value;
+    
+    fetch(`/api/customers/update/${customerId}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Customer updated successfully');
+            bootstrap.Modal.getInstance(document.getElementById('editCustomerModal')).hide();
+            loadCustomerList();
+        } else {
+            alert('Error updating customer: ' + data.error);
         }
     });
 }
@@ -185,6 +371,11 @@ document.getElementById('searchInput').addEventListener('input', searchCustomers
 document.getElementById('searchForm').addEventListener('submit', function(e) {
     e.preventDefault();
     searchCustomers();
+});
+
+// Load customer list on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadCustomerList();
 });
 </script>
 {% endblock %}
