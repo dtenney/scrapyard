@@ -31,7 +31,7 @@ class StarPrinterService:
             commands.append(b'\\x1B\\x21\\x08')  # ESC ! 8 - Double height
             
             # Print header
-            commands.append(b'ARMOR METALS RECEIPT\\n\\n')
+            commands.append(b'SCRAP YARD RECEIPT\\n\\n')
             
             # Reset to normal
             commands.append(b'\\x1B\\x21\\x00')  # ESC ! 0 - Normal
