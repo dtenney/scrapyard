@@ -50,8 +50,25 @@ def migrate_database():
             WHERE category = 'TRUCK SCALE';
         """)
         
+        # Add customer address columns
+        cursor.execute("""
+            ALTER TABLE customers 
+            ADD COLUMN IF NOT EXISTS street_address VARCHAR(200),
+            ADD COLUMN IF NOT EXISTS city VARCHAR(100),
+            ADD COLUMN IF NOT EXISTS state VARCHAR(2),
+            ADD COLUMN IF NOT EXISTS zip_code VARCHAR(10);
+        """)
+        
+        # Migrate existing address data if needed
+        cursor.execute("""
+            UPDATE customers 
+            SET street_address = address 
+            WHERE street_address IS NULL AND address IS NOT NULL;
+        """)
+        
         print("Added missing columns to devices table")
         print("Added ferrous classification to materials table")
+        print("Added customer address columns")
         
         conn.commit()
         print("Database migration completed successfully")
