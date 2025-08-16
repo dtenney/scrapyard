@@ -18,6 +18,14 @@ def require_permission(permission):
 @login_required
 def index():
     """Main dashboard with touch-screen interface"""
+    from app.models.user import User
+    from flask import redirect, url_for
+    
+    # Check if admin user has default password
+    admin_user = User.query.filter_by(username='admin').first()
+    if admin_user and admin_user.check_password('admin'):
+        return redirect(url_for('auth.setup'))
+    
     return render_template('dashboard.html', user=current_user)
 
 @main_bp.route('/transaction')
