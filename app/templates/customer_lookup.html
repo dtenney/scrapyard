@@ -7,6 +7,12 @@
     </div>
 </div>
 
+<div class="row mb-3">
+    <div class="col-12">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">Add New Customer</button>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-md-6">
         <div class="card">
@@ -14,12 +20,14 @@
                 <h5>Search Customer</h5>
             </div>
             <div class="card-body">
-                <form>
+                <form id="searchForm">
                     <div class="mb-3">
-                        <input type="text" class="form-control" placeholder="Search by name or ID">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Search by name or license number">
                     </div>
                     <button type="submit" class="btn btn-primary btn-lg">Search</button>
                 </form>
+                
+                <div id="searchResults" class="mt-3"></div>
             </div>
         </div>
     </div>
@@ -29,9 +37,154 @@
                 <h5>Scan Driver's License</h5>
             </div>
             <div class="card-body text-center">
-                <button class="btn btn-success btn-xl">Scan ID</button>
+                <button class="btn btn-success btn-xl" onclick="scanLicense()">Scan ID</button>
+                <div id="scanResult" class="mt-3"></div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Add Customer Modal -->
+<div class="modal fade" id="addCustomerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="customerForm" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Full Name *</label>
+                                <input type="text" class="form-control" name="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Phone</label>
+                                <input type="tel" class="form-control" name="phone">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="email">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Driver's License Number</label>
+                                <input type="text" class="form-control" name="drivers_license_number">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Address</label>
+                                <textarea class="form-control" name="address" rows="3"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Driver's License Photo</label>
+                                <input type="file" class="form-control" name="license_photo" accept="image/*">
+                                <div class="form-text">Upload photo of driver's license</div>
+                            </div>
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-info" onclick="capturePhoto()">Capture with Camera</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveCustomer()">Save Customer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function saveCustomer() {
+    const form = document.getElementById('customerForm');
+    const formData = new FormData(form);
+    
+    fetch('/api/customers/create', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Customer added successfully');
+            bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
+            form.reset();
+        } else {
+            alert('Error adding customer: ' + data.error);
+        }
+    });
+}
+
+function searchCustomers() {
+    const query = document.getElementById('searchInput').value;
+    
+    if (query.length < 2) {
+        document.getElementById('searchResults').innerHTML = '';
+        return;
+    }
+    
+    fetch(`/api/customers/search?q=${encodeURIComponent(query)}`)
+    .then(response => response.json())
+    .then(data => {
+        const results = document.getElementById('searchResults');
+        
+        if (data.customers && data.customers.length > 0) {
+            let html = '<div class="list-group">';
+            data.customers.forEach(customer => {
+                html += `
+                    <div class="list-group-item">
+                        <h6>${customer.name}</h6>
+                        <small>${customer.address || 'No address'}</small><br>
+                        <small>License: ${customer.drivers_license_number || 'N/A'}</small>
+                        <button class="btn btn-sm btn-primary float-end" onclick="selectCustomer(${customer.id})">Select</button>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            results.innerHTML = html;
+        } else {
+            results.innerHTML = '<p class="text-muted">No customers found</p>';
+        }
+    });
+}
+
+function selectCustomer(customerId) {
+    // Store selected customer for transaction
+    sessionStorage.setItem('selectedCustomerId', customerId);
+    alert('Customer selected for transaction');
+}
+
+function capturePhoto() {
+    // Use camera service to capture license photo
+    fetch('/api/camera/capture', {method: 'POST'})
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Photo captured successfully');
+            // Set the captured photo as the license photo
+        } else {
+            alert('Error capturing photo');
+        }
+    });
+}
+
+function scanLicense() {
+    alert('License scanning functionality - integrate with ID scanner hardware');
+}
+
+// Search as user types
+document.getElementById('searchInput').addEventListener('input', searchCustomers);
+
+// Handle search form submission
+document.getElementById('searchForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    searchCustomers();
+});
+</script>
 {% endblock %}
