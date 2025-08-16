@@ -50,7 +50,6 @@ class UserGroup(db.Model):
     
     # Relationships
     users = db.relationship('User', secondary='user_group_members', back_populates='groups')
-    devices = db.relationship('Device', back_populates='group')
 
 class UserGroupMember(db.Model):
     __tablename__ = 'user_group_members'
