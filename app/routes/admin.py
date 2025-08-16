@@ -64,3 +64,88 @@ def create_device():
 def groups():
     groups = UserGroup.query.all()
     return render_template('admin/groups.html', groups=groups)
+
+@admin_bp.route('/materials')
+def materials():
+    from app.models.material import Material
+    materials = Material.query.order_by(Material.category, Material.code).all()
+    return render_template('admin/materials.html', materials=materials)
+
+@admin_bp.route('/materials/create', methods=['POST'])
+def create_material():
+    from app.models.material import Material
+    data = request.get_json()
+    
+    material = Material(
+        code=data['code'],
+        description=data['description'],
+        category=data['category'],
+        price_per_pound=data.get('price_per_pound', 0.0)
+    )
+    
+    db.session.add(material)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'material_id': material.id})
+
+@admin_bp.route('/materials/update/<int:material_id>', methods=['POST'])
+def update_material(material_id):
+    from app.models.material import Material
+    material = Material.query.get_or_404(material_id)
+    data = request.get_json()
+    
+    material.code = data['code']
+    material.description = data['description']
+    material.category = data['category']
+    material.price_per_pound = data.get('price_per_pound', 0.0)
+    
+    db.session.commit()
+    
+    return jsonify({'success': True})
+
+@admin_bp.route('/materials/load_csv', methods=['POST'])
+def load_materials_csv():
+    from app.models.material import Material
+    import csv
+    import io
+    
+    # CSV data from materialMigration.csv
+    csv_data = '''Code,Description,GropDescription
+"101","SHEET","ALUMINUM"
+"102","CAST ALUM","ALUMINUM"
+"103","DIECAST ALUM","ALUMINUM"
+"201","YELLOW BRASS CLEAN","BRASS"
+"202","YELLOW BRASS DIRTY","BRASS"
+"301","BARE BRIGHT","COPPER"
+"302","#1 COPPER","COPPER"
+"401","SOFT LEAD","LEAD"
+"501","LIGHT STEEL","TRUCK SCALE"
+"601","304 CLEAN STAINLESS","STAINLESS STEEL"
+"701","COMPUTER - WHOLE","ELECTRONICS"
+"801","ALUM RAD CLEAN","RADIATORS"
+"901","HAIR WIRE","WIRE"'''
+    
+    reader = csv.DictReader(io.StringIO(csv_data))
+    count = 0
+    
+    for row in reader:
+        code = row['Code'].strip('"')
+        description = row['Description'].strip('"')
+        category = row['GropDescription'].strip('"')
+        
+        # Skip if material already exists
+        if Material.query.filter_by(code=code).first():
+            continue
+            
+        material = Material(
+            code=code,
+            description=description,
+            category=category,
+            price_per_pound=0.0000
+        )
+        
+        db.session.add(material)
+        count += 1
+    
+    db.session.commit()
+    return jsonify({'success': True, 'count': count})

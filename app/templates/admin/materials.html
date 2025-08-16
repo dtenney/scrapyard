@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>Material Management</h2>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMaterialModal">Add Material</button>
+        <button class="btn btn-success" onclick="loadFromCSV()">Load from CSV</button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Scrap Materials</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="materialsTable">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Description</th>
+                                <th>Category</th>
+                                <th>Price/lb</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for material in materials %}
+                            <tr data-id="{{ material.id }}">
+                                <td>{{ material.code }}</td>
+                                <td>{{ material.description }}</td>
+                                <td>{{ material.category }}</td>
+                                <td>${{ "%.4f"|format(material.price_per_pound) }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if material.is_active else 'secondary' }}">
+                                        {{ 'Active' if material.is_active else 'Inactive' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning" onclick="editMaterial({{ material.id }})">Edit</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Material Modal -->
+<div class="modal fade" id="addMaterialModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Material</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addMaterialForm">
+                    <div class="mb-3">
+                        <label class="form-label">Code</label>
+                        <input type="text" class="form-control" name="code" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-control" name="description" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <select class="form-control" name="category" required>
+                            <option value="ALUMINUM">ALUMINUM</option>
+                            <option value="BRASS">BRASS</option>
+                            <option value="COPPER">COPPER</option>
+                            <option value="LEAD">LEAD</option>
+                            <option value="TRUCK SCALE">TRUCK SCALE</option>
+                            <option value="STAINLESS STEEL">STAINLESS STEEL</option>
+                            <option value="ELECTRONICS">ELECTRONICS</option>
+                            <option value="RADIATORS">RADIATORS</option>
+                            <option value="WIRE">WIRE</option>
+                            <option value="MISC">MISC</option>
+                            <option value="ALLOYS">ALLOYS</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Price per Pound</label>
+                        <input type="number" class="form-control" name="price_per_pound" step="0.0001" min="0">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveMaterial()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function loadFromCSV() {
+    if (confirm('Load materials from CSV? This will add new materials but not overwrite existing ones.')) {
+        fetch('/admin/materials/load_csv', {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Materials loaded successfully');
+                location.reload();
+            } else {
+                alert('Error loading materials');
+            }
+        });
+    }
+}
+
+function saveMaterial() {
+    const form = document.getElementById('addMaterialForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    fetch('/admin/materials/create', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error saving material');
+        }
+    });
+}
+
+function editMaterial(id) {
+    // Edit functionality would go here
+    alert('Edit functionality coming soon');
+}
+</script>
+{% endblock %}
