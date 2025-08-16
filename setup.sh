@@ -110,6 +110,12 @@ sudo systemctl start supervisor
 # Initialize database
 echo "Initializing database..."
 cd /var/www/scrapyard
+
+# Run database migration first
+echo "Running database migration..."
+sudo -u scrapyard ./venv/bin/python migrate_database.py
+
+# Initialize database tables
 sudo -u scrapyard ./venv/bin/python -c "
 from app import create_app, db
 from app.models.user import User, UserGroup, UserGroupMember
