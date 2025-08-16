@@ -50,15 +50,37 @@ def create_device():
         name=data['name'],
         device_type=data['device_type'],
         ip_address=data['ip_address'],
-        port=data.get('port'),
-        model=data.get('model'),
-        config=data.get('config', {})
+        serial_port=data.get('serial_port', 23),
+        printer_model=data.get('printer_model'),
+        camera_model=data.get('camera_model'),
+        stream_url=data.get('stream_url')
     )
     
     db.session.add(device)
     db.session.commit()
     
     return jsonify({'success': True, 'device_id': device.id})
+
+@admin_bp.route('/devices/test/<int:device_id>', methods=['POST'])
+def test_device(device_id):
+    device = Device.query.get_or_404(device_id)
+    
+    if device.device_type == 'scale':
+        from app.services.scale_service import USRScaleService
+        service = USRScaleService(device.ip_address, device.serial_port)
+        result = service.test_connection()
+    elif device.device_type == 'printer':
+        from app.services.printer_service import StarPrinterService
+        service = StarPrinterService(device.ip_address)
+        result = service.test_connection()
+    elif device.device_type == 'camera':
+        from app.services.camera_service import AxisCameraService
+        service = AxisCameraService(device.ip_address)
+        result = service.test_connection()
+    else:
+        result = {'status': 'unknown', 'message': 'Unknown device type'}
+    
+    return jsonify(result)
 
 @admin_bp.route('/groups')
 def groups():
