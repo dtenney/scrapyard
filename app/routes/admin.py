@@ -102,6 +102,7 @@ def create_material():
         code=data['code'],
         description=data['description'],
         category=data['category'],
+        is_ferrous=data.get('is_ferrous', 'false').lower() == 'true',
         price_per_pound=data.get('price_per_pound', 0.0)
     )
     
@@ -119,6 +120,7 @@ def update_material(material_id):
     material.code = data['code']
     material.description = data['description']
     material.category = data['category']
+    material.is_ferrous = data.get('is_ferrous', 'false').lower() == 'true'
     material.price_per_pound = data.get('price_per_pound', 0.0)
     
     db.session.commit()
@@ -159,10 +161,15 @@ def load_materials_csv():
         if Material.query.filter_by(code=code).first():
             continue
             
+        # Determine if material is ferrous based on category
+        ferrous_categories = ['TRUCK SCALE']  # Steel materials
+        is_ferrous = category in ferrous_categories
+        
         material = Material(
             code=code,
             description=description,
             category=category,
+            is_ferrous=is_ferrous,
             price_per_pound=0.0000
         )
         

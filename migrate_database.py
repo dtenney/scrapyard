@@ -37,7 +37,21 @@ def migrate_database():
             ADD COLUMN IF NOT EXISTS stream_url VARCHAR(200);
         """)
         
+        # Add ferrous column to materials table
+        cursor.execute("""
+            ALTER TABLE materials 
+            ADD COLUMN IF NOT EXISTS is_ferrous BOOLEAN DEFAULT FALSE;
+        """)
+        
+        # Update existing materials with ferrous classification
+        cursor.execute("""
+            UPDATE materials 
+            SET is_ferrous = TRUE 
+            WHERE category = 'TRUCK SCALE';
+        """)
+        
         print("Added missing columns to devices table")
+        print("Added ferrous classification to materials table")
         
         conn.commit()
         print("Database migration completed successfully")

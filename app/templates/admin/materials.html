@@ -29,6 +29,7 @@
                                 <th>Code</th>
                                 <th>Description</th>
                                 <th>Category</th>
+                                <th>Type</th>
                                 <th>Price/lb</th>
                                 <th>Status</th>
                                 <th>Actions</th>
@@ -40,6 +41,11 @@
                                 <td>{{ material.code }}</td>
                                 <td>{{ material.description }}</td>
                                 <td>{{ material.category }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'warning' if material.is_ferrous else 'info' }}">
+                                        {{ 'Ferrous' if material.is_ferrous else 'Non-Ferrous' }}
+                                    </span>
+                                </td>
                                 <td>${{ "%.4f"|format(material.price_per_pound) }}</td>
                                 <td>
                                     <span class="badge bg-{{ 'success' if material.is_active else 'secondary' }}">
@@ -91,6 +97,13 @@
                             <option value="WIRE">WIRE</option>
                             <option value="MISC">MISC</option>
                             <option value="ALLOYS">ALLOYS</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Material Type</label>
+                        <select class="form-control" name="is_ferrous" required>
+                            <option value="false">Non-Ferrous</option>
+                            <option value="true">Ferrous</option>
                         </select>
                     </div>
                     <div class="mb-3">
