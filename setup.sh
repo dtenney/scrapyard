@@ -68,9 +68,9 @@ sudo -u scrapyard ./venv/bin/pip install -r requirements.txt
 
 # Configure PostgreSQL
 echo "Configuring PostgreSQL..."
-sudo -u postgres createuser scrapyard || true
-sudo -u postgres createdb scrapyard_db -O scrapyard || true
-sudo -u postgres psql -c "ALTER USER scrapyard PASSWORD 'scrapyard123';" || true
+# Reset database completely
+sudo chmod +x /var/www/scrapyard/reset_database.sh
+sudo /var/www/scrapyard/reset_database.sh
 
 # Configure Apache
 echo "Configuring Apache..."
@@ -110,10 +110,6 @@ sudo systemctl start supervisor
 # Initialize database
 echo "Initializing database..."
 cd /var/www/scrapyard
-
-# Run database migration first
-echo "Running database migration..."
-sudo -u scrapyard ./venv/bin/python migrate_database.py
 
 # Initialize database tables
 sudo -u scrapyard ./venv/bin/python -c "
