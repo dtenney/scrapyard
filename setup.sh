@@ -112,6 +112,11 @@ echo "Initializing database..."
 cd /var/www/scrapyard
 sudo -u scrapyard ./venv/bin/python -c "
 from app import create_app, db
+from app.models.user import User, UserGroup, UserGroupMember
+from app.models.device import Device
+from app.models.material import Material
+from app.models.customer import Customer
+from app.models.permissions import Permission, GroupPermission
 from app.services.setup_service import initialize_default_groups
 app = create_app()
 with app.app_context():
