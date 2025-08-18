@@ -31,10 +31,12 @@ def create_app():
     from app.routes.main import main_bp
     from app.routes.admin import admin_bp
     from app.routes.api import api_bp
+    from app.routes.cashier import cashier_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(cashier_bp, url_prefix='/cashier')
     
     return app

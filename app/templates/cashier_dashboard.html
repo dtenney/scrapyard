@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <!-- Transaction Panel -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>New Transaction</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Customer</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="customerSearch" placeholder="Search customer...">
+                            <button class="btn btn-outline-secondary" onclick="selectCustomer()">Select</button>
+                        </div>
+                        <div id="selectedCustomer" class="mt-2 text-success" style="display:none;"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Material</label>
+                        <select class="form-select" id="materialSelect">
+                            <option value="">Select material...</option>
+                            {% for material in materials %}
+                            <option value="{{ material.id }}" data-price="{{ material.price_per_pound }}">
+                                {{ material.code }} - {{ material.description }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Weight (lbs)</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="weight" step="0.01" placeholder="0.00">
+                            <button class="btn btn-primary" onclick="getScaleWeight()">Get Weight</button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Price/lb</label>
+                        <input type="number" class="form-control" id="pricePerLb" step="0.0001" placeholder="0.0000">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Total Value</label>
+                        <input type="text" class="form-control" id="totalValue" readonly>
+                    </div>
+                </div>
+                
+                <button class="btn btn-success btn-lg" onclick="addItem()">Add Item</button>
+            </div>
+        </div>
+        
+        <!-- Transaction Items -->
+        <div class="card">
+            <div class="card-header">
+                <h5>Transaction Items</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th>Weight</th>
+                            <th>Price/lb</th>
+                            <th>Total</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionItems">
+                        <!-- Items added via JavaScript -->
+                    </tbody>
+                </table>
+                <div class="text-end">
+                    <h4>Total: $<span id="grandTotal">0.00</span></h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Scale Display -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Scale Reading</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="display-4" id="scaleDisplay">0.00 lbs</div>
+                <button class="btn btn-warning mt-2" onclick="tareScale()">Tare Scale</button>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-primary btn-lg w-100 mb-2" onclick="capturePhoto()">Take Photo</button>
+                <button class="btn btn-success btn-lg w-100 mb-2" onclick="completeTransaction()">Complete Sale</button>
+                <button class="btn btn-danger btn-lg w-100" onclick="clearTransaction()">Clear All</button>
+            </div>
+        </div>
+        
+        <!-- Market Prices -->
+        <div class="card">
+            <div class="card-header">
+                <h5>Market Prices</h5>
+            </div>
+            <div class="card-body">
+                <div id="marketPrices">
+                    <small class="text-muted">Select material to see market price</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Modal -->
+<div class="modal fade" id="customerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="customerSearchModal" placeholder="Search customers...">
+                </div>
+                <div id="customerResults"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let transactionItems = [];
+let selectedCustomer = null;
+let grandTotal = 0;
+
+// Auto-calculate total when weight or price changes
+document.getElementById('weight').addEventListener('input', calculateTotal);
+document.getElementById('pricePerLb').addEventListener('input', calculateTotal);
+
+// Material selection updates price
+document.getElementById('materialSelect').addEventListener('change', function() {
+    const selected = this.options[this.selectedIndex];
+    if (selected.value) {
+        document.getElementById('pricePerLb').value = selected.dataset.price;
+        calculateTotal();
+        showMarketPrice(selected.value);
+    }
+});
+
+function calculateTotal() {
+    const weight = parseFloat(document.getElementById('weight').value) || 0;
+    const price = parseFloat(document.getElementById('pricePerLb').value) || 0;
+    const total = weight * price;
+    document.getElementById('totalValue').value = total.toFixed(2);
+}
+
+function getScaleWeight() {
+    fetch('/cashier/api/scale/weight')
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('weight').value = data.weight.toFixed(2);
+        document.getElementById('scaleDisplay').textContent = data.weight.toFixed(2) + ' lbs';
+        calculateTotal();
+    });
+}
+
+function tareScale() {
+    fetch('/cashier/api/scale/tare', {method: 'POST'})
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('scaleDisplay').textContent = '0.00 lbs';
+        }
+    });
+}
+
+function selectCustomer() {
+    new bootstrap.Modal(document.getElementById('customerModal')).show();
+}
+
+function addItem() {
+    const materialSelect = document.getElementById('materialSelect');
+    const weight = parseFloat(document.getElementById('weight').value);
+    const price = parseFloat(document.getElementById('pricePerLb').value);
+    
+    if (!materialSelect.value || !weight || !price) {
+        alert('Please fill all fields');
+        return;
+    }
+    
+    const item = {
+        materialId: materialSelect.value,
+        materialName: materialSelect.options[materialSelect.selectedIndex].text,
+        weight: weight,
+        pricePerLb: price,
+        total: weight * price
+    };
+    
+    transactionItems.push(item);
+    updateItemsTable();
+    clearForm();
+}
+
+function updateItemsTable() {
+    const tbody = document.getElementById('transactionItems');
+    tbody.innerHTML = '';
+    grandTotal = 0;
+    
+    transactionItems.forEach((item, index) => {
+        const row = `
+            <tr>
+                <td>${item.materialName}</td>
+                <td>${item.weight.toFixed(2)} lbs</td>
+                <td>$${item.pricePerLb.toFixed(4)}</td>
+                <td>$${item.total.toFixed(2)}</td>
+                <td><button class="btn btn-sm btn-danger" onclick="removeItem(${index})">Remove</button></td>
+            </tr>
+        `;
+        tbody.innerHTML += row;
+        grandTotal += item.total;
+    });
+    
+    document.getElementById('grandTotal').textContent = grandTotal.toFixed(2);
+}
+
+function removeItem(index) {
+    transactionItems.splice(index, 1);
+    updateItemsTable();
+}
+
+function clearForm() {
+    document.getElementById('materialSelect').value = '';
+    document.getElementById('weight').value = '';
+    document.getElementById('pricePerLb').value = '';
+    document.getElementById('totalValue').value = '';
+}
+
+function clearTransaction() {
+    transactionItems = [];
+    selectedCustomer = null;
+    updateItemsTable();
+    clearForm();
+    document.getElementById('selectedCustomer').style.display = 'none';
+}
+
+function completeTransaction() {
+    if (!selectedCustomer || transactionItems.length === 0) {
+        alert('Please select customer and add items');
+        return;
+    }
+    
+    const transaction = {
+        customerId: selectedCustomer.id,
+        items: transactionItems,
+        total: grandTotal
+    };
+    
+    fetch('/cashier/api/transactions/create', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(transaction)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Transaction completed successfully!');
+            clearTransaction();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+
+function capturePhoto() {
+    fetch('/api/camera/capture', {method: 'POST'})
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Photo captured successfully');
+        }
+    });
+}
+
+function showMarketPrice(materialId) {
+    fetch(`/cashier/api/materials/${materialId}/market-price`)
+    .then(response => response.json())
+    .then(data => {
+        const marketDiv = document.getElementById('marketPrices');
+        if (data.price) {
+            marketDiv.innerHTML = `
+                <div class="text-success">
+                    <strong>Market: $${data.price.toFixed(4)}/lb</strong><br>
+                    <small>${data.source}</small>
+                </div>
+            `;
+        } else {
+            marketDiv.innerHTML = '<small class="text-muted">No market data available</small>';
+        }
+    });
+}
+
+// Auto-refresh scale reading every 2 seconds
+setInterval(function() {
+    fetch('/cashier/api/scale/weight')
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('scaleDisplay').textContent = data.weight.toFixed(2) + ' lbs';
+    })
+    .catch(() => {}); // Ignore errors for auto-refresh
+}, 2000);
+</script>
+{% endblock %}

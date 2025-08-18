@@ -35,6 +35,15 @@ def transaction():
     """Transaction processing page"""
     return render_template('transaction.html')
 
+@main_bp.route('/cashier')
+@login_required
+@require_permission('transaction')
+def cashier_dashboard():
+    """Cashier point of sale dashboard"""
+    from app.models.material import Material
+    materials = Material.query.filter_by(is_active=True).order_by(Material.category, Material.description).all()
+    return render_template('cashier_dashboard.html', materials=materials)
+
 @main_bp.route('/api/weight/<int:scale_id>')
 @login_required
 def get_weight(scale_id):
