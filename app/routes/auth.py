@@ -8,8 +8,16 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/login', methods=['GET'])
 def login_get():
     """Display login form"""
+    from app.models.user import User
+    
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
+    
+    # Check if admin user exists
+    admin_user = User.query.filter_by(username='admin').first()
+    if not admin_user:
+        return redirect(url_for('auth.setup'))
+    
     return render_template('login.html')
 
 @auth_bp.route('/login', methods=['POST'])
@@ -37,21 +45,27 @@ def logout():
 @auth_bp.route('/setup', methods=['GET', 'POST'])
 def setup():
     """First-time admin setup"""
-    if User.query.count() > 0:
-        return redirect(url_for('auth.login'))
+    # Check if admin user already exists
+    admin_user = User.query.filter_by(username='admin').first()
+    if admin_user:
+        return redirect(url_for('auth.login_get'))
     
     if request.method == 'POST':
-        username = request.form['username']
+        username = request.form.get('username', 'admin')
         password = request.form['password']
         email = request.form['email']
         
-        admin_user = User(username=username, email=email, is_admin=True)
-        admin_user.set_password(password)
-        
-        db.session.add(admin_user)
-        db.session.commit()
-        
-        login_user(admin_user)
-        return redirect(url_for('main.index'))
+        try:
+            admin_user = User(username=username, email=email, is_admin=True)
+            admin_user.set_password(password)
+            
+            db.session.add(admin_user)
+            db.session.commit()
+            
+            flash('Admin account created successfully!')
+            return redirect(url_for('auth.login_get'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Error creating admin account')
     
     return render_template('setup.html')
