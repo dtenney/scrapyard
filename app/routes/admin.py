@@ -24,15 +24,24 @@ def users():
 
 @admin_bp.route('/users/create', methods=['POST'])
 def create_user():
+    from app.models.user import UserGroupMember
     try:
         username = request.form['username']
         email = request.form['email']
         password = request.form['password']
+        selected_groups = request.form.getlist('groups')
         
         user = User(username=username, email=email)
         user.set_password(password)
         
         db.session.add(user)
+        db.session.flush()  # Get user ID
+        
+        # Add user to selected groups
+        for group_id in selected_groups:
+            membership = UserGroupMember(user_id=user.id, group_id=int(group_id))
+            db.session.add(membership)
+        
         db.session.commit()
         
         flash('User created successfully')
