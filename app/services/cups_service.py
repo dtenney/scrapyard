@@ -40,24 +40,46 @@ class CUPSService:
     def print_file(self, printer_name: str, file_path: str, 
                    options: Optional[Dict] = None) -> bool:
         """Print a file using CUPS lp command"""
+        import re
+        import os
+        
+        # Validate printer name (alphanumeric, dash, underscore only)
+        if not re.match(r'^[a-zA-Z0-9_-]+$', printer_name):
+            logger.error("Invalid printer name")
+            return False
+        
+        # Validate file path exists and is safe
+        if not os.path.exists(file_path) or not os.path.isfile(file_path):
+            logger.error("Invalid file path")
+            return False
+        
+        # Validate file path is within allowed directories
+        allowed_dirs = ['/var/www/scrapyard/static', '/tmp']
+        abs_path = os.path.abspath(file_path)
+        if not any(abs_path.startswith(d) for d in allowed_dirs):
+            logger.error("File path not in allowed directory")
+            return False
+        
         try:
             cmd = ['lp', '-d', printer_name, file_path]
             
             if options:
                 for key, value in options.items():
-                    cmd.extend(['-o', f'{key}={value}'])
+                    # Validate option keys and values
+                    if re.match(r'^[a-zA-Z0-9_-]+$', key) and re.match(r'^[a-zA-Z0-9=_.-]+$', str(value)):
+                        cmd.extend(['-o', f'{key}={value}'])
             
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
             
             if result.returncode == 0:
-                logger.info(f"File printed successfully to {printer_name}")
+                logger.info("File printed successfully")
                 return True
             else:
-                logger.error(f"Print failed: {result.stderr}")
+                logger.error("Print job failed")
                 return False
                 
         except Exception as e:
-            logger.error(f"Error printing file: {e}")
+            logger.error("Error printing file")
             return False
     
     def print_text(self, printer_name: str, text: str, 

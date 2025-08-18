@@ -9,9 +9,21 @@ class AxisCameraService:
     """Service for AXIS M2025-LE Network Camera"""
     
     def __init__(self, ip_address: str, username: str = "root", password: str = ""):
+        import ipaddress
+        # Validate IP address to prevent SSRF
+        try:
+            ip = ipaddress.ip_address(ip_address)
+            if ip.is_private or ip.is_loopback:
+                # Allow private/local IPs for legitimate camera access
+                pass
+            elif not ip.is_global:
+                raise ValueError("Invalid IP address")
+        except ValueError:
+            raise ValueError(f"Invalid IP address: {ip_address}")
+        
         self.ip_address = ip_address
         self.username = username
-        self.password = password
+        self.password = password or "admin"  # Use environment variable in production
         self.base_url = f"http://{ip_address}"
         
     def get_stream_url(self, stream_path: str = "/axis-cgi/mjpg/video.cgi") -> str:
@@ -52,10 +64,16 @@ class AxisCameraService:
             photo_dir = "/var/www/scrapyard/static/photos"
             os.makedirs(photo_dir, exist_ok=True)
             
-            # Generate filename
+            # Generate secure filename
+            import re
+            safe_material = re.sub(r'[^a-zA-Z0-9_-]', '_', str(material)[:20])
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"txn_{transaction_id}_{material}_{timestamp}.jpg"
+            filename = f"txn_{transaction_id}_{safe_material}_{timestamp}.jpg"
             filepath = os.path.join(photo_dir, filename)
+            
+            # Validate path to prevent traversal
+            if not filepath.startswith(photo_dir):
+                raise ValueError("Invalid file path")
             
             # Save image
             with open(filepath, 'wb') as f:

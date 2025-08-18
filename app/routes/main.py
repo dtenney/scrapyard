@@ -90,10 +90,19 @@ def create_customer():
                 photo_dir = '/var/www/scrapyard/static/customer_photos'
                 os.makedirs(photo_dir, exist_ok=True)
                 
-                # Generate filename
+                # Generate secure filename
                 import uuid
-                filename = f"license_{uuid.uuid4().hex}.jpg"
+                from werkzeug.utils import secure_filename
+                safe_filename = secure_filename(file.filename) or "upload.jpg"
+                ext = safe_filename.rsplit('.', 1)[1].lower() if '.' in safe_filename else 'jpg'
+                if ext not in ['jpg', 'jpeg', 'png', 'gif']:
+                    ext = 'jpg'
+                filename = f"license_{uuid.uuid4().hex}.{ext}"
                 filepath = os.path.join(photo_dir, filename)
+                
+                # Validate path to prevent traversal
+                if not filepath.startswith(photo_dir):
+                    return jsonify({'success': False, 'error': 'Invalid file path'}), 400
                 
                 file.save(filepath)
                 customer.drivers_license_photo = filename

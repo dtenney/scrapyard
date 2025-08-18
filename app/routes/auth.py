@@ -5,8 +5,15 @@ from app import db
 
 auth_bp = Blueprint('auth', __name__)
 
-@auth_bp.route('/login', methods=['GET', 'POST'])
-def login():
+@auth_bp.route('/login', methods=['GET'])
+def login_get():
+    """Display login form"""
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+    return render_template('login.html')
+
+@auth_bp.route('/login', methods=['POST'])
+def login_post():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
