@@ -11,8 +11,8 @@ def make_celery(app):
     
     celery.conf.update(app.config)
     celery.conf.beat_schedule = {
-        'update-material-prices': {
-            'task': 'app.tasks.price_update.update_material_prices',
+        'update-competitive-prices': {
+            'task': 'app.tasks.price_scraper.update_competitive_prices',
             'schedule': crontab(minute=0),  # Run every hour
         },
     }

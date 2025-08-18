@@ -50,6 +50,17 @@ def migrate_database():
             WHERE category = 'TRUCK SCALE';
         """)
         
+        # Create competitive prices table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS competitive_prices (
+                id SERIAL PRIMARY KEY,
+                material_id INTEGER REFERENCES materials(id),
+                price_per_pound DECIMAL(10,4) NOT NULL,
+                source VARCHAR(50) NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        
         # Add customer address columns
         cursor.execute("""
             ALTER TABLE customers 
@@ -69,6 +80,7 @@ def migrate_database():
         print("Added missing columns to devices table")
         print("Added ferrous classification to materials table")
         print("Added customer address columns")
+        print("Created competitive prices table")
         
         conn.commit()
         print("Database migration completed successfully")
