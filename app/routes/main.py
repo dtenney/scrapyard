@@ -204,10 +204,13 @@ def reports():
 @login_required
 @require_permission('customer_lookup')
 def list_customers():
-    """Get all customers"""
+    """Get customers with pagination"""
     from app.models.customer import Customer
     
-    customers = Customer.query.filter_by(is_active=True).order_by(Customer.name).all()
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
+    
+    customers = Customer.query.filter_by(is_active=True).order_by(Customer.name).limit(per_page).offset((page-1)*per_page).all()
     
     results = []
     for customer in customers:

@@ -149,6 +149,10 @@ class PriceScraper:
                     material.price_per_pound = Decimal(str(base_copper_price * multiplier))
                     updated_count += 1
         
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.error("Failed to update material prices")
         logger.info(f"Updated prices for {updated_count} materials")
         return updated_count

@@ -19,10 +19,10 @@ class USRScaleService:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.settimeout(5)
             self.socket.connect((self.ip_address, self.port))
-            logger.info(f"Connected to scale at {self.ip_address}:{self.port}")
+            logger.info("Connected to scale successfully")
             return True
         except Exception as e:
-            logger.error(f"Failed to connect to scale: {e}")
+            logger.error("Failed to connect to scale")
             return False
     
     def disconnect(self):
@@ -51,14 +51,14 @@ class USRScaleService:
             
             if weight_match:
                 weight = float(weight_match.group(1))
-                logger.debug(f"Weight reading: {weight}")
+                logger.debug("Weight reading obtained")
                 return weight
             else:
-                logger.warning(f"Could not parse weight from: {response}")
+                logger.warning("Could not parse weight from response")
                 return None
                 
         except Exception as e:
-            logger.error(f"Error reading weight: {e}")
+            logger.error("Error reading weight")
             self.disconnect()
             return None
     
@@ -71,10 +71,11 @@ class USRScaleService:
         try:
             self.socket.send(b'T\\r\\n')  # Common tare command
             response = self.socket.recv(1024).decode('ascii').strip()
-            logger.info(f"Tare response: {response}")
+            logger.info("Tare command executed")
             return True
         except Exception as e:
-            logger.error(f"Error taring scale: {e}")
+            logger.error("Error taring scale")
+            self.disconnect()
             return False
     
     def test_connection(self) -> dict:

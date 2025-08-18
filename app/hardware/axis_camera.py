@@ -72,7 +72,7 @@ class AxisCamera:
                 'duration': duration
             }
             
-            response = self.session.post(url, params=params)
+            response = self.session.post(url, params=params, timeout=10)
             return response.status_code == 200
             
         except Exception as e:

@@ -24,17 +24,22 @@ def users():
 
 @admin_bp.route('/users/create', methods=['POST'])
 def create_user():
-    username = request.form['username']
-    email = request.form['email']
-    password = request.form['password']
+    try:
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        
+        user = User(username=username, email=email)
+        user.set_password(password)
+        
+        db.session.add(user)
+        db.session.commit()
+        
+        flash('User created successfully')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error creating user')
     
-    user = User(username=username, email=email)
-    user.set_password(password)
-    
-    db.session.add(user)
-    db.session.commit()
-    
-    flash('User created successfully')
     return redirect(url_for('admin.users'))
 
 @admin_bp.route('/devices')
@@ -96,36 +101,49 @@ def materials():
 @admin_bp.route('/materials/create', methods=['POST'])
 def create_material():
     from app.models.material import Material
-    data = request.get_json()
-    
-    material = Material(
-        code=data['code'],
-        description=data['description'],
-        category=data['category'],
-        is_ferrous=data.get('is_ferrous', 'false').lower() == 'true',
-        price_per_pound=data.get('price_per_pound', 0.0)
-    )
-    
-    db.session.add(material)
-    db.session.commit()
-    
-    return jsonify({'success': True, 'material_id': material.id})
+    try:
+        data = request.get_json()
+        if not data or 'code' not in data or 'description' not in data:
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        material = Material(
+            code=data['code'],
+            description=data['description'],
+            category=data['category'],
+            is_ferrous=data.get('is_ferrous', 'false').lower() == 'true',
+            price_per_pound=data.get('price_per_pound', 0.0)
+        )
+        
+        db.session.add(material)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'material_id': material.id})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': 'Database error'}), 500
 
 @admin_bp.route('/materials/update/<int:material_id>', methods=['POST'])
 def update_material(material_id):
     from app.models.material import Material
-    material = Material.query.get_or_404(material_id)
-    data = request.get_json()
-    
-    material.code = data['code']
-    material.description = data['description']
-    material.category = data['category']
-    material.is_ferrous = data.get('is_ferrous', 'false').lower() == 'true'
-    material.price_per_pound = data.get('price_per_pound', 0.0)
-    
-    db.session.commit()
-    
-    return jsonify({'success': True})
+    try:
+        material = Material.query.get_or_404(material_id)
+        data = request.get_json()
+        
+        if not data or 'code' not in data or 'description' not in data:
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        material.code = data['code']
+        material.description = data['description']
+        material.category = data['category']
+        material.is_ferrous = data.get('is_ferrous', 'false').lower() == 'true'
+        material.price_per_pound = data.get('price_per_pound', 0.0)
+        
+        db.session.commit()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': 'Database error'}), 500
 
 @admin_bp.route('/materials/load_csv', methods=['POST'])
 def load_materials_csv():
@@ -549,7 +567,7 @@ def load_materials_csv():
             continue
             
         # Determine if material is ferrous based on category
-        ferrous_categories = ['TRUCK SCALE']  # Steel materials
+        ferrous_categories = ['TRUCK SCALE', 'STEEL - NO TARE', 'STAINLESS STEEL']
         is_ferrous = category in ferrous_categories
         
         material = Material(

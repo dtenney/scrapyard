@@ -49,7 +49,7 @@ class AxisCameraService:
                 return None
                 
         except Exception as e:
-            logger.error(f"Camera capture error: {e}")
+            logger.error("Camera capture error occurred")
             return None
     
     def save_transaction_photo(self, transaction_id: int, material: str) -> Optional[str]:
@@ -79,7 +79,7 @@ class AxisCameraService:
             with open(filepath, 'wb') as f:
                 f.write(image_data)
             
-            logger.info(f"Transaction photo saved: {filename}")
+            logger.info("Transaction photo saved successfully")
             return filename
         
         return None

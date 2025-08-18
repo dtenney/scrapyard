@@ -31,14 +31,17 @@ class User(UserMixin, db.Model):
         
         from app.models.permissions import Permission, GroupPermission
         
-        for group in self.groups:
-            permissions = db.session.query(Permission).join(GroupPermission).filter(
-                GroupPermission.group_id == group.id,
-                Permission.name == permission_name
-            ).first()
-            if permissions:
-                return True
-        return False
+        # Single query to check permission across all user groups
+        group_ids = [group.id for group in self.groups]
+        if not group_ids:
+            return False
+            
+        permission_exists = db.session.query(Permission).join(GroupPermission).filter(
+            GroupPermission.group_id.in_(group_ids),
+            Permission.name == permission_name
+        ).first()
+        
+        return permission_exists is not None
 
 class UserGroup(db.Model):
     __tablename__ = 'user_groups'
