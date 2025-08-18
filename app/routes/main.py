@@ -71,12 +71,12 @@ def create_customer():
         email = request.form.get('email', '')
         license_number = request.form.get('drivers_license_number', '')
         
+        # Combine address fields into single address
+        address = f"{street_address} {city} {state} {zip_code}".strip()
+        
         customer = Customer(
             name=name,
-            street_address=street_address,
-            city=city,
-            state=state,
-            zip_code=zip_code,
+            address=address,
             phone=phone,
             email=email,
             drivers_license_number=license_number
@@ -140,10 +140,7 @@ def search_customers():
         results.append({
             'id': customer.id,
             'name': customer.name,
-            'street_address': customer.street_address,
-            'city': customer.city,
-            'state': customer.state,
-            'zip_code': customer.zip_code,
+            'address': customer.address,
             'phone': customer.phone,
             'drivers_license_number': customer.drivers_license_number
         })
