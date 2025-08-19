@@ -117,6 +117,19 @@ class SGTScraper:
         if scraped_norm in our_norm or our_norm in scraped_norm:
             return True
         
+        # Word order independence - check if same words in different order
+        our_words = set(our_norm.split())
+        scraped_words = set(scraped_norm.split())
+        if our_words == scraped_words and len(our_words) > 1:
+            return True
+        
+        # Check if most important words match (ignoring order)
+        important_words = {'COPPER', 'ALUMINUM', 'BRASS', 'STEEL', 'LEAD', 'WIRE', 'SHEET', 'CLEAN', 'DIRTY'}
+        our_important = our_words.intersection(important_words)
+        scraped_important = scraped_words.intersection(important_words)
+        if our_important and our_important == scraped_important:
+            return True
+        
         # Sequence similarity
         similarity = SequenceMatcher(None, our_norm, scraped_norm).ratio()
         if similarity > 0.75:
