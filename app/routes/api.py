@@ -2,11 +2,10 @@ from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
 from app import db
 from app.models.customer import Customer
-from app.services.smarty_service import SmartyAddressService
 from app.services.printer_service import StarPrinterService
+import requests
 
 api_bp = Blueprint('api', __name__)
-smarty_service = SmartyAddressService()
 
 @api_bp.route('/devices/test/<int:device_id>')
 @login_required
@@ -37,7 +36,7 @@ def compliance_report():
 @api_bp.route('/address/validate', methods=['POST'])
 @login_required
 def validate_address():
-    """Validate address using Smarty Streets"""
+    """Validate address using Geoapify"""
     try:
         data = request.get_json()
         if not data:
@@ -51,8 +50,38 @@ def validate_address():
         if not all([street, city, state, zipcode]):
             return jsonify({'success': False, 'error': 'All address fields required'})
         
-        is_valid, result = smarty_service.validate_address(street, city, state, zipcode)
-        return jsonify({'success': is_valid, 'data': result})
+        # Use Geoapify geocoding API
+        address_text = f"{street}, {city}, {state} {zipcode}, USA"
+        api_key = "YOUR_GEOAPIFY_API_KEY"  # Replace with actual key or env var
+        
+        url = "https://api.geoapify.com/v1/geocode/search"
+        params = {
+            'text': address_text,
+            'apiKey': api_key,
+            'limit': 1,
+            'format': 'json'
+        }
+        
+        response = requests.get(url, params=params, timeout=10)
+        
+        if response.status_code == 200:
+            result = response.json()
+            if result.get('results'):
+                addr = result['results'][0]
+                return jsonify({
+                    'success': True,
+                    'data': {
+                        'street': addr.get('street', street),
+                        'city': addr.get('city', city),
+                        'state': addr.get('state', state),
+                        'zipcode': addr.get('postcode', zipcode)
+                    }
+                })
+            else:
+                return jsonify({'success': False, 'data': {'error': 'Address not found'}})
+        else:
+            return jsonify({'success': False, 'data': {'error': 'Validation service unavailable'}})
+            
     except Exception as e:
         return jsonify({'success': False, 'error': 'Validation failed'}), 500
 
