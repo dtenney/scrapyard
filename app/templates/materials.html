@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>Material Management</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Scrap Materials</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="materialsTable">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Description</th>
+                                <th>Category</th>
+                                <th>Type</th>
+                                <th>Price/lb</th>
+                                <th>Market Price/lb</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for material in materials %}
+                            <tr data-id="{{ material.id }}">
+                                <td>{{ material.code }}</td>
+                                <td>{{ material.description }}</td>
+                                <td>{{ material.category }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'warning' if material.is_ferrous else 'info' }}">
+                                        {{ 'Ferrous' if material.is_ferrous else 'Non-Ferrous' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm price-input" 
+                                           value="{{ '%.4f'|format(material.price_per_pound) }}" 
+                                           step="0.0001" min="0" data-material-id="{{ material.id }}">
+                                </td>
+                                <td>
+                                    {% if material.competitive_prices %}
+                                        <span class="text-success">${{ "%.4f"|format(material.competitive_prices[0].price_per_pound) }}</span>
+                                        <small class="text-muted d-block">{{ material.competitive_prices[0].source }}</small>
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-success" onclick="updatePrice({{ material.id }})">Update</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updatePrice(materialId) {
+    const input = document.querySelector(`input[data-material-id="${materialId}"]`);
+    const price = parseFloat(input.value);
+    
+    if (isNaN(price) || price < 0) {
+        alert('Please enter a valid price');
+        return;
+    }
+    
+    fetch(`/api/materials/update/${materialId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({price_per_pound: price})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            input.style.backgroundColor = '#d4edda';
+            setTimeout(() => {
+                input.style.backgroundColor = '';
+            }, 2000);
+        } else {
+            alert('Error updating price: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error updating price');
+    });
+}
+
+// Allow Enter key to update price
+document.addEventListener('keypress', function(e) {
+    if (e.target.classList.contains('price-input') && e.key === 'Enter') {
+        const materialId = e.target.getAttribute('data-material-id');
+        updatePrice(materialId);
+    }
+});
+</script>
+{% endblock %}

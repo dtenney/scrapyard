@@ -206,6 +206,40 @@ def reports():
     """Reports and analytics page"""
     return render_template('reports.html')
 
+@main_bp.route('/materials')
+@login_required
+def materials():
+    """Materials management page - accessible to cashiers and admins"""
+    if not (current_user.has_permission('transaction') or current_user.is_admin):
+        abort(403)
+    
+    from app.models.material import Material
+    materials = Material.query.order_by(Material.category, Material.code).all()
+    return render_template('materials.html', materials=materials)
+
+@main_bp.route('/api/materials/update/<int:material_id>', methods=['POST'])
+@login_required
+def update_material_price(material_id):
+    """Update material price - accessible to cashiers and admins"""
+    if not (current_user.has_permission('transaction') or current_user.is_admin):
+        return jsonify({'success': False, 'error': 'Permission denied'}), 403
+    
+    from app.models.material import Material
+    try:
+        material = Material.query.get_or_404(material_id)
+        data = request.get_json()
+        
+        if 'price_per_pound' in data:
+            material.price_per_pound = float(data['price_per_pound'])
+            db.session.commit()
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': 'Price required'}), 400
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': 'Update failed'}), 500
+
 @main_bp.route('/api/customers/list')
 @login_required
 @require_permission('customer_lookup')
