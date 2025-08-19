@@ -113,7 +113,9 @@ def create_customer():
                 filepath = os.path.join(photo_dir, filename)
                 
                 # Validate path to prevent traversal
-                if not filepath.startswith(photo_dir):
+                abs_filepath = os.path.abspath(filepath)
+                abs_photo_dir = os.path.abspath(photo_dir)
+                if not abs_filepath.startswith(abs_photo_dir):
                     return jsonify({'success': False, 'error': 'Invalid file path'}), 400
                 
                 file.save(filepath)
@@ -125,6 +127,7 @@ def create_customer():
         return jsonify({'success': True, 'customer_id': customer.id})
         
     except Exception as e:
+        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @main_bp.route('/api/customers/search')
@@ -233,6 +236,9 @@ def update_material_price(material_id):
         data = request.get_json()
         
         if 'price_per_pound' in data:
+            price_str = str(data['price_per_pound']).lower()
+            if price_str in ['nan', 'inf', '-inf']:
+                return jsonify({'success': False, 'error': 'Invalid price value'}), 400
             material.price_per_pound = float(data['price_per_pound'])
             db.session.commit()
             return jsonify({'success': True})
@@ -323,4 +329,5 @@ def update_customer(customer_id):
         return jsonify({'success': True})
         
     except Exception as e:
+        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500

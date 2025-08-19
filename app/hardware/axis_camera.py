@@ -61,11 +61,14 @@ class AxisCamera:
             
             response = self.session.get(url, params=params, timeout=10)
             
-            if response.status_code == 200:
-                logger.info("Image captured from camera %s", self.ip)
-                return response.content
-            else:
-                logger.error(f"Failed to capture image: HTTP {response.status_code}")
+            try:
+                if response.status_code == 200:
+                    logger.info("Image captured from camera %s", self.ip)
+                    return response.content
+                else:
+                    logger.error("Failed to capture image: HTTP %d", response.status_code)
+            finally:
+                response.close()
                 
         except Exception as e:
             logger.error("Error capturing image: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))

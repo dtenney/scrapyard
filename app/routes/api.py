@@ -146,9 +146,9 @@ def search_customers():
     
     customers = Customer.query.filter(
         db.or_(
-            Customer.name.ilike(f'%{query}%'),
-            Customer.drivers_license_number.ilike(f'%{query}%'),
-            Customer.phone.ilike(f'%{query}%')
+            Customer.name.ilike('%' + query + '%'),
+            Customer.drivers_license_number.ilike('%' + query + '%'),
+            Customer.phone.ilike('%' + query + '%')
         ),
         Customer.is_active == True
     ).limit(10).all()

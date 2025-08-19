@@ -34,7 +34,7 @@ class CUPSService:
             return printers
             
         except Exception as e:
-            logger.error(f"Error getting CUPS printers: {e}")
+            logger.error("Error getting CUPS printers: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
             return []
     
     def print_file(self, printer_name: str, file_path: str, 
