@@ -1,42 +1,30 @@
-import requests
-from bs4 import BeautifulSoup
+import scrapy
+from scrapy.crawler import CrawlerProcess
+from difflib import SequenceMatcher
 import re
 from app.models.material import Material
 from app import db
+from app.scrapers.sgt_spider import SGTSpider
 
 class SGTScraper:
     def __init__(self):
-        self.url = "https://sgt-scrap.com/todays-prices/"
-        self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
+        self.prices = {}
     
     def scrape_prices(self):
-        """Scrape prices from SGT Scrap website"""
+        """Scrape prices using Scrapy"""
         try:
-            response = requests.get(self.url, headers=self.headers, timeout=30)
-            response.raise_for_status()
+            process = CrawlerProcess({
+                'USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'LOG_LEVEL': 'ERROR'
+            })
             
-            soup = BeautifulSoup(response.content, 'html.parser')
-            prices = {}
+            def collect_prices(spider, reason, spider_stats):
+                self.prices = spider.prices if hasattr(spider, 'prices') else {}
             
-            # Find price tables or sections
-            tables = soup.find_all('table')
-            for table in tables:
-                rows = table.find_all('tr')
-                for row in rows:
-                    cells = row.find_all(['td', 'th'])
-                    if len(cells) >= 2:
-                        material_name = cells[0].get_text(strip=True).upper()
-                        price_text = cells[1].get_text(strip=True)
-                        
-                        # Extract price using regex
-                        price_match = re.search(r'\$?(\d+\.?\d*)', price_text)
-                        if price_match:
-                            price = float(price_match.group(1))
-                            prices[material_name] = price
+            process.crawl(SGTSpider)
+            process.start()
             
-            return prices
+            return self.prices
         except Exception as e:
             print(f"Error scraping SGT prices: {e}")
             return {}
@@ -73,31 +61,81 @@ class SGTScraper:
         return updated_count
     
     def _materials_match(self, our_material, scraped_material):
-        """Check if materials match using fuzzy logic"""
-        our_words = set(our_material.split())
-        scraped_words = set(scraped_material.split())
+        """Advanced material matching with fuzzy logic and semantic understanding"""
+        # Normalize materials
+        our_norm = self._normalize_material(our_material)
+        scraped_norm = self._normalize_material(scraped_material)
         
-        # Check for common keywords
-        common_keywords = our_words.intersection(scraped_words)
-        
-        # Match if significant overlap
-        if len(common_keywords) >= 2:
+        # Direct match
+        if our_norm == scraped_norm:
             return True
         
-        # Specific material mappings
-        mappings = {
-            'COPPER': ['COPPER', 'CU'],
-            'ALUMINUM': ['ALUMINUM', 'ALUMINIUM', 'AL'],
-            'BRASS': ['BRASS'],
-            'STEEL': ['STEEL', 'IRON'],
-            'WIRE': ['WIRE', 'CABLE'],
-            'BATTERY': ['BATTERY', 'BATTERIES']
+        # Sequence similarity
+        similarity = SequenceMatcher(None, our_norm, scraped_norm).ratio()
+        if similarity > 0.8:
+            return True
+        
+        # Keyword matching with weights
+        our_keywords = self._extract_keywords(our_norm)
+        scraped_keywords = self._extract_keywords(scraped_norm)
+        
+        # Calculate weighted match score
+        match_score = self._calculate_match_score(our_keywords, scraped_keywords)
+        return match_score > 0.7
+    
+    def _normalize_material(self, material):
+        """Normalize material description"""
+        # Remove common prefixes/suffixes
+        material = re.sub(r'^(#\d+\s*)', '', material)
+        material = re.sub(r'\s*(CLEAN|DIRTY|PREPARED|UNPREPARED)$', '', material)
+        
+        # Standardize terms
+        replacements = {
+            'ALUMINIUM': 'ALUMINUM',
+            'ALUM': 'ALUMINUM',
+            'CU': 'COPPER',
+            'STAINLESS': 'STAINLESS STEEL',
+            'SS': 'STAINLESS STEEL'
         }
         
-        for key, variants in mappings.items():
-            if key in our_material:
-                for variant in variants:
-                    if variant in scraped_material:
-                        return True
+        for old, new in replacements.items():
+            material = material.replace(old, new)
         
-        return False
+        return material.strip()
+    
+    def _extract_keywords(self, material):
+        """Extract weighted keywords from material description"""
+        # High-value keywords (material types)
+        high_value = ['COPPER', 'ALUMINUM', 'BRASS', 'STEEL', 'LEAD', 'WIRE']
+        # Medium-value keywords (grades/types)
+        medium_value = ['CLEAN', 'DIRTY', 'PREPARED', 'TURNINGS', 'SHEET', 'BARE']
+        # Low-value keywords (descriptors)
+        low_value = ['BRIGHT', 'HEAVY', 'LIGHT', 'MIXED', 'SCRAP']
+        
+        keywords = {}
+        words = material.split()
+        
+        for word in words:
+            if word in high_value:
+                keywords[word] = 3
+            elif word in medium_value:
+                keywords[word] = 2
+            elif word in low_value:
+                keywords[word] = 1
+            else:
+                keywords[word] = 1
+        
+        return keywords
+    
+    def _calculate_match_score(self, our_keywords, scraped_keywords):
+        """Calculate weighted match score between keyword sets"""
+        total_weight = sum(our_keywords.values())
+        if total_weight == 0:
+            return 0
+        
+        matched_weight = 0
+        for word, weight in our_keywords.items():
+            if word in scraped_keywords:
+                matched_weight += weight
+        
+        return matched_weight / total_weight
