@@ -26,23 +26,46 @@ class SGTScraper:
                 for row in table.find_all('tr'):
                     cells = row.find_all(['td', 'th'])
                     if len(cells) >= 2:
-                        material = cells[0].get_text(strip=True).upper()
-                        price_text = cells[1].get_text(strip=True)
-                        
-                        price_match = re.search(r'\$?(\d+\.?\d*)', price_text)
-                        if price_match and material:
-                            prices[material] = float(price_match.group(1))
+                        # Try both orders: material-price and price-material
+                        for i in range(len(cells) - 1):
+                            for j in range(i + 1, len(cells)):
+                                text1 = cells[i].get_text(strip=True)
+                                text2 = cells[j].get_text(strip=True)
+                                
+                                # Check if text1 is material and text2 is price
+                                price_match = re.search(r'\$?(\d+\.?\d*)', text2)
+                                if price_match and text1 and not re.search(r'\d', text1):
+                                    prices[text1.upper()] = float(price_match.group(1))
+                                
+                                # Check if text2 is material and text1 is price
+                                price_match = re.search(r'\$?(\d+\.?\d*)', text1)
+                                if price_match and text2 and not re.search(r'\d', text2):
+                                    prices[text2.upper()] = float(price_match.group(1))
             
-            # Extract from divs/spans with price patterns
-            for element in soup.find_all(['div', 'span', 'p']):
-                text = element.get_text(strip=True)
-                if text and '$' in text:
-                    parts = text.split('$')
-                    if len(parts) >= 2:
-                        material = parts[0].strip().upper()
-                        price_match = re.search(r'(\d+\.?\d*)', parts[1])
-                        if price_match and material:
-                            prices[material] = float(price_match.group(1))
+            # Extract from text patterns with material and price
+            all_text = soup.get_text()
+            # Look for patterns like "COPPER $3.50" or "$3.50 COPPER"
+            patterns = [
+                r'([A-Z\s]+?)\s*\$?(\d+\.?\d*)',  # Material followed by price
+                r'\$?(\d+\.?\d*)\s*([A-Z\s]+?)',  # Price followed by material
+            ]
+            
+            for pattern in patterns:
+                matches = re.findall(pattern, all_text)
+                for match in matches:
+                    if len(match) == 2:
+                        text1, text2 = match
+                        # Determine which is material and which is price
+                        if re.match(r'^\d+\.?\d*$', text1):  # text1 is price
+                            price, material = float(text1), text2.strip().upper()
+                        elif re.match(r'^\d+\.?\d*$', text2):  # text2 is price
+                            material, price = text1.strip().upper(), float(text2)
+                        else:
+                            continue
+                        
+                        # Filter out invalid materials
+                        if len(material) > 3 and not re.search(r'\d', material):
+                            prices[material] = price
             
             return prices
         except Exception as e:
@@ -90,9 +113,13 @@ class SGTScraper:
         if our_norm == scraped_norm:
             return True
         
+        # Check if scraped material is contained in our material or vice versa
+        if scraped_norm in our_norm or our_norm in scraped_norm:
+            return True
+        
         # Sequence similarity
         similarity = SequenceMatcher(None, our_norm, scraped_norm).ratio()
-        if similarity > 0.8:
+        if similarity > 0.75:
             return True
         
         # Keyword matching with weights
@@ -101,7 +128,7 @@ class SGTScraper:
         
         # Calculate weighted match score
         match_score = self._calculate_match_score(our_keywords, scraped_keywords)
-        return match_score > 0.7
+        return match_score > 0.6
     
     def _normalize_material(self, material):
         """Normalize material description"""
