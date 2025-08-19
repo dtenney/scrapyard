@@ -1,212 +1,232 @@
 # Scrapyard Installation Log
 
-## System Requirements
-- Ubuntu Linux
-- Apache with mod_wsgi
-- PostgreSQL database
-- Python 3.8+
-- Network connectivity for hardware devices
+## Automated Setup Script
 
-## Installation Steps
+The scrapyard system includes an automated setup script that handles the complete installation process.
 
-### 1. System Setup
-```bash
-# Update system
-sudo apt update && sudo apt upgrade -y
-
-# Install required packages
-sudo apt install -y apache2 postgresql postgresql-contrib python3 python3-pip python3-venv libpq-dev python3-dev apache2-dev redis-server
-
-# Enable Apache modules
-sudo a2enmod wsgi
-sudo a2enmod ssl
-sudo a2enmod rewrite
-```
-
-### 2. Database Setup
-```bash
-# Switch to postgres user and create database
-sudo -u postgres createuser -P scrapyard
-sudo -u postgres createdb -O scrapyard scrapyard
-
-# Test database connection
-psql -U scrapyard -d scrapyard -h localhost -c "SELECT version();"
-```
-
-### 3. Application Setup
+### Quick Installation
 ```bash
 # Clone repository
-cd /var/www
-sudo git clone https://github.com/dtenney/scrapyard.git
-sudo chown -R www-data:www-data scrapyard
+git clone https://github.com/dtenney/scrapyard.git
 cd scrapyard
 
-# Create virtual environment
-sudo -u www-data python3 -m venv venv
-sudo -u www-data ./venv/bin/pip install -r requirements.txt
-
-# Set up environment variables
-sudo -u www-data cp .env.example .env
-# Edit .env with actual values:
-# DATABASE_URL=postgresql://scrapyard:password@localhost/scrapyard
-# SECRET_KEY=your_secret_key_here
-# SMARTY_AUTH_ID=your_smarty_auth_id
-# SMARTY_AUTH_TOKEN=your_smarty_auth_token
+# Run setup script
+sudo ./setup.sh
 ```
 
-### 4. Database Migration
-```bash
-# Run database migrations
-sudo -u www-data psql -U scrapyard -d scrapyard -h localhost < fix_database_tables.sql
-sudo -u www-data psql -U scrapyard -d scrapyard -h localhost < add_customer_address_fields.sql
+## Setup Script Actions
 
-# Initialize database with materials
-sudo -u www-data ./venv/bin/python3 -c "
-from app import create_app, db
-app = create_app()
-with app.app_context():
-    db.create_all()
-    print('Database initialized')
-"
+The `setup.sh` script performs the following operations:
+
+### 1. System Package Installation
+- Updates system packages
+- Installs Apache2 with mod_wsgi
+- Installs PostgreSQL database server
+- Installs Python 3 and development tools
+- Installs Redis server for Celery
+- Installs CUPS for printer support
+- Installs security tools (ufw, fail2ban)
+
+### 2. Security Configuration
+- Enables UFW firewall
+- Opens required ports (22, 80, 443, 631)
+- Creates application user with proper permissions
+
+### 3. Application Setup
+- Creates `/var/www/scrapyard` directory
+- Copies application files with correct ownership
+- Creates Python virtual environment
+- Installs Python dependencies from requirements.txt
+
+### 4. Database Configuration
+- Runs `reset_database.sh` to create PostgreSQL user and database
+- Initializes database tables using SQLAlchemy models
+- Creates default user groups and permissions
+- Loads material catalog from CSV data
+
+### 5. Web Server Configuration
+- Configures Apache virtual host from `config/apache-scrapyard.conf`
+- Enables required Apache modules (wsgi, ssl, rewrite, headers)
+- Creates self-signed SSL certificate for HTTPS
+- Disables default Apache site
+
+### 6. Service Configuration
+- Configures CUPS printing service
+- Sets up Redis server for background tasks
+- Configures Supervisor for Celery worker management
+- Starts all required system services
+
+### 7. Background Task Setup
+- Configures Celery worker and beat scheduler
+- Sets up price scraping and automated tasks
+- Starts background services via Supervisor
+
+### 8. Final System Configuration
+- Sets proper file permissions and ownership
+- Restarts all services
+- Validates installation
+
+## Post-Installation Steps
+
+### 1. Access Application
+```bash
+# Application will be available at:
+https://localhost/scrapyard
 ```
 
-### 5. Apache Configuration
+### 2. Initial Admin Setup
+- First visit will redirect to setup page
+- Create admin account with email and password
+- Login with admin credentials
+
+### 3. Hardware Configuration
+- Navigate to Admin → Devices
+- Add scales: USR-TCP232-410S devices with IP addresses
+- Add printers: Star Micronics thermal printers
+- Add cameras: AXIS M2025-LE network cameras
+- Test device connections
+
+### 4. User Management
+- Admin → Users to create cashier accounts
+- Assign users to device groups (scales, printers, cameras)
+- Configure role-based permissions
+
+### 5. Material Management
+- Materials are pre-loaded from CSV during setup
+- Admin → Materials to view/edit material catalog
+- Use "Update Market Prices" for current pricing
+- Configure SGT price scraping for automated updates
+
+### 6. Customer Management
+- Cashier interface includes customer lookup
+- Add customers with driver's license scanning
+- Address validation via Smarty Streets (requires API keys)
+
+## Installation Verification
+
+### Check Service Status
 ```bash
-# Copy Apache configuration
-sudo cp config/apache-scrapyard.conf /etc/apache2/sites-available/
-sudo a2ensite apache-scrapyard
-sudo a2dissite 000-default
-sudo systemctl reload apache2
-```
-
-### 6. Celery Setup
-```bash
-# Copy supervisor configuration
-sudo cp config/supervisor-scrapyard.conf /etc/supervisor/conf.d/
-sudo supervisorctl reread
-sudo supervisorctl update
-sudo supervisorctl start scrapyard-celery
-sudo supervisorctl start scrapyard-celery-beat
-```
-
-### 7. SSL Certificate (Optional)
-```bash
-# Install Let's Encrypt
-sudo apt install -y certbot python3-certbot-apache
-sudo certbot --apache -d yourdomain.com
-```
-
-### 8. Final Steps
-```bash
-# Set proper permissions
-sudo chown -R www-data:www-data /var/www/scrapyard
-sudo chmod -R 755 /var/www/scrapyard
-
-# Restart services
-sudo systemctl restart apache2
-sudo systemctl restart redis-server
-sudo supervisorctl restart all
-
-# Check status
+# Verify all services are running
 sudo systemctl status apache2
 sudo systemctl status postgresql
 sudo systemctl status redis-server
 sudo supervisorctl status
-```
 
-## Post-Installation
-
-### 1. Initial Admin Setup
-- Navigate to http://localhost/scrapyard
-- Complete admin account setup
-- Configure hardware devices in admin panel
-
-### 2. Hardware Configuration
-- Add scales, printers, and cameras in Device Management
-- Test device connections
-- Assign devices to user groups
-
-### 3. Material Setup
-- Load materials from CSV: Admin → Materials → Load from CSV
-- Update prices: Admin → Materials → Update Market Prices
-- Configure SGT price scraping: Admin → Materials → Prepopulate SGT Prices
-
-### 4. User Management
-- Create user accounts in Admin → Users
-- Assign users to appropriate groups
-- Configure device access permissions
-
-## Troubleshooting
-
-### Common Issues
-
-#### Database Connection Error
-```bash
-# Check PostgreSQL status
-sudo systemctl status postgresql
-
-# Verify database exists
-sudo -u postgres psql -l | grep scrapyard
-
-# Test connection
-psql -U scrapyard -d scrapyard -h localhost
-```
-
-#### Apache Permission Issues
-```bash
-# Fix ownership
-sudo chown -R www-data:www-data /var/www/scrapyard
-
-# Check Apache error log
+# Check application logs
 sudo tail -f /var/log/apache2/error.log
-```
-
-#### Celery Not Starting
-```bash
-# Check supervisor status
-sudo supervisorctl status
-
-# Restart Celery services
-sudo supervisorctl restart scrapyard-celery
-sudo supervisorctl restart scrapyard-celery-beat
-
-# Check logs
 sudo tail -f /var/log/supervisor/scrapyard-celery.log
 ```
 
-#### CSRF Token Errors
-- Ensure SECRET_KEY is set in .env
-- Clear browser cache and cookies
-- Restart Apache after configuration changes
-
-### Log Files
-- Apache: `/var/log/apache2/error.log`
-- Application: `/media/david/apache_logs/scrapyard_error.log`
-- Celery: `/var/log/supervisor/scrapyard-celery.log`
-- Database: `/var/log/postgresql/postgresql-*.log`
-
-## Security Checklist
-- [ ] Change default admin password
-- [ ] Configure firewall (ufw)
-- [ ] Set up SSL certificate
-- [ ] Configure backup strategy
-- [ ] Update system packages regularly
-- [ ] Monitor log files for errors
-
-## Backup Strategy
+### Test Database Connection
 ```bash
-# Database backup
-pg_dump -U scrapyard -h localhost scrapyard > backup_$(date +%Y%m%d).sql
+# Connect to database
+psql -U scrapyard -d scrapyard -h localhost
 
-# Application backup
-tar -czf scrapyard_backup_$(date +%Y%m%d).tar.gz /var/www/scrapyard
+# List tables
+\dt
+
+# Check materials loaded
+SELECT COUNT(*) FROM materials;
 ```
 
-## Version Information
-- Application Version: Latest from GitHub
-- Python: 3.8+
-- PostgreSQL: 12+
-- Apache: 2.4+
-- Redis: 6.0+
+### Verify Web Access
+```bash
+# Test HTTP redirect
+curl -I http://localhost/scrapyard
 
-Last Updated: $(date)
+# Test HTTPS access
+curl -k -I https://localhost/scrapyard
+```
+
+## Troubleshooting Setup Issues
+
+### Setup Script Fails
+```bash
+# Re-run with verbose output
+bash -x setup.sh
+
+# Check specific service logs
+journalctl -u apache2 -f
+journalctl -u postgresql -f
+```
+
+### Database Issues
+```bash
+# Reset database completely
+sudo ./reset_database.sh
+
+# Manually initialize
+sudo -u scrapyard /var/www/scrapyard/venv/bin/python -c "
+from app import create_app, db
+app = create_app()
+with app.app_context(): db.create_all()
+"
+```
+
+### Permission Issues
+```bash
+# Fix all permissions
+sudo chown -R scrapyard:www-data /var/www/scrapyard
+sudo chmod -R 755 /var/www/scrapyard
+sudo systemctl restart apache2
+```
+
+### Log File Locations
+- Setup log: Console output during `./setup.sh`
+- Apache errors: `/var/log/apache2/error.log`
+- Application errors: `/var/log/apache2/scrapyard_error.log`
+- Celery logs: `/var/log/supervisor/scrapyard-celery*.log`
+- PostgreSQL: `/var/log/postgresql/postgresql-*.log`
+
+## Configuration Files
+
+The setup script uses these configuration files:
+
+- `setup.sh` - Main installation script
+- `reset_database.sh` - Database initialization
+- `config/apache-scrapyard.conf` - Apache virtual host
+- `config/supervisor-scrapyard.conf` - Celery process management
+- `scripts/start_celery.sh` - Celery startup script
+- `requirements.txt` - Python dependencies
+- `.env.example` - Environment variables template
+
+## Security Features
+
+### Automatic Security Setup
+- UFW firewall enabled with minimal required ports
+- Self-signed SSL certificate for HTTPS
+- Fail2ban for intrusion prevention
+- Separate application user with limited privileges
+- CSRF protection on all forms
+
+### Post-Setup Security
+- Change admin password immediately
+- Configure production SSL certificate
+- Set up regular security updates
+- Monitor access logs
+- Configure backup strategy
+
+## System Requirements Met
+
+- ✅ Ubuntu Linux (18.04+)
+- ✅ Apache 2.4+ with mod_wsgi
+- ✅ PostgreSQL 12+ database
+- ✅ Python 3.8+ with virtual environment
+- ✅ Redis for background tasks
+- ✅ CUPS for printer support
+- ✅ SSL/HTTPS encryption
+- ✅ Process supervision (Supervisor)
+- ✅ Firewall configuration (UFW)
+
+## Installation Complete
+
+After successful setup:
+1. Access https://localhost/scrapyard
+2. Complete admin account creation
+3. Configure hardware devices
+4. Begin scrap metal operations
+
+**Setup script handles all technical installation automatically.**
+
+Installation Method: Automated via setup.sh script
+Last Updated: 2025-01-19
