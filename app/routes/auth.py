@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
-from flask_wtf.csrf import validate_csrf, ValidationError
+from flask_wtf.csrf import validate_csrf, ValidationError, generate_csrf
 from app.models.user import User
 from app import db
 
@@ -88,4 +88,4 @@ def setup():
             db.session.rollback()
             flash('Error creating admin account')
     
-    return render_template('setup.html')
+    return render_template('setup.html', csrf_token=generate_csrf)
