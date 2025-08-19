@@ -19,7 +19,7 @@ def login_get():
     if not admin_user:
         return redirect(url_for('auth.setup'))
     
-    return render_template('login.html')
+    return render_template('login.html', csrf_token=generate_csrf)
 
 @auth_bp.route('/login', methods=['POST'])
 def login_post():
@@ -27,14 +27,14 @@ def login_post():
         validate_csrf(request.form.get('csrf_token'))
     except ValidationError:
         flash('Security token invalid')
-        return render_template('login.html')
+        return render_template('login.html', csrf_token=generate_csrf)
         
     username = request.form.get('username')
     password = request.form.get('password')
     
     if not username or not password:
         flash('Username and password are required')
-        return render_template('login.html')
+        return render_template('login.html', csrf_token=generate_csrf)
     
     user = User.query.filter_by(username=username).first()
     
@@ -44,7 +44,7 @@ def login_post():
     else:
         flash('Invalid username or password')
     
-    return render_template('login.html')
+    return render_template('login.html', csrf_token=generate_csrf)
 
 @auth_bp.route('/logout')
 @login_required
