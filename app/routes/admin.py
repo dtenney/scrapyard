@@ -51,6 +51,52 @@ def create_user():
     
     return redirect(url_for('admin.users'))
 
+@admin_bp.route('/users/<int:user_id>')
+def get_user(user_id):
+    """Get user details for editing"""
+    user = User.query.get_or_404(user_id)
+    return jsonify({
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'is_admin': user.is_admin,
+            'groups': [{'id': g.id, 'name': g.name} for g in user.groups]
+        }
+    })
+
+@admin_bp.route('/users/update/<int:user_id>', methods=['POST'])
+def update_user(user_id):
+    """Update user details and groups"""
+    from app.models.user import UserGroupMember
+    try:
+        user = User.query.get_or_404(user_id)
+        data = request.get_json()
+        
+        # Update email
+        user.email = data['email']
+        
+        # Update password if provided
+        if data.get('password'):
+            user.set_password(data['password'])
+        
+        # Update groups
+        # Remove existing group memberships
+        UserGroupMember.query.filter_by(user_id=user.id).delete()
+        
+        # Add new group memberships
+        for group_id in data.get('groups', []):
+            membership = UserGroupMember(user_id=user.id, group_id=int(group_id))
+            db.session.add(membership)
+        
+        db.session.commit()
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @admin_bp.route('/devices')
 def devices():
     devices = Device.query.all()

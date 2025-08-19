@@ -20,6 +20,7 @@
                             <th>Username</th>
                             <th>Email</th>
                             <th>Admin</th>
+                            <th>Groups</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -30,7 +31,12 @@
                             <td>{{ user.email }}</td>
                             <td>{{ 'Yes' if user.is_admin else 'No' }}</td>
                             <td>
-                                <button class="btn btn-sm btn-warning">Edit</button>
+                                {% for group in user.groups %}
+                                    <span class="badge bg-secondary me-1">{{ group.name }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-warning" onclick="editUser({{ user.id }})">Edit</button>
                             </td>
                         </tr>
                         {% endfor %}
@@ -72,4 +78,108 @@
         </div>
     </div>
 </div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm">
+                    <input type="hidden" id="editUserId">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" id="editUsername" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="editEmail" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">New Password (leave blank to keep current)</label>
+                        <input type="password" class="form-control" id="editPassword" name="password">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Groups</label>
+                        <div id="editUserGroups">
+                            {% for group in groups %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="groups" value="{{ group.id }}" id="editGroup{{ group.id }}">
+                                <label class="form-check-label" for="editGroup{{ group.id }}">
+                                    {{ group.name }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updateUser()">Update User</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
+
+{% block scripts %}
+<script>
+function editUser(userId) {
+    fetch(`/admin/users/${userId}`)
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('editUserId').value = data.user.id;
+        document.getElementById('editUsername').value = data.user.username;
+        document.getElementById('editEmail').value = data.user.email;
+        document.getElementById('editPassword').value = '';
+        
+        // Clear all group checkboxes
+        document.querySelectorAll('#editUserGroups input[type="checkbox"]').forEach(cb => {
+            cb.checked = false;
+        });
+        
+        // Check user's current groups
+        data.user.groups.forEach(group => {
+            const checkbox = document.getElementById(`editGroup${group.id}`);
+            if (checkbox) checkbox.checked = true;
+        });
+        
+        new bootstrap.Modal(document.getElementById('editUserModal')).show();
+    });
+}
+
+function updateUser() {
+    const userId = document.getElementById('editUserId').value;
+    const email = document.getElementById('editEmail').value;
+    const password = document.getElementById('editPassword').value;
+    const selectedGroups = Array.from(document.querySelectorAll('#editUserGroups input[type="checkbox"]:checked')).map(cb => cb.value);
+    
+    const data = {
+        email: email,
+        groups: selectedGroups
+    };
+    
+    if (password) {
+        data.password = password;
+    }
+    
+    fetch(`/admin/users/update/${userId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+            location.reload();
+        } else {
+            alert('Error updating user: ' + data.error);
+        }
+    });
+}
+</script>
