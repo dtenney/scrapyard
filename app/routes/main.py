@@ -297,7 +297,10 @@ def get_customer(customer_id):
         'customer': {
             'id': customer.id,
             'name': customer.name,
-            'address': customer.full_address,
+            'street_address': customer.street_address,
+            'city': customer.city,
+            'state': customer.state,
+            'zip_code': customer.zip_code,
             'phone': customer.phone,
             'email': customer.email,
             'drivers_license_number': customer.drivers_license_number
