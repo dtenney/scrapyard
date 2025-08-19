@@ -42,6 +42,7 @@ class CUPSService:
         """Print a file using CUPS lp command"""
         import re
         import os
+        import shlex
         
         # Validate printer name (alphanumeric, dash, underscore only)
         if not re.match(r'^[a-zA-Z0-9_-]+$', printer_name):
@@ -60,16 +61,24 @@ class CUPSService:
             logger.error("File path not in allowed directory")
             return False
         
+        # Additional path traversal protection
+        if '..' in file_path or file_path.startswith('/'):
+            if not abs_path.startswith(tuple(allowed_dirs)):
+                logger.error("Path traversal attempt detected")
+                return False
+        
         try:
-            cmd = ['lp', '-d', printer_name, file_path]
+            # Use list format to prevent command injection
+            cmd = ['lp', '-d', printer_name, abs_path]
             
             if options:
+                # Whitelist allowed options to prevent injection
+                allowed_options = {'copies', 'media', 'orientation', 'sides'}
                 for key, value in options.items():
-                    # Validate option keys and values
-                    if re.match(r'^[a-zA-Z0-9_-]+$', key) and re.match(r'^[a-zA-Z0-9=_.-]+$', str(value)):
+                    if key in allowed_options and re.match(r'^[a-zA-Z0-9_.-]+$', str(value)):
                         cmd.extend(['-o', f'{key}={value}'])
             
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, shell=False)
             
             if result.returncode == 0:
                 logger.info("File printed successfully")
@@ -85,12 +94,29 @@ class CUPSService:
     def print_text(self, printer_name: str, text: str, 
                    title: str = "Scrap Receipt") -> bool:
         """Print text content directly"""
+        import re
+        
+        # Validate printer name
+        if not re.match(r'^[a-zA-Z0-9_-]+$', printer_name):
+            logger.error("Invalid printer name")
+            return False
+        
+        # Validate title (no shell metacharacters)
+        if not re.match(r'^[a-zA-Z0-9 _.-]+$', title):
+            logger.error("Invalid title format")
+            return False
+        
+        # Limit text length to prevent abuse
+        if len(text) > 10000:
+            logger.error("Text too long")
+            return False
+        
         try:
             cmd = ['lp', '-d', printer_name, '-t', title, '-']
             
             process = subprocess.Popen(cmd, stdin=subprocess.PIPE, 
                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                     text=True)
+                                     text=True, shell=False)
             
             stdout, stderr = process.communicate(input=text, timeout=30)
             
@@ -98,18 +124,25 @@ class CUPSService:
                 logger.info(f"Text printed successfully to {printer_name}")
                 return True
             else:
-                logger.error(f"Print failed: {stderr}")
+                logger.error("Print job failed")
                 return False
                 
         except Exception as e:
-            logger.error(f"Error printing text: {e}")
+            logger.error("Error printing text")
             return False
     
     def get_printer_status(self, printer_name: str) -> Dict:
         """Get status of specific printer"""
+        import re
+        
+        # Validate printer name
+        if not re.match(r'^[a-zA-Z0-9_-]+$', printer_name):
+            logger.error("Invalid printer name")
+            return {'status': 'error', 'message': 'Invalid printer name'}
+        
         try:
             result = subprocess.run(['lpstat', '-p', printer_name], 
-                                  capture_output=True, text=True, timeout=10)
+                                  capture_output=True, text=True, timeout=10, shell=False)
             
             if result.returncode == 0:
                 status_line = result.stdout.strip()
@@ -118,10 +151,10 @@ class CUPSService:
                 elif 'printing' in status_line:
                     return {'status': 'busy', 'message': 'Printer busy'}
                 else:
-                    return {'status': 'unknown', 'message': status_line}
+                    return {'status': 'unknown', 'message': 'Status unknown'}
             else:
                 return {'status': 'error', 'message': 'Printer not found'}
                 
         except Exception as e:
-            logger.error(f"Error getting printer status: {e}")
-            return {'status': 'error', 'message': str(e)}
+            logger.error("Error getting printer status")
+            return {'status': 'error', 'message': 'Status check failed'}
