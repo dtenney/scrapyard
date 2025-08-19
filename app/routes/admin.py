@@ -604,3 +604,4 @@ def update_prices():
         return jsonify({'success': True, 'updated': updated_count})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
