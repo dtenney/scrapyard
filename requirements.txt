@@ -14,7 +14,6 @@ pyserial==3.5
 requests==2.32.4
 Pillow==10.3.0
 beautifulsoup4==4.12.2
-scrapy==2.11.0
 
 # Network Communication
 websockets==11.0.3

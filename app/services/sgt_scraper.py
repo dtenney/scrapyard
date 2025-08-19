@@ -1,30 +1,50 @@
-import scrapy
-from scrapy.crawler import CrawlerProcess
+import requests
+from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
 import re
 from app.models.material import Material
 from app import db
-from app.scrapers.sgt_spider import SGTSpider
 
 class SGTScraper:
     def __init__(self):
-        self.prices = {}
+        self.url = "https://sgt-scrap.com/todays-prices/"
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
     
     def scrape_prices(self):
-        """Scrape prices using Scrapy"""
+        """Scrape prices using requests and BeautifulSoup"""
         try:
-            process = CrawlerProcess({
-                'USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'LOG_LEVEL': 'ERROR'
-            })
+            response = requests.get(self.url, headers=self.headers, timeout=30)
+            response.raise_for_status()
             
-            def collect_prices(spider, reason, spider_stats):
-                self.prices = spider.prices if hasattr(spider, 'prices') else {}
+            soup = BeautifulSoup(response.content, 'html.parser')
+            prices = {}
             
-            process.crawl(SGTSpider)
-            process.start()
+            # Extract prices from tables
+            for table in soup.find_all('table'):
+                for row in table.find_all('tr'):
+                    cells = row.find_all(['td', 'th'])
+                    if len(cells) >= 2:
+                        material = cells[0].get_text(strip=True).upper()
+                        price_text = cells[1].get_text(strip=True)
+                        
+                        price_match = re.search(r'\$?(\d+\.?\d*)', price_text)
+                        if price_match and material:
+                            prices[material] = float(price_match.group(1))
             
-            return self.prices
+            # Extract from divs/spans with price patterns
+            for element in soup.find_all(['div', 'span', 'p']):
+                text = element.get_text(strip=True)
+                if text and '$' in text:
+                    parts = text.split('$')
+                    if len(parts) >= 2:
+                        material = parts[0].strip().upper()
+                        price_match = re.search(r'(\d+\.?\d*)', parts[1])
+                        if price_match and material:
+                            prices[material] = float(price_match.group(1))
+            
+            return prices
         except Exception as e:
             print(f"Error scraping SGT prices: {e}")
             return {}
