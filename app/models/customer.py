@@ -11,7 +11,7 @@ class Customer(db.Model):
     state = db.Column(db.String(2))
     zip_code = db.Column(db.String(10))
     county = db.Column(db.String(100))
-    address = db.Column(db.Text)  # Legacy field for backward compatibility
+
     phone = db.Column(db.String(20))
     email = db.Column(db.String(100))
     drivers_license_number = db.Column(db.String(50))
@@ -26,6 +26,3 @@ class Customer(db.Model):
         parts = [self.street_address, self.city, self.state, self.zip_code]
         return ', '.join(filter(None, parts))
     
-    def update_legacy_address(self):
-        """Update legacy address field from individual components"""
-        self.address = self.full_address

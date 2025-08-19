@@ -13,7 +13,6 @@
     </div>
     <div class="col-md-6">
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMaterialModal">Add Material</button>
-        <button class="btn btn-success" onclick="loadFromCSV()">Load from CSV</button>
         <button class="btn btn-warning" onclick="updatePrices()">Update Market Prices</button>
         <button class="btn btn-info" onclick="prepopulateSGTPrices()">Prepopulate SGT Prices</button>
     </div>
@@ -131,21 +130,6 @@
 
 {% block scripts %}
 <script>
-function loadFromCSV() {
-    if (confirm('Load materials from CSV? This will add new materials but not overwrite existing ones.')) {
-        fetch('/admin/materials/load_csv', {method: 'POST'})
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Materials loaded successfully');
-                location.reload();
-            } else {
-                alert('Error loading materials');
-            }
-        });
-    }
-}
-
 function saveMaterial() {
     const form = document.getElementById('addMaterialForm');
     const formData = new FormData(form);
