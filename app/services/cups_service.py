@@ -14,7 +14,7 @@ class CUPSService:
     def refresh_printers(self) -> List[Dict]:
         """Get list of available CUPS printers"""
         try:
-            result = subprocess.run(['lpstat', '-p'], 
+            result = subprocess.run(['/usr/bin/lpstat', '-p'], 
                                   capture_output=True, text=True, timeout=10)
             
             printers = []
@@ -68,8 +68,8 @@ class CUPSService:
                 return False
         
         try:
-            # Use list format to prevent command injection
-            cmd = ['lp', '-d', printer_name, abs_path]
+            # Use full path to prevent command injection
+            cmd = ['/usr/bin/lp', '-d', printer_name, abs_path]
             
             if options:
                 # Whitelist allowed options to prevent injection
@@ -112,7 +112,7 @@ class CUPSService:
             return False
         
         try:
-            cmd = ['lp', '-d', printer_name, '-t', title, '-']
+            cmd = ['/usr/bin/lp', '-d', printer_name, '-t', title, '-']
             
             process = subprocess.Popen(cmd, stdin=subprocess.PIPE, 
                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -141,7 +141,7 @@ class CUPSService:
             return {'status': 'error', 'message': 'Invalid printer name'}
         
         try:
-            result = subprocess.run(['lpstat', '-p', printer_name], 
+            result = subprocess.run(['/usr/bin/lpstat', '-p', printer_name], 
                                   capture_output=True, text=True, timeout=10, shell=False)
             
             if result.returncode == 0:

@@ -2,6 +2,8 @@ import requests
 import cv2
 import base64
 import logging
+import os
+import ipaddress
 from datetime import datetime
 from typing import Optional
 import numpy as np
@@ -11,13 +13,24 @@ logger = logging.getLogger(__name__)
 class AxisCamera:
     """Driver for AXIS M2025-LE Network Camera"""
     
-    def __init__(self, ip: str, username: str = 'admin', password: str = 'admin'):
+    def __init__(self, ip: str, username: str = None, password: str = None):
+        # Validate IP address to prevent SSRF
+        try:
+            ip_obj = ipaddress.ip_address(ip)
+            if ip_obj.is_loopback or ip_obj.is_private:
+                # Allow private/loopback for legitimate camera networks
+                pass
+            elif not ip_obj.is_global:
+                raise ValueError("Invalid IP address")
+        except ValueError:
+            raise ValueError(f"Invalid IP address: {ip}")
+            
         self.ip = ip
-        self.username = username
-        self.password = password
+        self.username = username or os.environ.get('CAMERA_USERNAME', 'admin')
+        self.password = password or os.environ.get('CAMERA_PASSWORD', '')
         self.base_url = f"http://{ip}"
         self.session = requests.Session()
-        self.session.auth = (username, password)
+        self.session.auth = (self.username, self.password)
         self.connected = False
     
     def connect(self) -> bool:
@@ -55,7 +68,7 @@ class AxisCamera:
                 logger.error(f"Failed to capture image: HTTP {response.status_code}")
                 
         except Exception as e:
-            logger.error(f"Error capturing image: {e}")
+            logger.error(f"Error capturing image: {str(e)[:100]}")
         
         return None
     
@@ -108,7 +121,7 @@ class AxisCamera:
                 return info
                 
         except Exception as e:
-            logger.error(f"Error getting camera info: {e}")
+            logger.error(f"Error getting camera info: {str(e)[:100]}")
         
         return {'ip': self.ip, 'connected': False}
     
@@ -151,11 +164,20 @@ class AxisCamera:
             # Convert to base64 for storage/transmission
             base64_image = base64.b64encode(image_data).decode('utf-8')
             
-            # Optionally save to file
-            filename = f"scale_photo_{transaction_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+            # Sanitize transaction_id to prevent path traversal
+            safe_transaction_id = ''.join(c for c in str(transaction_id) if c.isalnum() or c in '-_')
+            filename = f"scale_photo_{safe_transaction_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
             
             try:
-                with open(f"/var/www/scrapyard/photos/{filename}", 'wb') as f:
+                photo_dir = "/var/www/scrapyard/photos"
+                os.makedirs(photo_dir, exist_ok=True)
+                filepath = os.path.join(photo_dir, filename)
+                
+                # Ensure path is within allowed directory
+                if not os.path.abspath(filepath).startswith(os.path.abspath(photo_dir)):
+                    raise ValueError("Invalid file path")
+                    
+                with open(filepath, 'wb') as f:
                     f.write(image_data)
                 logger.info(f"Scale photo saved: {filename}")
             except Exception as e:

@@ -22,7 +22,7 @@ class USRScaleService:
             logger.info("Connected to scale successfully")
             return True
         except Exception as e:
-            logger.error("Failed to connect to scale")
+            logger.error(f"Failed to connect to scale: {str(e)[:100]}")
             return False
     
     def disconnect(self):

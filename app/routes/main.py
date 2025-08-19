@@ -71,7 +71,10 @@ def create_customer():
     import os
     
     try:
-        name = request.form['name']
+        name = request.form.get('name')
+        if not name:
+            flash('Name is required')
+            return redirect(url_for('main.customer_lookup'))
         street_address = request.form.get('street_address', '')
         city = request.form.get('city', '')
         state = request.form.get('state', '')

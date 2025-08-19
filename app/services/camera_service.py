@@ -137,6 +137,6 @@ class AxisCameraService:
                 return info
             
         except Exception as e:
-            logger.error(f"Error getting camera info: {e}")
+            logger.error(f"Error getting camera info: {str(e)[:100]}")
         
         return {}

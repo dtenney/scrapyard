@@ -1,6 +1,9 @@
 from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
 from app import db
+import logging
+
+logger = logging.getLogger(__name__)
 
 cashier_bp = Blueprint('cashier', __name__)
 
@@ -39,7 +42,8 @@ def get_scale_weight():
         service = USRScaleService(scale.ip_address, scale.serial_port)
         weight_data = service.get_weight()
         return jsonify(weight_data)
-    except:
+    except Exception as e:
+        logger.error(f"Scale read error: {str(e)[:100]}")
         return jsonify({'weight': 0.0, 'stable': False})
 
 @cashier_bp.route('/api/scale/tare', methods=['POST'])
@@ -58,8 +62,9 @@ def tare_scale():
         service = USRScaleService(scale.ip_address, scale.serial_port)
         result = service.tare_scale()
         return jsonify({'success': result})
-    except:
-        return jsonify({'success': False})
+    except Exception as e:
+        logger.error(f"Scale tare error: {str(e)[:100]}")
+        return jsonify({'success': False, 'error': 'Scale communication failed'})
 
 
 

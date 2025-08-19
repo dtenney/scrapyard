@@ -4,28 +4,35 @@ Database migration script to update existing tables with new columns
 """
 
 import psycopg2
+from urllib.parse import urlparse
 from config.settings import Config
 
 def migrate_database():
     """Add missing columns to existing tables"""
     
-    # Parse database URL
+    # Parse database URL using urllib.parse
     db_url = Config.SQLALCHEMY_DATABASE_URI
-    # Extract connection details from postgresql://user:pass@host:port/db
-    parts = db_url.replace('postgresql://', '').split('@')
-    user_pass = parts[0].split(':')
-    host_port_db = parts[1].split('/')
-    host_port = host_port_db[0].split(':')
+    parsed = urlparse(db_url)
     
-    conn = psycopg2.connect(
-        host=host_port[0],
-        port=int(host_port[1]) if len(host_port) > 1 else 5432,
-        database=host_port_db[1],
-        user=user_pass[0],
-        password=user_pass[1] if len(user_pass) > 1 else ''
-    )
+    host = parsed.hostname
+    port = parsed.port or 5432
+    database = parsed.path.lstrip('/')
+    username = parsed.username
+    password = parsed.password
     
-    cursor = conn.cursor()
+    conn = None
+    cursor = None
+    
+    try:
+        conn = psycopg2.connect(
+            host=host,
+            port=port,
+            database=database,
+            user=username,
+            password=password
+        )
+        
+        cursor = conn.cursor()
     
     try:
         # Add missing columns to devices table
@@ -137,10 +144,13 @@ def migrate_database():
         
     except Exception as e:
         print(f"Migration error: {e}")
-        conn.rollback()
+        if conn:
+            conn.rollback()
     finally:
-        cursor.close()
-        conn.close()
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 if __name__ == '__main__':
     migrate_database()
