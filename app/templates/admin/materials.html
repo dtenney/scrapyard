@@ -28,13 +28,13 @@
                     <table class="table table-striped" id="materialsTable">
                         <thead>
                             <tr>
-                                <th>Code</th>
-                                <th>Description</th>
-                                <th>Category</th>
-                                <th>Type</th>
-                                <th>Our Price/lb</th>
-                                <th>SGT Scrap Price/lb</th>
-                                <th>Status</th>
+                                <th onclick="sortTable(0)" style="cursor: pointer;">Code ↕</th>
+                                <th onclick="sortTable(1)" style="cursor: pointer;">Description ↕</th>
+                                <th onclick="sortTable(2)" style="cursor: pointer;">Category ↕</th>
+                                <th onclick="sortTable(3)" style="cursor: pointer;">Type ↕</th>
+                                <th onclick="sortTable(4)" style="cursor: pointer;">Our Price/lb ↕</th>
+                                <th onclick="sortTable(5)" style="cursor: pointer;">SGT Scrap Price/lb ↕</th>
+                                <th onclick="sortTable(6)" style="cursor: pointer;">Status ↕</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -265,6 +265,40 @@ function updatePrices() {
             }
         });
     }
+}
+
+let sortDirection = {};
+
+function sortTable(columnIndex) {
+    const table = document.getElementById('materialsTable');
+    const tbody = table.getElementsByTagName('tbody')[0];
+    const rows = Array.from(tbody.getElementsByTagName('tr'));
+    
+    // Toggle sort direction
+    sortDirection[columnIndex] = !sortDirection[columnIndex];
+    const ascending = sortDirection[columnIndex];
+    
+    rows.sort((a, b) => {
+        let aVal = a.cells[columnIndex].textContent.trim();
+        let bVal = b.cells[columnIndex].textContent.trim();
+        
+        // Handle price columns (remove $ and convert to number)
+        if (columnIndex === 4 || columnIndex === 5) {
+            aVal = parseFloat(aVal.replace('$', '')) || 0;
+            bVal = parseFloat(bVal.replace('$', '')) || 0;
+            return ascending ? aVal - bVal : bVal - aVal;
+        }
+        
+        // Handle text columns
+        if (ascending) {
+            return aVal.localeCompare(bVal);
+        } else {
+            return bVal.localeCompare(aVal);
+        }
+    });
+    
+    // Re-append sorted rows
+    rows.forEach(row => tbody.appendChild(row));
 }
 
 // Search functionality
