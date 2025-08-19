@@ -27,6 +27,11 @@ def make_celery(app):
     return celery
 
 # Create celery instance for direct access
-from app import create_app
-app = create_app()
+from flask import Flask
+
+app = Flask(__name__)
+app.config.update(
+    REDIS_URL='redis://localhost:6379/0',
+    SECRET_KEY='dev-key'
+)
 celery = make_celery(app)
