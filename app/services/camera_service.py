@@ -8,8 +8,9 @@ logger = logging.getLogger(__name__)
 class AxisCameraService:
     """Service for AXIS M2025-LE Network Camera"""
     
-    def __init__(self, ip_address: str, username: str = "root", password: str = ""):
+    def __init__(self, ip_address: str, username: str = None, password: str = None):
         import ipaddress
+        import os
         # Validate IP address to prevent SSRF
         try:
             ip = ipaddress.ip_address(ip_address)
@@ -22,8 +23,8 @@ class AxisCameraService:
             raise ValueError(f"Invalid IP address: {ip_address}")
         
         self.ip_address = ip_address
-        self.username = username
-        self.password = password or "admin"  # Use environment variable in production
+        self.username = username or os.getenv('CAMERA_USERNAME', 'admin')
+        self.password = password or os.getenv('CAMERA_PASSWORD', '')
         self.base_url = f"http://{ip_address}"
         
     def get_stream_url(self, stream_path: str = "/axis-cgi/mjpg/video.cgi") -> str:
