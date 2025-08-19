@@ -4,7 +4,6 @@ import re
 from decimal import Decimal
 import logging
 from app.models.material import Material
-from app.models.competitive_price import CompetitivePrice
 from app import db
 
 logger = logging.getLogger(__name__)
@@ -162,23 +161,6 @@ class SGTPriceScraper:
             for sgt_key, sgt_price in sgt_prices.items():
                 if sgt_key.upper() in material.description.upper():
                     material.price_per_pound = Decimal(str(sgt_price))
-                    
-                    # Create competitive price entry
-                    comp_price = CompetitivePrice.query.filter_by(
-                        material_id=material.id,
-                        source='SGT Scrap'
-                    ).first()
-                    
-                    if comp_price:
-                        comp_price.price_per_pound = Decimal(str(sgt_price))
-                    else:
-                        comp_price = CompetitivePrice(
-                            material_id=material.id,
-                            price_per_pound=Decimal(str(sgt_price)),
-                            source='SGT Scrap'
-                        )
-                        db.session.add(comp_price)
-                    
                     price_set = True
                     updated_count += 1
                     logger.info("Set SGT price for %s: $%.2f", material.description[:50], sgt_price)
