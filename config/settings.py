@@ -6,7 +6,7 @@ class Config:
     
     # Database
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'postgresql://user:password@localhost/database'
+        'postgresql://scrapyard:scrapyard123@localhost/scrapyard_db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Security
