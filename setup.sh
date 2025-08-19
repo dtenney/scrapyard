@@ -131,7 +131,7 @@ try:
     from app.models.material import Material
     from app.models.customer import Customer
     from app.models.permissions import Permission, GroupPermission
-
+    from app.services.setup_service import initialize_default_groups
     app = create_app()
     with app.app_context():
         db.create_all()
