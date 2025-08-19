@@ -53,12 +53,7 @@
                                 </td>
                                 <td>${{ "%.4f"|format(material.price_per_pound) }}</td>
                                 <td>
-                                    {% if material.competitive_prices %}
-                                        <span class="text-success">${{ "%.4f"|format(material.competitive_prices[0].price_per_pound) }}</span>
-                                        <small class="text-muted d-block">{{ material.competitive_prices[0].source }}</small>
-                                    {% else %}
-                                        <span class="text-muted">N/A</span>
-                                    {% endif %}
+                                    <span class="text-muted">N/A</span>
                                 </td>
                                 <td>
                                     <span class="badge bg-{{ 'success' if material.is_active else 'secondary' }}">
