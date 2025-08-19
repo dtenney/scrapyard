@@ -61,21 +61,7 @@ def tare_scale():
     except:
         return jsonify({'success': False})
 
-@cashier_bp.route('/api/materials/<int:material_id>/market-price')
-@login_required
-@require_permission('transaction')
-def get_market_price(material_id):
-    """Get market price for material"""
-    from app.models.competitive_price import CompetitivePrice
-    
-    comp_price = CompetitivePrice.query.filter_by(material_id=material_id).first()
-    if comp_price:
-        return jsonify({
-            'price': float(comp_price.price_per_pound),
-            'source': comp_price.source
-        })
-    else:
-        return jsonify({'price': None})
+
 
 @cashier_bp.route('/api/transactions/create', methods=['POST'])
 @login_required

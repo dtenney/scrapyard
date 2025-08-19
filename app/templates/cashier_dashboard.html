@@ -104,14 +104,14 @@
             </div>
         </div>
         
-        <!-- Market Prices -->
+        <!-- Customer Info -->
         <div class="card">
             <div class="card-header">
-                <h5>Market Prices</h5>
+                <h5>Customer Info</h5>
             </div>
             <div class="card-body">
-                <div id="marketPrices">
-                    <small class="text-muted">Select material to see market price</small>
+                <div id="customerInfo">
+                    <small class="text-muted">No customer selected</small>
                 </div>
             </div>
         </div>
@@ -128,9 +128,9 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <input type="text" class="form-control" id="customerSearchModal" placeholder="Search customers...">
+                    <input type="text" class="form-control" id="customerSearchModal" placeholder="Search by name or license..." oninput="searchCustomers()">
                 </div>
-                <div id="customerResults"></div>
+                <div id="customerResults" style="max-height: 300px; overflow-y: auto;"></div>
             </div>
         </div>
     </div>
@@ -153,7 +153,6 @@ document.getElementById('materialSelect').addEventListener('change', function() 
     if (selected.value) {
         document.getElementById('pricePerLb').value = selected.dataset.price;
         calculateTotal();
-        showMarketPrice(selected.value);
     }
 });
 
@@ -185,7 +184,60 @@ function tareScale() {
 }
 
 function selectCustomer() {
+    document.getElementById('customerSearchModal').value = '';
+    document.getElementById('customerResults').innerHTML = '';
     new bootstrap.Modal(document.getElementById('customerModal')).show();
+}
+
+function searchCustomers() {
+    const query = document.getElementById('customerSearchModal').value;
+    if (query.length < 2) {
+        document.getElementById('customerResults').innerHTML = '';
+        return;
+    }
+    
+    fetch(`/api/customers/search?q=${encodeURIComponent(query)}`)
+    .then(response => response.json())
+    .then(data => {
+        const results = document.getElementById('customerResults');
+        results.innerHTML = '';
+        
+        data.customers.forEach(customer => {
+            const div = document.createElement('div');
+            div.className = 'border p-2 mb-2 cursor-pointer';
+            div.style.cursor = 'pointer';
+            div.innerHTML = `
+                <strong>${customer.name}</strong><br>
+                <small class="text-muted">${customer.address || 'No address'}</small><br>
+                <small class="text-muted">License: ${customer.drivers_license_number || 'N/A'}</small>
+            `;
+            div.onclick = () => selectCustomerFromList(customer);
+            results.appendChild(div);
+        });
+        
+        if (data.customers.length === 0) {
+            results.innerHTML = '<div class="text-muted">No customers found</div>';
+        }
+    });
+}
+
+function selectCustomerFromList(customer) {
+    selectedCustomer = customer;
+    document.getElementById('selectedCustomer').innerHTML = `
+        <strong>${customer.name}</strong><br>
+        <small>${customer.address || 'No address'}</small>
+    `;
+    document.getElementById('selectedCustomer').style.display = 'block';
+    
+    // Update customer info panel
+    document.getElementById('customerInfo').innerHTML = `
+        <strong>${customer.name}</strong><br>
+        <small class="text-muted">${customer.address || 'No address'}</small><br>
+        <small class="text-muted">Phone: ${customer.phone || 'N/A'}</small><br>
+        <small class="text-muted">License: ${customer.drivers_license_number || 'N/A'}</small>
+    `;
+    
+    bootstrap.Modal.getInstance(document.getElementById('customerModal')).hide();
 }
 
 function addItem() {
@@ -291,23 +343,7 @@ function capturePhoto() {
     });
 }
 
-function showMarketPrice(materialId) {
-    fetch(`/cashier/api/materials/${materialId}/market-price`)
-    .then(response => response.json())
-    .then(data => {
-        const marketDiv = document.getElementById('marketPrices');
-        if (data.price) {
-            marketDiv.innerHTML = `
-                <div class="text-success">
-                    <strong>Market: $${data.price.toFixed(4)}/lb</strong><br>
-                    <small>${data.source}</small>
-                </div>
-            `;
-        } else {
-            marketDiv.innerHTML = '<small class="text-muted">No market data available</small>';
-        }
-    });
-}
+
 
 // Auto-refresh scale reading every 2 seconds
 setInterval(function() {
