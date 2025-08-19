@@ -681,3 +681,15 @@ def update_prices():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@admin_bp.route('/materials/prepopulate_sgt_prices', methods=['POST'])
+def prepopulate_sgt_prices():
+    """Prepopulate material prices from SGT Scrap website"""
+    from app.services.sgt_price_scraper import SGTPriceScraper
+    
+    try:
+        scraper = SGTPriceScraper()
+        updated_count = scraper.prepopulate_material_prices()
+        return jsonify({'success': True, 'updated': updated_count})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
