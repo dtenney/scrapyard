@@ -16,6 +16,14 @@ sudo systemctl stop apache2
 sudo systemctl stop celery-scrapyard || true
 sudo systemctl stop redis-server || true
 
+echo "Cleaning up Celery processes..."
+sudo pkill -f celery || true
+sudo rm -f /tmp/celery*.pid
+sudo supervisorctl stop all || true
+sudo rm -f /etc/supervisor/conf.d/scrapyard.conf
+sudo supervisorctl reread || true
+sudo supervisorctl update || true
+
 echo "Removing Apache configuration..."
 sudo rm -f /etc/apache2/sites-available/scrapyard.conf
 sudo rm -f /etc/apache2/sites-enabled/scrapyard.conf
