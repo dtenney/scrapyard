@@ -50,9 +50,7 @@
                                     </span>
                                 </td>
                                 <td>${{ "%.4f"|format(material.price_per_pound) }}</td>
-                                <td>
-                                    <span class="text-muted">N/A</span>
-                                </td>
+                                <td>${{ "%.4f"|format(material.market_price or 0) }}</td>
                                 <td>
                                     <span class="badge bg-{{ 'success' if material.is_active else 'secondary' }}">
                                         {{ 'Active' if material.is_active else 'Inactive' }}

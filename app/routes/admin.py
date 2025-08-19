@@ -683,11 +683,11 @@ def load_materials_csv():
 
 @admin_bp.route('/materials/update_prices', methods=['POST'])
 def update_prices():
-    """Manually trigger price update"""
-    from app.services.price_scraper import PriceScraper
+    """Update prices from SGT Scrap website"""
+    from app.services.sgt_scraper import SGTScraper
     
     try:
-        scraper = PriceScraper()
+        scraper = SGTScraper()
         updated_count = scraper.update_material_prices()
         return jsonify({'success': True, 'updated': updated_count})
     except Exception as e:

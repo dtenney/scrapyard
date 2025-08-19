@@ -11,6 +11,7 @@ class Material(db.Model):
     category = db.Column(db.String(50), nullable=False)
     is_ferrous = db.Column(db.Boolean, nullable=False, default=False)
     price_per_pound = db.Column(db.Numeric(10, 4), default=0.0000)
+    market_price = db.Column(db.Numeric(10, 4), default=0.0000)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
