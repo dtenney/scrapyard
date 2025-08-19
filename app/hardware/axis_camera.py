@@ -1,12 +1,10 @@
-import requests
-import cv2
-import base64
-import logging
-import os
-import ipaddress
+from requests import Session
+from base64 import b64encode
+from logging import getLogger
+from os import environ, makedirs, path
+from ipaddress import ip_address
 from datetime import datetime
 from typing import Optional
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +27,7 @@ class AxisCamera:
         self.username = username or os.environ.get('CAMERA_USERNAME', 'admin')
         self.password = password or os.environ.get('CAMERA_PASSWORD', '')
         self.base_url = f"http://{ip}"
-        self.session = requests.Session()
+        self.session = Session()
         self.session.auth = (self.username, self.password)
         self.connected = False
     
@@ -37,10 +35,13 @@ class AxisCamera:
         """Test connection to camera"""
         try:
             response = self.session.get(f"{self.base_url}/axis-cgi/param.cgi?action=list&group=Properties.System")
-            if response.status_code == 200:
-                self.connected = True
-                logger.info("Connected to AXIS camera at %s", self.ip)
-                return True
+            try:
+                if response.status_code == 200:
+                    self.connected = True
+                    logger.info("Connected to AXIS camera at %s", self.ip)
+                    return True
+            finally:
+                response.close()
         except Exception as e:
             logger.error("Failed to connect to camera: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
         
@@ -127,6 +128,11 @@ class AxisCamera:
             logger.error("Error getting camera info: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
         
         return {'ip': self.ip, 'connected': False}
+    
+    def close(self):
+        """Close session and cleanup resources"""
+        if hasattr(self, 'session'):
+            self.session.close()
     
     def set_preset(self, preset_name: str, position: dict) -> bool:
         """Set a camera preset position (if PTZ supported)"""

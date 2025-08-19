@@ -153,14 +153,17 @@ def search_customers():
     if len(query) < 2:
         return jsonify({'customers': []})
     
-    customers = Customer.query.filter(
-        db.or_(
-            Customer.name.ilike('%' + query + '%'),
-            Customer.drivers_license_number.ilike('%' + query + '%'),
-            Customer.phone.ilike('%' + query + '%')
-        ),
-        Customer.is_active == True
-    ).limit(10).all()
+    try:
+        customers = Customer.query.filter(
+            db.or_(
+                Customer.name.ilike(f'%{query}%'),
+                Customer.drivers_license_number.ilike(f'%{query}%'),
+                Customer.phone.ilike(f'%{query}%')
+            ),
+            Customer.is_active.is_(True)
+        ).limit(10).all()
+    except Exception as e:
+        return jsonify({'success': False, 'error': 'Search failed'}), 500
     
     return jsonify({
         'customers': [{

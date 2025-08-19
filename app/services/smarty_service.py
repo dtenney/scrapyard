@@ -27,7 +27,10 @@ class SmartyAddressService:
             response = requests.get(self.base_url, params=params, timeout=10)
             response.raise_for_status()
             
-            data = response.json()
+            try:
+                data = response.json()
+            except ValueError as e:
+                return False, {'error': 'Invalid JSON response from validation service'}
             if not data:
                 return False, {'error': 'Address not found or invalid'}
             

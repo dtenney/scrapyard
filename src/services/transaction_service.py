@@ -40,7 +40,7 @@ class TransactionService:
             ''', (transaction_id,))
             
             result = cursor.fetchone()
-            if result is None:
+            if result is None or result[0] is None:
                 raise ValueError("No transaction items found")
             total_weight, total_amount = result
             
@@ -50,6 +50,9 @@ class TransactionService:
                 SET total_weight = ?, total_amount = ?, payment_method = ?, status = ?
                 WHERE transaction_id = ?
             ''', (total_weight, total_amount, payment_method, "COMPLETED", transaction_id))
+            
+            if cursor.rowcount == 0:
+                raise ValueError(f"Transaction {transaction_id} not found")
             
             conn.commit()
             return total_amount

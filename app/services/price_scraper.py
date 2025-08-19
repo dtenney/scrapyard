@@ -19,7 +19,10 @@ class PriceScraper:
         """Scrape prices from SGT Scrap"""
         try:
             response = self.session.get('https://sgt-scrap.com/todays-prices/', timeout=30)
-            soup = BeautifulSoup(response.content, 'html.parser')
+            try:
+                soup = BeautifulSoup(response.content, 'html.parser')
+            finally:
+                response.close()
             
             prices = {}
             
@@ -64,7 +67,10 @@ class PriceScraper:
         """Scrape prices from COMEX Live"""
         try:
             response = self.session.get('https://comexlive.org/', timeout=30)
-            soup = BeautifulSoup(response.content, 'html.parser')
+            try:
+                soup = BeautifulSoup(response.content, 'html.parser')
+            finally:
+                response.close()
             
             prices = {}
             
@@ -92,40 +98,20 @@ class PriceScraper:
         
         updated_count = 0
         
-        # Update copper materials
-        if 'COPPER_1' in sgt_prices:
-            materials = Material.query.filter(
-                Material.description.ilike('%#1 COPPER%') |
-                Material.description.ilike('%BARE BRIGHT%')
-            ).all()
-            for material in materials:
+        # Batch update materials to avoid N+1 queries
+        all_materials = Material.query.all()
+        
+        for material in all_materials:
+            if 'COPPER_1' in sgt_prices and ('#1 COPPER' in material.description.upper() or 'BARE BRIGHT' in material.description.upper()):
                 material.price_per_pound = Decimal(str(sgt_prices['COPPER_1']))
                 updated_count += 1
-        
-        if 'COPPER_2' in sgt_prices:
-            materials = Material.query.filter(
-                Material.description.ilike('%#2 COPPER%')
-            ).all()
-            for material in materials:
+            elif 'COPPER_2' in sgt_prices and '#2 COPPER' in material.description.upper():
                 material.price_per_pound = Decimal(str(sgt_prices['COPPER_2']))
                 updated_count += 1
-        
-        # Update aluminum materials
-        if 'ALUMINUM_SHEET' in sgt_prices:
-            materials = Material.query.filter(
-                Material.description.ilike('%SHEET%'),
-                Material.category == 'ALUMINUM'
-            ).all()
-            for material in materials:
+            elif 'ALUMINUM_SHEET' in sgt_prices and 'SHEET' in material.description.upper() and material.category == 'ALUMINUM':
                 material.price_per_pound = Decimal(str(sgt_prices['ALUMINUM_SHEET']))
                 updated_count += 1
-        
-        # Update brass materials
-        if 'BRASS_YELLOW' in sgt_prices:
-            materials = Material.query.filter(
-                Material.description.ilike('%YELLOW BRASS%')
-            ).all()
-            for material in materials:
+            elif 'BRASS_YELLOW' in sgt_prices and 'YELLOW BRASS' in material.description.upper():
                 material.price_per_pound = Decimal(str(sgt_prices['BRASS_YELLOW']))
                 updated_count += 1
         
@@ -153,6 +139,6 @@ class PriceScraper:
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            logger.error("Failed to update material prices")
+            logger.error("Failed to update material prices: %s", str(e)[:100])
         logger.info(f"Updated prices for {updated_count} materials")
         return updated_count

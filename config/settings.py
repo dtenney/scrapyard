@@ -6,7 +6,7 @@ class Config:
     
     # Database
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'postgresql://scrapyard:scrapyard123@localhost/scrapyard_db'
+        'postgresql://user:password@localhost/database'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Security
@@ -25,7 +25,7 @@ class Config:
     DEFAULT_CAMERA_PORT = 80
     
     # Compliance
-    NJ_LICENSE_NUMBER = os.environ.get('NJ_LICENSE_NUMBER', '12345')
+    NJ_LICENSE_NUMBER = os.environ.get('NJ_LICENSE_NUMBER', 'REQUIRED')
     REQUIRE_CUSTOMER_ID = True
     PHOTO_REQUIRED = True
     

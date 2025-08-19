@@ -52,7 +52,7 @@ class SGTPriceScraper:
                         try:
                             price = float(price_match.group(1))
                             prices[material_key] = price
-                            logger.info(f"Found price for {material_key}: ${price}")
+                            logger.info("Found price for %s: $%.2f", material_key, price)
                         except ValueError:
                             continue
             
@@ -181,7 +181,7 @@ class SGTPriceScraper:
                     
                     price_set = True
                     updated_count += 1
-                    logger.info(f"Set SGT price for {material.description}: ${sgt_price}")
+                    logger.info("Set SGT price for %s: $%.2f", material.description[:50], sgt_price)
                     break
             
             # Use grade multiplier for other materials
@@ -192,15 +192,15 @@ class SGTPriceScraper:
                         calculated_price = base_price * multiplier
                         material.price_per_pound = Decimal(str(round(calculated_price, 4)))
                         updated_count += 1
-                        logger.info(f"Calculated price for {material.description}: ${calculated_price:.4f}")
+                        logger.info("Calculated price for %s: $%.4f", material.description[:50], calculated_price)
                         break
         
         try:
             db.session.commit()
-            logger.info(f"Successfully prepopulated prices for {updated_count} materials")
+            logger.info("Successfully prepopulated prices for %d materials", updated_count)
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Failed to prepopulate material prices: {e}")
+            logger.error("Failed to prepopulate material prices: %s", str(e)[:100])
             updated_count = 0
         
         return updated_count

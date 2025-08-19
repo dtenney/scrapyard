@@ -36,7 +36,6 @@ sudo apt-get install -y \
     libcups2-dev \
     python3-opencv \
     git \
-    nginx \
     redis-server \
     supervisor \
     ufw \

@@ -29,26 +29,27 @@ def migrate_addresses():
             return False
         
         # Connect to database
-        conn = psycopg2.connect(
+        with psycopg2.connect(
             host=host,
             database=database,
             user=user,
             password=password
-        )
-        
-        cursor = conn.cursor()
-        
-        # Read and execute migration SQL
-        with open('add_customer_address_fields.sql', 'r') as f:
-            migration_sql = f.read()
-        
-        cursor.execute(migration_sql)
-        conn.commit()
-        
-        print("✓ Customer address fields migration completed successfully")
-        
-        cursor.close()
-        conn.close()
+        ) as conn:
+            cursor = conn.cursor()
+            
+            # Read and execute migration SQL
+            try:
+                with open('add_customer_address_fields.sql', 'r') as f:
+                    migration_sql = f.read()
+            except FileNotFoundError:
+                print("✗ Migration SQL file not found: add_customer_address_fields.sql")
+                return False
+            
+            cursor.execute(migration_sql)
+            conn.commit()
+            
+            print("✓ Customer address fields migration completed successfully")
+            cursor.close()
         return True
         
     except Exception as e:
