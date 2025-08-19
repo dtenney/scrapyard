@@ -16,6 +16,8 @@ class TransactionService:
             return cursor.lastrowid
     
     def add_item_to_transaction(self, transaction_id, metal_id, weight_pounds, price_per_pound):
+        if weight_pounds is None or price_per_pound is None:
+            raise ValueError("Weight and price cannot be None")
         total_value = Decimal(str(weight_pounds)) * Decimal(str(price_per_pound))
         
         with self.db.get_connection() as conn:
@@ -37,7 +39,10 @@ class TransactionService:
                 WHERE transaction_id = ?
             ''', (transaction_id,))
             
-            total_weight, total_amount = cursor.fetchone()
+            result = cursor.fetchone()
+            if result is None:
+                raise ValueError("No transaction items found")
+            total_weight, total_amount = result
             
             # Update transaction
             cursor.execute('''

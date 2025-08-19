@@ -37,17 +37,23 @@ def compliance_report():
 @login_required
 def validate_address():
     """Validate address using Smarty Streets"""
-    data = request.get_json()
-    street = data.get('street', '').strip()
-    city = data.get('city', '').strip()
-    state = data.get('state', '').strip()
-    zipcode = data.get('zipcode', '').strip()
-    
-    if not all([street, city, state, zipcode]):
-        return jsonify({'success': False, 'error': 'All address fields required'})
-    
-    is_valid, result = smarty_service.validate_address(street, city, state, zipcode)
-    return jsonify({'success': is_valid, 'data': result})
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'Invalid JSON data'}), 400
+            
+        street = data.get('street', '').strip()
+        city = data.get('city', '').strip()
+        state = data.get('state', '').strip()
+        zipcode = data.get('zipcode', '').strip()
+        
+        if not all([street, city, state, zipcode]):
+            return jsonify({'success': False, 'error': 'All address fields required'})
+        
+        is_valid, result = smarty_service.validate_address(street, city, state, zipcode)
+        return jsonify({'success': is_valid, 'data': result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': 'Validation failed'}), 500
 
 @api_bp.route('/customers/create', methods=['POST'])
 @login_required
@@ -70,9 +76,12 @@ def create_customer():
         db.session.commit()
         
         return jsonify({'success': True, 'customer_id': customer.id})
+    except (ValueError, TypeError) as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': 'Invalid data provided'}), 400
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)})
+        return jsonify({'success': False, 'error': 'Database error'}), 500
 
 @api_bp.route('/customers/update/<int:customer_id>', methods=['POST'])
 @login_required

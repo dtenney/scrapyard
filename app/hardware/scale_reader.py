@@ -33,6 +33,9 @@ class USRScaleReader:
             return True
         except (ConnectionRefusedError, OSError, socket.error) as e:
             logger.error("Failed to connect to scale: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
+            if self.socket:
+                self.socket.close()
+                self.socket = None
             self.connected = False
             return False
     
@@ -40,7 +43,9 @@ class USRScaleReader:
         """Disconnect from the scale"""
         self.running = False
         if self.thread:
-            self.thread.join()
+            self.thread.join(timeout=5)
+            if self.thread.is_alive():
+                logger.warning("Scale reader thread did not terminate gracefully")
         if self.socket:
             self.socket.close()
         self.connected = False
@@ -102,8 +107,8 @@ class USRScaleReader:
                 weight_str = parts[2]
                 unit = parts[3]
                 
-                # Remove + sign and convert to float
-                weight = float(weight_str.replace('+', ''))
+                # Remove + sign but preserve - for negative weights
+                weight = float(weight_str.lstrip('+'))
                 
                 return {
                     'weight': weight,

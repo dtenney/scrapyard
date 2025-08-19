@@ -36,7 +36,10 @@ class AxisCameraService:
         
     def get_stream_url(self, stream_path: str = "/axis-cgi/mjpg/video.cgi") -> str:
         """Get MJPEG stream URL"""
-        return f"{self.base_url}{stream_path}?resolution=640x480&fps=15"
+        # Sanitize stream_path to prevent XSS
+        import html
+        safe_path = html.escape(stream_path)
+        return f"{self.base_url}{safe_path}?resolution=640x480&fps=15"
     
     def capture_image(self) -> Optional[bytes]:
         """Capture single image from camera"""
@@ -57,7 +60,7 @@ class AxisCameraService:
                 return None
                 
         except Exception as e:
-            logger.error("Camera capture error occurred")
+            logger.error("Camera capture error: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
             return None
     
     def save_transaction_photo(self, transaction_id: int, material: str) -> Optional[str]:
@@ -116,7 +119,8 @@ class AxisCameraService:
                 return {'status': 'error', 'message': f'HTTP {response.status_code}'}
                 
         except Exception as e:
-            return {'status': 'offline', 'message': str(e)}
+            logger.error("Camera connection test failed: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
+            return {'status': 'offline', 'message': 'Connection failed'}
     
     def get_camera_info(self) -> dict:
         """Get camera model and firmware info"""

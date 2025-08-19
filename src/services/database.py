@@ -1,9 +1,12 @@
 import sqlite3
 import os
+from contextlib import contextmanager
+import threading
 
 class Database:
     def __init__(self, db_path="scrapyard.db"):
         self.db_path = db_path
+        self._local = threading.local()
         self.init_database()
     
     def init_database(self):
@@ -64,5 +67,17 @@ class Database:
             
             conn.commit()
     
+    @contextmanager
     def get_connection(self):
-        return sqlite3.connect(self.db_path)
+        """Get database connection with proper resource management"""
+        if not hasattr(self._local, 'connection'):
+            self._local.connection = sqlite3.connect(self.db_path)
+        
+        try:
+            yield self._local.connection
+        except Exception:
+            self._local.connection.rollback()
+            raise
+        finally:
+            # Connection is reused per thread, not closed here
+            pass

@@ -1,6 +1,9 @@
 from flask import Blueprint, render_template, request, jsonify, abort
 from flask_login import login_required, current_user
 from app import db
+import logging
+
+logger = logging.getLogger(__name__)
 
 main_bp = Blueprint('main', __name__)
 
@@ -22,9 +25,13 @@ def index():
     from flask import redirect, url_for
     
     # Check if admin user has default password
-    admin_user = User.query.filter_by(username='admin').first()
-    if admin_user and admin_user.check_password('admin'):
-        return redirect(url_for('auth.setup'))
+    try:
+        admin_user = User.query.filter_by(username='admin').first()
+        if admin_user and admin_user.check_password('admin'):
+            return redirect(url_for('auth.setup'))
+    except Exception as e:
+        logger.error("Database error checking admin user: %s", str(e)[:100])
+        # Continue with normal flow if database check fails
     
     return render_template('dashboard.html', user=current_user)
 
@@ -48,6 +55,7 @@ def cashier_dashboard():
 @login_required
 def get_weight(scale_id):
     """Get current weight from specified scale"""
+    # TODO: Implement actual scale integration
     return jsonify({'weight': 0.0, 'stable': False, 'unit': 'lbs'})
 
 @main_bp.route('/api/capture/<int:camera_id>')
@@ -115,7 +123,7 @@ def create_customer():
                 # Validate path to prevent traversal
                 abs_filepath = os.path.abspath(filepath)
                 abs_photo_dir = os.path.abspath(photo_dir)
-                if not abs_filepath.startswith(abs_photo_dir):
+                if not abs_filepath.startswith(abs_photo_dir + os.sep):
                     return jsonify({'success': False, 'error': 'Invalid file path'}), 400
                 
                 file.save(filepath)

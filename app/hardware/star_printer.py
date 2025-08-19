@@ -23,8 +23,11 @@ class StarMicronicsPrinter:
             self.connected = True
             logger.info(f"Connected to Star printer at {self.ip}:{self.port}")
             return True
-        except Exception as e:
-            logger.error(f"Failed to connect to printer: {e}")
+        except (socket.error, socket.timeout, ConnectionRefusedError) as e:
+            logger.error("Failed to connect to printer: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
+            if self.socket:
+                self.socket.close()
+                self.socket = None
             return False
     
     def disconnect(self):
@@ -139,7 +142,7 @@ class StarMicronicsPrinter:
             return True
             
         except Exception as e:
-            logger.error(f"Error printing label: {e}")
+            logger.error("Error printing label: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
             return False
     
     def get_status(self) -> dict:

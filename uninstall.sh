@@ -19,7 +19,7 @@ sudo systemctl stop redis-server || true
 echo "Cleaning up Celery processes..."
 sudo pkill -f celery || true
 sudo rm -f /tmp/celery*.pid
-sudo supervisorctl stop all || true
+sudo supervisorctl stop scrapyard:* || true
 sudo rm -f /etc/supervisor/conf.d/scrapyard.conf
 sudo supervisorctl reread || true
 sudo supervisorctl update || true

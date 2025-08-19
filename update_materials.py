@@ -11,18 +11,23 @@ def update_materials_from_csv(csv_file_path):
     app = create_app()
     
     with app.app_context():
-        updated_count = 0
-        
-        with open(csv_file_path, 'r', encoding='utf-8') as file:
-            reader = csv.DictReader(file)
+        try:
+            updated_count = 0
             
-            for row in reader:
-                code = row['COMMODITY CODE'].strip()
-                description = row['TICKET DESCRIPTION'].strip()
-                price = float(row['PRICE']) if row['PRICE'] else 0.0
+            # Load all existing materials into memory for O(1) lookups
+            existing_materials = {m.code: m for m in Material.query.all()}
+            
+            with open(csv_file_path, 'r', encoding='utf-8') as file:
+                reader = csv.DictReader(file)
                 
-                # Find existing material by code
-                material = Material.query.filter_by(code=code).first()
+                for row in reader:
+                    try:
+                        code = row['COMMODITY CODE'].strip()
+                        description = row['TICKET DESCRIPTION'].strip()
+                        price = float(row['PRICE']) if row['PRICE'] else 0.0
+                        
+                        # Find existing material by code using in-memory lookup
+                        material = existing_materials.get(code)
                 
                 if material:
                     # Update existing material
@@ -77,12 +82,23 @@ def update_materials_from_csv(csv_file_path):
                         is_active=True
                     )
                     
-                    db.session.add(material)
-                    updated_count += 1
-                    print(f"Created {code}: {description} - ${price:.4f}/lb")
+                        db.session.add(material)
+                        existing_materials[code] = material  # Add to lookup dict
+                        updated_count += 1
+                        print(f"Created {code}: {description} - ${price:.4f}/lb")
+                    except (ValueError, KeyError) as e:
+                        print(f"Error processing row {code}: {e}")
+                        continue
         
-        db.session.commit()
-        print(f"\nTotal materials updated/created: {updated_count}")
+            db.session.commit()
+            print(f"\nTotal materials updated/created: {updated_count}")
+        except FileNotFoundError:
+            print(f"Error: CSV file not found: {csv_file_path}")
+        except KeyError as e:
+            print(f"Error: Missing required CSV column: {e}")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error updating materials: {e}")
 
 if __name__ == '__main__':
     csv_file = r'C:\Users\david\Downloads\MaterialCSV_18082025082225.csv'

@@ -120,28 +120,32 @@ cd /var/www/scrapyard
 
 # Initialize database tables
 sudo -u scrapyard ./venv/bin/python -c "
-from app import create_app, db
-from app.models.user import User, UserGroup, UserGroupMember
-from app.models.device import Device
-from app.models.material import Material
-from app.models.customer import Customer
-from app.models.permissions import Permission, GroupPermission
-from app.services.setup_service import initialize_default_groups
-from app.routes.admin import load_materials_csv
-app = create_app()
-with app.app_context():
-    db.create_all()
-    initialize_default_groups()
-    
-    # Load materials from CSV automatically
-    print('Loading materials from CSV...')
-    try:
-        result = load_materials_csv()
-        print('Materials loaded successfully')
-    except Exception as e:
-        print(f'Materials loading failed: {e}')
-    
-    print('Database initialized successfully')
+try:
+    from app import create_app, db
+    from app.models.user import User, UserGroup, UserGroupMember
+    from app.models.device import Device
+    from app.models.material import Material
+    from app.models.customer import Customer
+    from app.models.permissions import Permission, GroupPermission
+    from app.services.setup_service import initialize_default_groups
+    from app.routes.admin import load_materials_csv
+    app = create_app()
+    with app.app_context():
+        db.create_all()
+        initialize_default_groups()
+        
+        # Load materials from CSV automatically
+        print('Loading materials from CSV...')
+        try:
+            result = load_materials_csv()
+            print('Materials loaded successfully')
+        except Exception as e:
+            print(f'Materials loading failed: {e}')
+        
+        print('Database initialized successfully')
+except Exception as e:
+    print(f'Database initialization failed: {e}')
+    exit(1)
 "
 
 # Set permissions

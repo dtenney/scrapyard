@@ -3,11 +3,20 @@ from celery.schedules import crontab
 
 def make_celery(app):
     redis_url = app.config.get('REDIS_URL', 'redis://localhost:6379/0')
-    celery = Celery(
-        app.import_name,
-        backend=redis_url,
-        broker=redis_url
-    )
+    try:
+        celery = Celery(
+            app.import_name,
+            backend=redis_url,
+            broker=redis_url
+        )
+    except Exception as e:
+        # Fallback to in-memory broker for development
+        celery = Celery(
+            app.import_name,
+            backend='cache+memory://',
+            broker='memory://'
+        )
+        app.logger.warning("Redis connection failed, using in-memory broker: %s", str(e)[:100])
     
     celery.conf.update(app.config)
     celery.conf.beat_schedule = {
