@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
+from flask_wtf.csrf import validate_csrf, ValidationError
 from app.models.user import User
 from app import db
 
@@ -22,21 +23,26 @@ def login_get():
 
 @auth_bp.route('/login', methods=['POST'])
 def login_post():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        flash('Security token invalid')
+        return render_template('login.html')
         
-        if not username or not password:
-            flash('Username and password are required')
-            return render_template('login.html')
-        
-        user = User.query.filter_by(username=username).first()
-        
-        if user and user.check_password(password):
-            login_user(user)
-            return redirect(url_for('main.index'))
-        else:
-            flash('Invalid username or password')
+    username = request.form.get('username')
+    password = request.form.get('password')
+    
+    if not username or not password:
+        flash('Username and password are required')
+        return render_template('login.html')
+    
+    user = User.query.filter_by(username=username).first()
+    
+    if user and user.check_password(password):
+        login_user(user)
+        return redirect(url_for('main.index'))
+    else:
+        flash('Invalid username or password')
     
     return render_template('login.html')
 
@@ -55,6 +61,12 @@ def setup():
         return redirect(url_for('auth.login_get'))
     
     if request.method == 'POST':
+        try:
+            validate_csrf(request.form.get('csrf_token'))
+        except ValidationError:
+            flash('Security token invalid')
+            return render_template('setup.html')
+            
         username = request.form.get('username', 'admin')
         password = request.form.get('password')
         email = request.form.get('email')

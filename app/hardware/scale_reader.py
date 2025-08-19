@@ -31,8 +31,8 @@ class USRScaleReader:
             self.connected = True
             logger.info(f"Connected to scale at {self.ip}:{self.port}")
             return True
-        except Exception as e:
-            logger.error(f"Failed to connect to scale: {e}")
+        except (ConnectionRefusedError, OSError, socket.error) as e:
+            logger.error("Failed to connect to scale: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
             self.connected = False
             return False
     
@@ -65,7 +65,8 @@ class USRScaleReader:
                 # Send weight request command
                 self.socket.send(b'W\r\n')
                 
-                # Read response
+                # Set timeout for recv operation and read response
+                self.socket.settimeout(1.0)
                 data = self.socket.recv(1024).decode('ascii').strip()
                 
                 # Parse weight data (format varies by scale manufacturer)
@@ -83,8 +84,8 @@ class USRScaleReader:
                 
             except socket.timeout:
                 continue
-            except Exception as e:
-                logger.error(f"Error reading from scale: {e}")
+            except (socket.timeout, socket.error, OSError) as e:
+                logger.error("Error reading from scale: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
                 self.connected = False
                 break
     
@@ -110,8 +111,8 @@ class USRScaleReader:
                     'unit': unit,
                     'raw_data': data
                 }
-        except Exception as e:
-            logger.error(f"Error parsing weight data: {e}")
+        except (ValueError, IndexError) as e:
+            logger.error("Error parsing weight data: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
         
         return None
     
@@ -132,6 +133,6 @@ class USRScaleReader:
         try:
             self.socket.send(b'T\r\n')
             return True
-        except Exception as e:
-            logger.error(f"Error sending tare command: {e}")
+        except (socket.error, OSError) as e:
+            logger.error("Error sending tare command: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
             return False

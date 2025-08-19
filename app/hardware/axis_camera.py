@@ -39,10 +39,10 @@ class AxisCamera:
             response = self.session.get(f"{self.base_url}/axis-cgi/param.cgi?action=list&group=Properties.System")
             if response.status_code == 200:
                 self.connected = True
-                logger.info(f"Connected to AXIS camera at {self.ip}")
+                logger.info("Connected to AXIS camera at %s", self.ip)
                 return True
         except Exception as e:
-            logger.error(f"Failed to connect to camera: {e}")
+            logger.error("Failed to connect to camera: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
         
         self.connected = False
         return False
@@ -62,13 +62,13 @@ class AxisCamera:
             response = self.session.get(url, params=params, timeout=10)
             
             if response.status_code == 200:
-                logger.info(f"Image captured from camera {self.ip}")
+                logger.info("Image captured from camera %s", self.ip)
                 return response.content
             else:
                 logger.error(f"Failed to capture image: HTTP {response.status_code}")
                 
         except Exception as e:
-            logger.error(f"Error capturing image: {str(e)[:100]}")
+            logger.error("Error capturing image: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
         
         return None
     
@@ -89,7 +89,7 @@ class AxisCamera:
             return response.status_code == 200
             
         except Exception as e:
-            logger.error(f"Error starting recording: {e}")
+            logger.error("Error starting recording: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
             return False
     
     def get_camera_info(self) -> dict:
@@ -121,7 +121,7 @@ class AxisCamera:
                 return info
                 
         except Exception as e:
-            logger.error(f"Error getting camera info: {str(e)[:100]}")
+            logger.error("Error getting camera info: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
         
         return {'ip': self.ip, 'connected': False}
     
@@ -140,7 +140,7 @@ class AxisCamera:
             return response.status_code == 200
             
         except Exception as e:
-            logger.error(f"Error setting preset: {e}")
+            logger.error("Error setting preset: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
             return False
     
     def goto_preset(self, preset_name: str) -> bool:
@@ -153,7 +153,7 @@ class AxisCamera:
             return response.status_code == 200
             
         except Exception as e:
-            logger.error(f"Error going to preset: {e}")
+            logger.error("Error going to preset: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
             return False
     
     def capture_scale_photo(self, transaction_id: str) -> Optional[str]:
@@ -179,9 +179,9 @@ class AxisCamera:
                     
                 with open(filepath, 'wb') as f:
                     f.write(image_data)
-                logger.info(f"Scale photo saved: {filename}")
+                logger.info("Scale photo saved: %s", filename)
             except Exception as e:
-                logger.error(f"Error saving photo: {e}")
+                logger.error("Error saving photo: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
             
             return base64_image
         

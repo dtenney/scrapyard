@@ -70,29 +70,33 @@ def update_competitive_prices():
         # Combine prices
         all_prices = {**sgt_prices, **comex_prices}
         
-        # Update database
-        for material_name, price in all_prices.items():
-            # Find matching material by name or description
-            material = Material.query.filter(
-                db.or_(
-                    Material.description.ilike(f'%{material_name}%'),
-                    Material.code.ilike(f'%{material_name}%')
+        # Batch update database - fetch all materials at once
+        all_materials = Material.query.all()
+        material_updates = []
+        
+        for material in all_materials:
+            for material_name, price in all_prices.items():
+                if (material_name.upper() in material.description.upper() or 
+                    material_name.upper() in material.code.upper()):
+                    material_updates.append({
+                        'material_id': material.id,
+                        'price': price
+                    })
+                    break
+        
+        # Batch update competitive prices
+        for update in material_updates:
+            comp_price = CompetitivePrice.query.filter_by(material_id=update['material_id']).first()
+            if comp_price:
+                comp_price.price_per_pound = update['price']
+                comp_price.source = 'SGT/COMEX'
+            else:
+                comp_price = CompetitivePrice(
+                    material_id=update['material_id'],
+                    price_per_pound=update['price'],
+                    source='SGT/COMEX'
                 )
-            ).first()
-            
-            if material:
-                # Update or create competitive price
-                comp_price = CompetitivePrice.query.filter_by(material_id=material.id).first()
-                if comp_price:
-                    comp_price.price_per_pound = price
-                    comp_price.source = 'SGT/COMEX'
-                else:
-                    comp_price = CompetitivePrice(
-                        material_id=material.id,
-                        price_per_pound=price,
-                        source='SGT/COMEX'
-                    )
-                    db.session.add(comp_price)
+                db.session.add(comp_price)
         
         db.session.commit()
         logger.info(f"Updated {len(all_prices)} competitive prices")

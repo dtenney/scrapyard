@@ -95,9 +95,13 @@ class MainWindow:
             messagebox.showerror("Error", "Please enter a customer ID")
             return
         
-        self.current_transaction_id = self.transaction_service.create_transaction(
-            int(self.customer_id_var.get())
-        )
+        try:
+            customer_id = int(self.customer_id_var.get())
+        except ValueError:
+            messagebox.showerror("Error", "Invalid customer ID")
+            return
+        
+        self.current_transaction_id = self.transaction_service.create_transaction(customer_id)
         
         # Clear items
         for item in self.items_tree.get_children():
@@ -113,6 +117,10 @@ class MainWindow:
         
         try:
             metal_type = self.metal_var.get()
+            if not metal_type:
+                messagebox.showerror("Error", "Please select a metal type")
+                return
+                
             weight = float(self.weight_var.get())
             price = float(self.price_var.get())
             total = weight * price
@@ -138,7 +146,11 @@ class MainWindow:
         total = 0
         for item in self.items_tree.get_children():
             values = self.items_tree.item(item)['values']
-            total += float(values[3].replace('$', ''))
+            try:
+                total += float(values[3].replace('$', ''))
+            except (ValueError, IndexError):
+                messagebox.showerror("Error", "Invalid total value in transaction")
+                return
         
         self.total_label.config(text=f"Total: ${total:.2f}")
     

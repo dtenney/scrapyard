@@ -50,7 +50,7 @@ class AxisCameraService:
             )
             
             if response.status_code == 200:
-                logger.info(f"Image captured from {self.ip_address}")
+                logger.info("Image captured from %s", self.ip_address)
                 return response.content
             else:
                 logger.error(f"Failed to capture image: {response.status_code}")
@@ -75,19 +75,24 @@ class AxisCameraService:
             # Generate secure filename
             import re
             safe_material = re.sub(r'[^a-zA-Z0-9_-]', '_', str(material)[:20])
+            safe_transaction_id = re.sub(r'[^a-zA-Z0-9_-]', '_', str(transaction_id)[:10])
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"txn_{transaction_id}_{safe_material}_{timestamp}.jpg"
+            filename = f"txn_{safe_transaction_id}_{safe_material}_{timestamp}.jpg"
             filepath = os.path.join(photo_dir, filename)
             
             # Validate path to prevent traversal
-            if not filepath.startswith(photo_dir):
+            if not os.path.abspath(filepath).startswith(os.path.abspath(photo_dir)):
                 raise ValueError("Invalid file path")
             
-            # Save image
-            with open(filepath, 'wb') as f:
-                f.write(image_data)
+            # Save image with error handling
+            try:
+                with open(filepath, 'wb') as f:
+                    f.write(image_data)
+            except (OSError, IOError, PermissionError) as e:
+                logger.error("Failed to save photo: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
+                return None
             
-            logger.info("Transaction photo saved successfully")
+            logger.info("Transaction photo saved: %s", filename)
             return filename
         
         return None
@@ -137,6 +142,6 @@ class AxisCameraService:
                 return info
             
         except Exception as e:
-            logger.error(f"Error getting camera info: {str(e)[:100]}")
+            logger.error("Error getting camera info: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
         
         return {}

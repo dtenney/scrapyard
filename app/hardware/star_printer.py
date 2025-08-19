@@ -101,7 +101,7 @@ class StarMicronicsPrinter:
             return True
             
         except Exception as e:
-            logger.error(f"Error printing receipt: {e}")
+            logger.error("Error printing receipt: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
             return False
     
     def print_label(self, label_data: dict) -> bool:

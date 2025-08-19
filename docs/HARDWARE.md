@@ -106,7 +106,7 @@ This guide covers the setup and configuration of hardware devices for the Scrap 
 {
     "ip_address": "192.168.1.140",
     "username": "admin",
-    "password": "camera123",
+    "password": "${CAMERA_PASSWORD}",
     "resolution": "1920x1080",
     "fps": 15,
     "stream_format": "mjpeg"
