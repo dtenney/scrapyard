@@ -9,7 +9,7 @@ def make_celery(app):
             backend=redis_url,
             broker=redis_url
         )
-    except Exception as e:
+    except (ConnectionError, ImportError) as e:
         # Fallback to in-memory broker for development
         celery = Celery(
             app.import_name,
@@ -39,8 +39,9 @@ def make_celery(app):
 from flask import Flask
 
 app = Flask(__name__)
+import os
 app.config.update(
-    REDIS_URL='redis://localhost:6379/0',
-    SECRET_KEY='dev-key'
+    REDIS_URL=os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
+    SECRET_KEY=os.environ.get('SECRET_KEY', 'change-me-in-production')
 )
 celery = make_celery(app)

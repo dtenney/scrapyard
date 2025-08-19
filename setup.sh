@@ -70,7 +70,12 @@ echo "Creating Python virtual environment..."
 cd /var/www/scrapyard
 sudo -u scrapyard python3 -m venv venv
 sudo -u scrapyard ./venv/bin/pip install --upgrade pip
-sudo -u scrapyard ./venv/bin/pip install -r requirements.txt
+if [ -f requirements.txt ]; then
+    sudo -u scrapyard ./venv/bin/pip install -r requirements.txt
+else
+    echo "Error: requirements.txt not found"
+    exit 1
+fi
 
 # Configure PostgreSQL
 echo "Configuring PostgreSQL..."

@@ -121,9 +121,13 @@ def create_customer():
                 filepath = os.path.join(photo_dir, filename)
                 
                 # Validate path to prevent traversal
-                abs_filepath = os.path.abspath(filepath)
-                abs_photo_dir = os.path.abspath(photo_dir)
-                if not abs_filepath.startswith(abs_photo_dir + os.sep):
+                from werkzeug.utils import safe_join
+                try:
+                    safe_filepath = safe_join(photo_dir, filename)
+                    if safe_filepath is None:
+                        return jsonify({'success': False, 'error': 'Invalid file path'}), 400
+                    filepath = safe_filepath
+                except ValueError:
                     return jsonify({'success': False, 'error': 'Invalid file path'}), 400
                 
                 file.save(filepath)

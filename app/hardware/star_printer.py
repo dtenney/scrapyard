@@ -33,6 +33,10 @@ class StarMicronicsPrinter:
     def disconnect(self):
         """Disconnect from the printer"""
         if self.socket:
+            try:
+                self.socket.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
             self.socket.close()
         self.connected = False
     
