@@ -104,27 +104,38 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">Street Address</label>
-                                <input type="text" class="form-control" name="street_address">
+                                <input type="text" class="form-control" name="street_address" id="streetAddress">
                             </div>
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label">City</label>
-                                        <input type="text" class="form-control" name="city">
+                                        <input type="text" class="form-control" name="city" id="city">
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="mb-3">
                                         <label class="form-label">State</label>
-                                        <input type="text" class="form-control" name="state" maxlength="2">
+                                        <select class="form-control" name="state" id="state">
+                                            <option value="">Select State</option>
+                                            <option value="NJ">NJ - New Jersey</option>
+                                            <option value="NY">NY - New York</option>
+                                            <option value="PA">PA - Pennsylvania</option>
+                                            <option value="DE">DE - Delaware</option>
+                                            <option value="CT">CT - Connecticut</option>
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="mb-3">
                                         <label class="form-label">ZIP Code</label>
-                                        <input type="text" class="form-control" name="zip_code">
+                                        <input type="text" class="form-control" name="zip_code" id="zipCode" pattern="[0-9]{5}(-[0-9]{4})?" placeholder="12345">
                                     </div>
                                 </div>
+                            </div>
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="validateAddress()">Validate Address</button>
+                                <div id="addressValidation" class="mt-2"></div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Driver's License Photo</label>
@@ -191,15 +202,26 @@
                                 <div class="col-md-3">
                                     <div class="mb-3">
                                         <label class="form-label">State</label>
-                                        <input type="text" class="form-control" name="state" id="editState" maxlength="2">
+                                        <select class="form-control" name="state" id="editState">
+                                            <option value="">Select State</option>
+                                            <option value="NJ">NJ - New Jersey</option>
+                                            <option value="NY">NY - New York</option>
+                                            <option value="PA">PA - Pennsylvania</option>
+                                            <option value="DE">DE - Delaware</option>
+                                            <option value="CT">CT - Connecticut</option>
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="mb-3">
                                         <label class="form-label">ZIP Code</label>
-                                        <input type="text" class="form-control" name="zip_code" id="editZip">
+                                        <input type="text" class="form-control" name="zip_code" id="editZip" pattern="[0-9]{5}(-[0-9]{4})?" placeholder="12345">
                                     </div>
                                 </div>
+                            </div>
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="validateEditAddress()">Validate Address</button>
+                                <div id="editAddressValidation" class="mt-2"></div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Driver's License Photo</label>
@@ -255,7 +277,7 @@ function loadCustomerList() {
                     <td>${customer.name}</td>
                     <td>${customer.phone || 'N/A'}</td>
                     <td>${customer.drivers_license_number || 'N/A'}</td>
-                    <td>${customer.city || ''}, ${customer.state || ''}</td>
+                    <td>${parseAddressForDisplay(customer.address)}</td>
                     <td>
                         <button class="btn btn-sm btn-primary" onclick="selectCustomer(${customer.id})">Select</button>
                         <button class="btn btn-sm btn-warning" onclick="editCustomer(${customer.id})">Edit</button>
@@ -372,6 +394,65 @@ document.getElementById('searchForm').addEventListener('submit', function(e) {
     e.preventDefault();
     searchCustomers();
 });
+
+function validateAddress() {
+    const street = document.getElementById('streetAddress').value;
+    const city = document.getElementById('city').value;
+    const state = document.getElementById('state').value;
+    const zip = document.getElementById('zipCode').value;
+    
+    const validation = document.getElementById('addressValidation');
+    
+    if (!street || !city || !state || !zip) {
+        validation.innerHTML = '<small class="text-warning">Please fill all address fields</small>';
+        return false;
+    }
+    
+    if (!/^\d{5}(-\d{4})?$/.test(zip)) {
+        validation.innerHTML = '<small class="text-danger">Invalid ZIP code format</small>';
+        return false;
+    }
+    
+    validation.innerHTML = '<small class="text-success">✓ Address format valid</small>';
+    return true;
+}
+
+function validateEditAddress() {
+    const street = document.getElementById('editStreet').value;
+    const city = document.getElementById('editCity').value;
+    const state = document.getElementById('editState').value;
+    const zip = document.getElementById('editZip').value;
+    
+    const validation = document.getElementById('editAddressValidation');
+    
+    if (!street || !city || !state || !zip) {
+        validation.innerHTML = '<small class="text-warning">Please fill all address fields</small>';
+        return false;
+    }
+    
+    if (!/^\d{5}(-\d{4})?$/.test(zip)) {
+        validation.innerHTML = '<small class="text-danger">Invalid ZIP code format</small>';
+        return false;
+    }
+    
+    validation.innerHTML = '<small class="text-success">✓ Address format valid</small>';
+    return true;
+}
+
+function parseAddressForDisplay(address) {
+    if (!address) return 'No address';
+    const parts = address.split(' ');
+    if (parts.length >= 2) {
+        // Try to find state and return city, state
+        const state = parts.find(part => /^[A-Z]{2}$/.test(part));
+        if (state) {
+            const stateIndex = parts.indexOf(state);
+            const city = parts.slice(Math.max(0, stateIndex - 2), stateIndex).join(' ');
+            return `${city}, ${state}`;
+        }
+    }
+    return address.substring(0, 30) + (address.length > 30 ? '...' : '');
+}
 
 // Load customer list on page load
 document.addEventListener('DOMContentLoaded', function() {
