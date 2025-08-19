@@ -105,6 +105,33 @@ def migrate_database():
         
         print("Updated material prices from CSV data")
         
+        # Create system settings table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS system_settings (
+                id SERIAL PRIMARY KEY,
+                key VARCHAR(100) UNIQUE NOT NULL,
+                value TEXT,
+                description VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        
+        # Insert default camera settings
+        cursor.execute("""
+            INSERT INTO system_settings (key, value, description) 
+            VALUES ('CAMERA_USERNAME', 'admin', 'Camera authentication username')
+            ON CONFLICT (key) DO NOTHING;
+        """)
+        
+        cursor.execute("""
+            INSERT INTO system_settings (key, value, description) 
+            VALUES ('CAMERA_PASSWORD', '', 'Camera authentication password')
+            ON CONFLICT (key) DO NOTHING;
+        """)
+        
+        print("Created system settings table")
+        
         conn.commit()
         print("Database migration completed successfully")
         

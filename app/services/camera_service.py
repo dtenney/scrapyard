@@ -10,7 +10,6 @@ class AxisCameraService:
     
     def __init__(self, ip_address: str, username: str = None, password: str = None):
         import ipaddress
-        import os
         # Validate IP address to prevent SSRF
         try:
             ip = ipaddress.ip_address(ip_address)
@@ -23,8 +22,16 @@ class AxisCameraService:
             raise ValueError(f"Invalid IP address: {ip_address}")
         
         self.ip_address = ip_address
-        self.username = username or os.getenv('CAMERA_USERNAME', 'admin')
-        self.password = password or os.getenv('CAMERA_PASSWORD', '')
+        
+        # Get credentials from database settings or use provided values
+        if username is None or password is None:
+            from app.models.system_setting import SystemSetting
+            self.username = username or SystemSetting.get_value('CAMERA_USERNAME', 'admin')
+            self.password = password or SystemSetting.get_value('CAMERA_PASSWORD', '')
+        else:
+            self.username = username
+            self.password = password
+            
         self.base_url = f"http://{ip_address}"
         
     def get_stream_url(self, stream_path: str = "/axis-cgi/mjpg/video.cgi") -> str:

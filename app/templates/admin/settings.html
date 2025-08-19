@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>System Settings</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Camera Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form id="cameraSettingsForm">
+                    <div class="mb-3">
+                        <label class="form-label">Camera Username</label>
+                        <input type="text" class="form-control" id="cameraUsername" value="{{ settings.camera_username }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Camera Password</label>
+                        <input type="password" class="form-control" id="cameraPassword" value="{{ settings.camera_password }}">
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function saveSettings() {
+    const data = {
+        camera_username: document.getElementById('cameraUsername').value,
+        camera_password: document.getElementById('cameraPassword').value
+    };
+    
+    fetch('/admin/settings/update', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Settings saved successfully');
+        } else {
+            alert('Error saving settings: ' + data.error);
+        }
+    });
+}
+</script>
+{% endblock %}
