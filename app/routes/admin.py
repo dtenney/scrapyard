@@ -219,6 +219,26 @@ def create_material():
         db.session.rollback()
         return jsonify({'success': False, 'error': 'Database error'}), 500
 
+@admin_bp.route('/materials/<int:material_id>')
+def get_material(material_id):
+    from app.models.material import Material
+    try:
+        material = Material.query.get_or_404(material_id)
+        return jsonify({
+            'success': True,
+            'material': {
+                'id': material.id,
+                'code': material.code,
+                'description': material.description,
+                'category': material.category,
+                'is_ferrous': material.is_ferrous,
+                'price_per_pound': float(material.price_per_pound),
+                'is_active': material.is_active
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @admin_bp.route('/materials/update/<int:material_id>', methods=['POST'])
 def update_material(material_id):
     from app.models.material import Material
@@ -234,6 +254,7 @@ def update_material(material_id):
         material.category = data['category']
         material.is_ferrous = data.get('is_ferrous', 'false').lower() == 'true'
         material.price_per_pound = data.get('price_per_pound', 0.0)
+        material.is_active = data.get('is_active', 'true').lower() == 'true'
         
         db.session.commit()
         

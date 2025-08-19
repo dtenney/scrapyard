@@ -69,6 +69,69 @@
     </div>
 </div>
 
+<!-- Edit Material Modal -->
+<div class="modal fade" id="editMaterialModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Material</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editMaterialForm">
+                    <input type="hidden" id="editMaterialId">
+                    <div class="mb-3">
+                        <label class="form-label">Code</label>
+                        <input type="text" class="form-control" id="editCode" name="code" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-control" id="editDescription" name="description" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <select class="form-control" id="editCategory" name="category" required>
+                            <option value="ALUMINUM">ALUMINUM</option>
+                            <option value="BRASS">BRASS</option>
+                            <option value="COPPER">COPPER</option>
+                            <option value="LEAD">LEAD</option>
+                            <option value="TRUCK SCALE">TRUCK SCALE</option>
+                            <option value="STAINLESS STEEL">STAINLESS STEEL</option>
+                            <option value="ELECTRONICS">ELECTRONICS</option>
+                            <option value="RADIATORS">RADIATORS</option>
+                            <option value="WIRE">WIRE</option>
+                            <option value="MISC">MISC</option>
+                            <option value="ALLOYS">ALLOYS</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Material Type</label>
+                        <select class="form-control" id="editIsFerrous" name="is_ferrous" required>
+                            <option value="false">Non-Ferrous</option>
+                            <option value="true">Ferrous</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Price per Pound</label>
+                        <input type="number" class="form-control" id="editPrice" name="price_per_pound" step="0.0001" min="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-control" id="editIsActive" name="is_active" required>
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updateMaterial()">Update</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Add Material Modal -->
 <div class="modal fade" id="addMaterialModal" tabindex="-1">
     <div class="modal-dialog">
@@ -148,8 +211,45 @@ function saveMaterial() {
 }
 
 function editMaterial(id) {
-    // Edit functionality would go here
-    alert('Edit functionality coming soon');
+    fetch(`/admin/materials/${id}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const material = data.material;
+            document.getElementById('editMaterialId').value = material.id;
+            document.getElementById('editCode').value = material.code;
+            document.getElementById('editDescription').value = material.description;
+            document.getElementById('editCategory').value = material.category;
+            document.getElementById('editIsFerrous').value = material.is_ferrous.toString();
+            document.getElementById('editPrice').value = material.price_per_pound;
+            document.getElementById('editIsActive').value = material.is_active.toString();
+            
+            new bootstrap.Modal(document.getElementById('editMaterialModal')).show();
+        } else {
+            alert('Error loading material data');
+        }
+    });
+}
+
+function updateMaterial() {
+    const id = document.getElementById('editMaterialId').value;
+    const form = document.getElementById('editMaterialForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    fetch(`/admin/materials/update/${id}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error updating material: ' + (data.error || 'Unknown error'));
+        }
+    });
 }
 
 function updatePrices() {
