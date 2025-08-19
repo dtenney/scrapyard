@@ -23,8 +23,12 @@ def login_get():
 @auth_bp.route('/login', methods=['POST'])
 def login_post():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if not username or not password:
+            flash('Username and password are required')
+            return render_template('login.html')
         
         user = User.query.filter_by(username=username).first()
         
@@ -52,8 +56,12 @@ def setup():
     
     if request.method == 'POST':
         username = request.form.get('username', 'admin')
-        password = request.form['password']
-        email = request.form['email']
+        password = request.form.get('password')
+        email = request.form.get('email')
+        
+        if not password or not email:
+            flash('Password and email are required')
+            return render_template('setup.html')
         
         try:
             admin_user = User(username=username, email=email, is_admin=True)

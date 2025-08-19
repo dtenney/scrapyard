@@ -18,12 +18,16 @@ class SystemSetting(db.Model):
     
     @classmethod
     def set_value(cls, key, value, description=None):
-        setting = cls.query.filter_by(key=key).first()
-        if setting:
-            setting.value = value
-            setting.updated_at = datetime.utcnow()
-        else:
-            setting = cls(key=key, value=value, description=description)
-            db.session.add(setting)
-        db.session.commit()
-        return setting
+        try:
+            setting = cls.query.filter_by(key=key).first()
+            if setting:
+                setting.value = value
+                setting.updated_at = datetime.utcnow()
+            else:
+                setting = cls(key=key, value=value, description=description)
+                db.session.add(setting)
+            db.session.commit()
+            return setting
+        except Exception:
+            db.session.rollback()
+            raise

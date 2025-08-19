@@ -49,8 +49,12 @@ class StarPrinterService:
             for cmd in commands:
                 sock.send(cmd)
             
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+            except:
+                pass
             sock.close()
-            logger.info(f"Receipt printed to {self.ip_address}")
+            logger.info("Receipt printed successfully")
             return True
             
         except Exception as e:
@@ -77,8 +81,12 @@ Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}
             sock.connect((self.ip_address, self.port))
             
             # Send status request
-            sock.send(b'\\x10\\x04\\x01')  # DLE EOT 1 - Real-time status
+            sock.send(b'\x10\x04\x01')  # DLE EOT 1 - Real-time status
             
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+            except:
+                pass
             sock.close()
             return {'status': 'online', 'message': 'Printer ready'}
             

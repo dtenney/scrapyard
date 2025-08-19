@@ -121,7 +121,7 @@ class CUPSService:
             stdout, stderr = process.communicate(input=text, timeout=30)
             
             if process.returncode == 0:
-                logger.info(f"Text printed successfully to {printer_name}")
+                logger.info("Text printed successfully to printer")
                 return True
             else:
                 logger.error("Print job failed")
