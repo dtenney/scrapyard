@@ -408,13 +408,29 @@ function validateAddress() {
         return false;
     }
     
-    if (!/^\d{5}(-\d{4})?$/.test(zip)) {
-        validation.innerHTML = '<small class="text-danger">Invalid ZIP code format</small>';
-        return false;
-    }
+    validation.innerHTML = '<small class="text-info">Validating address...</small>';
     
-    validation.innerHTML = '<small class="text-success">✓ Address format valid</small>';
-    return true;
+    fetch('/api/address/validate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({street, city, state, zipcode: zip})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const addr = data.data;
+            document.getElementById('streetAddress').value = addr.street;
+            document.getElementById('city').value = addr.city;
+            document.getElementById('state').value = addr.state;
+            document.getElementById('zipCode').value = addr.zipcode + (addr.plus4 ? '-' + addr.plus4 : '');
+            validation.innerHTML = '<small class="text-success">✓ Address validated and corrected</small>';
+        } else {
+            validation.innerHTML = '<small class="text-danger">⚠ ' + data.data.error + '</small>';
+        }
+    })
+    .catch(error => {
+        validation.innerHTML = '<small class="text-danger">Validation service unavailable</small>';
+    });
 }
 
 function validateEditAddress() {
@@ -430,13 +446,29 @@ function validateEditAddress() {
         return false;
     }
     
-    if (!/^\d{5}(-\d{4})?$/.test(zip)) {
-        validation.innerHTML = '<small class="text-danger">Invalid ZIP code format</small>';
-        return false;
-    }
+    validation.innerHTML = '<small class="text-info">Validating address...</small>';
     
-    validation.innerHTML = '<small class="text-success">✓ Address format valid</small>';
-    return true;
+    fetch('/api/address/validate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({street, city, state, zipcode: zip})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const addr = data.data;
+            document.getElementById('editStreet').value = addr.street;
+            document.getElementById('editCity').value = addr.city;
+            document.getElementById('editState').value = addr.state;
+            document.getElementById('editZip').value = addr.zipcode + (addr.plus4 ? '-' + addr.plus4 : '');
+            validation.innerHTML = '<small class="text-success">✓ Address validated and corrected</small>';
+        } else {
+            validation.innerHTML = '<small class="text-danger">⚠ ' + data.data.error + '</small>';
+        }
+    })
+    .catch(error => {
+        validation.innerHTML = '<small class="text-danger">Validation service unavailable</small>';
+    });
 }
 
 function parseAddressForDisplay(address) {

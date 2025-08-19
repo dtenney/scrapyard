@@ -180,8 +180,20 @@ def update_settings():
 @admin_bp.route('/materials')
 def materials():
     from app.models.material import Material
-    materials = Material.query.order_by(Material.category, Material.code).all()
-    return render_template('admin/materials.html', materials=materials)
+    search = request.args.get('search', '').strip()
+    
+    if search:
+        materials = Material.query.filter(
+            db.or_(
+                Material.code.ilike(f'%{search}%'),
+                Material.description.ilike(f'%{search}%'),
+                Material.category.ilike(f'%{search}%')
+            )
+        ).order_by(Material.category, Material.code).all()
+    else:
+        materials = Material.query.order_by(Material.category, Material.code).all()
+    
+    return render_template('admin/materials.html', materials=materials, search=search)
 
 @admin_bp.route('/materials/create', methods=['POST'])
 def create_material():

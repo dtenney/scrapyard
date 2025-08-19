@@ -8,12 +8,14 @@
 </div>
 
 <div class="row mb-3">
-    <div class="col-12">
+    <div class="col-md-6">
+        <input type="text" class="form-control" id="materialSearch" placeholder="Search materials by code, description, or category..." value="{{ search or '' }}">
+    </div>
+    <div class="col-md-6">
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMaterialModal">Add Material</button>
         <button class="btn btn-success" onclick="loadFromCSV()">Load from CSV</button>
         <button class="btn btn-warning" onclick="updatePrices()">Update Market Prices</button>
         <button class="btn btn-info" onclick="prepopulateSGTPrices()">Prepopulate SGT Prices</button>
-
     </div>
 </div>
 
@@ -214,6 +216,29 @@ function prepopulateSGTPrices() {
         });
     }
 }
+
+// Search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('materialSearch');
+    const table = document.getElementById('materialsTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        
+        for (let row of rows) {
+            const code = row.cells[0].textContent.toLowerCase();
+            const description = row.cells[1].textContent.toLowerCase();
+            const category = row.cells[2].textContent.toLowerCase();
+            
+            if (code.includes(query) || description.includes(query) || category.includes(query)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    });
+});
 
 
 </script>
