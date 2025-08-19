@@ -72,6 +72,7 @@ def create_customer():
             email=data.get('email'),
             drivers_license_number=data.get('drivers_license_number')
         )
+        customer.update_legacy_address()
         
         db.session.add(customer)
         db.session.commit()
@@ -100,6 +101,7 @@ def update_customer(customer_id):
         customer.phone = data.get('phone', customer.phone)
         customer.email = data.get('email', customer.email)
         customer.drivers_license_number = data.get('drivers_license_number', customer.drivers_license_number)
+        customer.update_legacy_address()
         
         db.session.commit()
         

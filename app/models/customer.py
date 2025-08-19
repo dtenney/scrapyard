@@ -25,3 +25,7 @@ class Customer(db.Model):
         """Return formatted full address"""
         parts = [self.street_address, self.city, self.state, self.zip_code]
         return ', '.join(filter(None, parts))
+    
+    def update_legacy_address(self):
+        """Update legacy address field from individual components"""
+        self.address = self.full_address
