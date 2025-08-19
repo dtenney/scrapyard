@@ -227,13 +227,12 @@ def reports():
 @main_bp.route('/materials')
 @login_required
 def materials():
-    """Materials management page - accessible to cashiers and admins"""
+    """Materials management page - redirect to admin materials"""
     if not (current_user.has_permission('transaction') or current_user.is_admin):
         abort(403)
     
-    from app.models.material import Material
-    materials = Material.query.order_by(Material.category, Material.code).all()
-    return render_template('materials.html', materials=materials)
+    from flask import redirect, url_for
+    return redirect(url_for('admin.materials'))
 
 @main_bp.route('/api/materials/update/<int:material_id>', methods=['POST'])
 @login_required
