@@ -65,7 +65,7 @@ def setup():
             validate_csrf(request.form.get('csrf_token'))
         except ValidationError:
             flash('Security token invalid')
-            return render_template('setup.html')
+            return render_template('setup.html', csrf_token=generate_csrf)
             
         username = request.form.get('username', 'admin')
         password = request.form.get('password')
@@ -73,7 +73,7 @@ def setup():
         
         if not password or not email:
             flash('Password and email are required')
-            return render_template('setup.html')
+            return render_template('setup.html', csrf_token=generate_csrf)
         
         try:
             admin_user = User(username=username, email=email, is_admin=True)
