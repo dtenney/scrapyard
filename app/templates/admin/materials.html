@@ -13,8 +13,7 @@
     </div>
     <div class="col-md-6">
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMaterialModal">Add Material</button>
-        <button class="btn btn-warning" onclick="updatePrices()">Update Market Prices</button>
-        <button class="btn btn-info" onclick="prepopulateSGTPrices()">Prepopulate SGT Prices</button>
+        <button class="btn btn-warning" onclick="updatePrices()">Update SGT Scrap Prices</button>
     </div>
 </div>
 
@@ -34,7 +33,7 @@
                                 <th>Category</th>
                                 <th>Type</th>
                                 <th>Our Price/lb</th>
-                                <th>Market Price/lb</th>
+                                <th>SGT Scrap Price/lb</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -156,42 +155,16 @@ function editMaterial(id) {
 }
 
 function updatePrices() {
-    if (confirm('Update material prices from SGT Scrap and COMEX Live?')) {
+    if (confirm('Update material prices from SGT Scrap?')) {
         fetch('/admin/materials/update_prices', {method: 'POST'})
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert(`Updated prices for ${data.updated} materials`);
+                alert(`Updated SGT Scrap prices for ${data.updated} materials`);
                 location.reload();
             } else {
-                alert('Error updating prices: ' + data.error);
+                alert('Error updating SGT Scrap prices: ' + data.error);
             }
-        });
-    }
-}
-
-function prepopulateSGTPrices() {
-    if (confirm('Prepopulate all material prices from SGT Scrap website? This will set both our prices and market prices.')) {
-        const button = event.target;
-        button.disabled = true;
-        button.textContent = 'Loading...';
-        
-        fetch('/admin/materials/prepopulate_sgt_prices', {method: 'POST'})
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(`Successfully prepopulated prices for ${data.updated} materials from SGT Scrap`);
-                location.reload();
-            } else {
-                alert('Error prepopulating prices: ' + data.error);
-            }
-        })
-        .catch(error => {
-            alert('Network error: ' + error.message);
-        })
-        .finally(() => {
-            button.disabled = false;
-            button.textContent = 'Prepopulate SGT Prices';
         });
     }
 }
