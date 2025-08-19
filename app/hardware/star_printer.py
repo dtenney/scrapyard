@@ -149,6 +149,22 @@ class StarMicronicsPrinter:
             logger.error("Error printing label: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
             return False
     
+    def open_cash_drawer(self) -> bool:
+        """Open cash drawer connected to printer"""
+        if not self.connected and not self.connect():
+            return False
+        
+        try:
+            # ESC/POS command to open cash drawer
+            # ESC p m t1 t2 - Generate pulse to open drawer
+            # m=0 (connector pin 2), t1=50 (pulse on time), t2=250 (pulse off time)
+            self.socket.send(b'\x1b\x70\x00\x32\xfa')
+            logger.info("Cash drawer opened")
+            return True
+        except Exception as e:
+            logger.error("Error opening cash drawer: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
+            return False
+    
     def get_status(self) -> dict:
         """Get printer status"""
         if not self.connected:

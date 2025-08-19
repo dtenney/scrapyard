@@ -73,6 +73,28 @@ Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}
         
         return self.print_receipt(content)
     
+    def open_cash_drawer(self) -> bool:
+        """Open cash drawer connected to printer"""
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(10)
+            sock.connect((self.ip_address, self.port))
+            
+            # ESC/POS command to open cash drawer
+            sock.send(b'\x1b\x70\x00\x32\xfa')
+            
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+            except:
+                pass
+            sock.close()
+            logger.info("Cash drawer opened")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Cash drawer error: {e}")
+            return False
+    
     def test_connection(self) -> dict:
         """Test connection to printer"""
         try:

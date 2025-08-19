@@ -19,6 +19,7 @@ DEFAULT_PERMISSIONS = [
     ('transaction', 'Access transaction processing'),
     ('customer_lookup', 'Access customer lookup'),
     ('reports', 'Access reports and analytics'),
+    ('open_cash_drawer', 'Open cash drawer'),
     ('admin', 'Administrative access')
 ]
 
@@ -30,7 +31,7 @@ DEFAULT_GROUPS = {
     },
     'cashier': {
         'description': 'Cashier - Full POS access',
-        'permissions': ['transaction', 'customer_lookup', 'reports']
+        'permissions': ['transaction', 'customer_lookup', 'reports', 'open_cash_drawer']
     },
     'reporter': {
         'description': 'Reporter - Customer and reports access',

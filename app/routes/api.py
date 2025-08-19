@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models.customer import Customer
 from app.services.smarty_service import SmartyAddressService
+from app.services.printer_service import StarPrinterService
 
 api_bp = Blueprint('api', __name__)
 smarty_service = SmartyAddressService()
@@ -174,3 +175,28 @@ def search_customers():
             'address': c.full_address
         } for c in customers]
     })
+
+@api_bp.route('/cash-drawer/open', methods=['POST'])
+@login_required
+def open_cash_drawer():
+    """Open cash drawer - requires cashier permission"""
+    if not current_user.has_permission('open_cash_drawer'):
+        return jsonify({'success': False, 'error': 'Insufficient permissions'}), 403
+    
+    try:
+        data = request.get_json() or {}
+        printer_ip = data.get('printer_ip')
+        
+        if not printer_ip:
+            return jsonify({'success': False, 'error': 'Printer IP required'}), 400
+        
+        printer_service = StarPrinterService(printer_ip)
+        success = printer_service.open_cash_drawer()
+        
+        if success:
+            return jsonify({'success': True, 'message': 'Cash drawer opened'})
+        else:
+            return jsonify({'success': False, 'error': 'Failed to open cash drawer'}), 500
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': 'Cash drawer operation failed'}), 500

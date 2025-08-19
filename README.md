@@ -7,7 +7,7 @@ A comprehensive web-based Point of Sale system for scrap metal yards with hardwa
 - **Web-based Interface**: Touch-screen friendly Python web application
 - **Hardware Integration**: 
   - USR-TCP232-410S serial-to-ethernet weight scales
-  - Star Micronics thermal label printers
+  - Star Micronics thermal label printers with cash drawer support
   - AXIS M2025-LE network cameras
   - CUPS printing support
 - **Compliance**: New Jersey regulatory compliance and industry best practices
