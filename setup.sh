@@ -7,6 +7,13 @@ set -e
 
 echo "=== Scrap Yard Management System Setup ==="
 
+# Clean up existing Celery processes
+echo "Cleaning up existing Celery processes..."
+sudo pkill -f celery || true
+sudo rm -f /tmp/celery*.pid
+sudo supervisorctl stop all || true
+sudo rm -f /etc/supervisor/conf.d/scrapyard.conf
+
 # Update system
 echo "Updating system packages..."
 sudo apt-get update
