@@ -26,46 +26,53 @@ class SGTScraper:
                 for row in table.find_all('tr'):
                     cells = row.find_all(['td', 'th'])
                     if len(cells) >= 2:
-                        # Try both orders: material-price and price-material
-                        for i in range(len(cells) - 1):
-                            for j in range(i + 1, len(cells)):
-                                text1 = cells[i].get_text(strip=True)
-                                text2 = cells[j].get_text(strip=True)
-                                
-                                # Check if text1 is material and text2 is price
-                                price_match = re.search(r'\$?(\d+\.?\d*)', text2)
-                                if price_match and text1 and not re.search(r'\d', text1):
-                                    prices[text1.upper()] = float(price_match.group(1))
-                                
-                                # Check if text2 is material and text1 is price
-                                price_match = re.search(r'\$?(\d+\.?\d*)', text1)
-                                if price_match and text2 and not re.search(r'\d', text2):
-                                    prices[text2.upper()] = float(price_match.group(1))
-            
-            # Extract from text patterns with material and price
-            all_text = soup.get_text()
-            # Look for patterns like "COPPER $3.50" or "$3.50 COPPER"
-            patterns = [
-                r'([A-Z\s]+?)\s*\$?(\d+\.?\d*)',  # Material followed by price
-                r'\$?(\d+\.?\d*)\s*([A-Z\s]+?)',  # Price followed by material
-            ]
-            
-            for pattern in patterns:
-                matches = re.findall(pattern, all_text)
-                for match in matches:
-                    if len(match) == 2:
-                        text1, text2 = match
-                        # Determine which is material and which is price
-                        if re.match(r'^\d+\.?\d*$', text1):  # text1 is price
-                            price, material = float(text1), text2.strip().upper()
-                        elif re.match(r'^\d+\.?\d*$', text2):  # text2 is price
-                            material, price = text1.strip().upper(), float(text2)
-                        else:
-                            continue
+                        # Standard table format: first cell material, second cell price
+                        material_text = cells[0].get_text(strip=True)
+                        price_text = cells[1].get_text(strip=True)
                         
-                        # Filter out invalid materials
-                        if len(material) > 3 and not re.search(r'\d', material):
-                            prices[material] = price
+                        if material_text and price_text:
+                            price_match = re.search(r'\$?(\d+\.\d+)', price_text)
+                            if price_match and self._is_valid_material(material_text):
+                                prices[material_text.upper()] = float(price_match.group(1))
+            
+            # Extract from list items and divs with price patterns
+            for element in soup.find_all(['li', 'div', 'span', 'p']):
+                text = element.get_text(strip=True)
+                if not text or len(text) > 100:  # Skip very long text
+                    continue
+                
+                # Pattern: "Material Name $X.XX"
+                match = re.search(r'^([^$]+?)\s*\$?(\d+\.\d+)', text)
+                if match:
+                    material, price = match.groups()
+                    material = material.strip().upper()
+                    if self._is_valid_material(material):
+                        prices[material] = float(price)
+                
+                # Pattern: "$X.XX Material Name"
+                match = re.search(r'^\$?(\d+\.\d+)\s*(.+)', text)
+                if match:
+                    price, material = match.groups()
+                    material = material.strip().upper()
+                    if self._is_valid_material(material):
+                        prices[material] = float(price)
+            
+            # Look for specific material patterns in all text
+            all_text = soup.get_text()
+            lines = [line.strip() for line in all_text.split('\n') if line.strip()]
+            
+            for line in lines:
+                if len(line) > 100:  # Skip very long lines
+                    continue
+                    
+                # Find price in line
+                price_match = re.search(r'\$?(\d+\.\d+)', line)
+                if price_match:
+                    price = float(price_match.group(1))
+                    # Extract material name (everything except the price)
+                    material = re.sub(r'\$?\d+\.\d+', '', line).strip().upper()
+                    if self._is_valid_material(material):
+                        prices[material] = price
             
             return prices
         except Exception as e:
@@ -199,3 +206,36 @@ class SGTScraper:
                 matched_weight += weight
         
         return matched_weight / total_weight
+    
+    def _is_valid_material(self, material):
+        """Check if extracted text is a valid material name"""
+        material = material.strip().upper()
+        
+        # Must be reasonable length
+        if len(material) < 3 or len(material) > 50:
+            return False
+        
+        # Must contain letters
+        if not re.search(r'[A-Z]', material):
+            return False
+        
+        # Skip common non-material words
+        skip_words = {'PRICE', 'PRICES', 'TODAY', 'CURRENT', 'MARKET', 'SCRAP', 'METAL', 'METALS', 
+                     'YARD', 'COMPANY', 'CONTACT', 'PHONE', 'EMAIL', 'ADDRESS', 'LOCATION',
+                     'HOURS', 'OPEN', 'CLOSED', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY',
+                     'FRIDAY', 'SATURDAY', 'SUNDAY', 'AM', 'PM', 'EST', 'PST', 'CST', 'MST'}
+        
+        if material in skip_words:
+            return False
+        
+        # Must contain at least one material-related keyword
+        material_keywords = {'COPPER', 'ALUMINUM', 'BRASS', 'STEEL', 'LEAD', 'WIRE', 'SHEET', 
+                           'CLEAN', 'DIRTY', 'PREPARED', 'TURNINGS', 'SCRAP', 'METAL',
+                           'STAINLESS', 'CAST', 'BARE', 'BRIGHT', 'HEAVY', 'LIGHT',
+                           'INSULATED', 'STRIPPED', 'MIXED', 'SOLID', 'BATTERY'}
+        
+        words = set(material.split())
+        if not words.intersection(material_keywords):
+            return False
+        
+        return True
