@@ -181,19 +181,28 @@ def update_settings():
 def materials():
     from app.models.material import Material
     search = request.args.get('search', '').strip()
+    page = request.args.get('page', 1, type=int)
+    per_page = 50
+    
+    query = Material.query
     
     if search:
-        materials = Material.query.filter(
+        query = query.filter(
             db.or_(
                 Material.code.ilike(f'%{search}%'),
                 Material.description.ilike(f'%{search}%'),
                 Material.category.ilike(f'%{search}%')
             )
-        ).order_by(Material.category, Material.code).all()
-    else:
-        materials = Material.query.order_by(Material.category, Material.code).all()
+        )
     
-    return render_template('admin/materials.html', materials=materials, search=search)
+    pagination = query.order_by(Material.category, Material.code).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    return render_template('admin/materials.html', 
+                         materials=pagination.items, 
+                         pagination=pagination,
+                         search=search)
 
 @admin_bp.route('/materials/create', methods=['POST'])
 def create_material():
