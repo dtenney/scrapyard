@@ -4,6 +4,7 @@ from app import db
 from app.models.customer import Customer
 from app.services.printer_service import StarPrinterService
 import requests
+import os
 
 api_bp = Blueprint('api', __name__)
 
@@ -36,54 +37,105 @@ def compliance_report():
 @api_bp.route('/address/validate', methods=['POST'])
 @login_required
 def validate_address():
-    """Validate address using Geoapify"""
+    """Validate address using USPS API with reCAPTCHA"""
+    import os
+    import xml.etree.ElementTree as ET
+    
     try:
         data = request.get_json()
         if not data:
-            return jsonify({'success': False, 'error': 'Invalid JSON data'}), 400
+            return jsonify({'success': False, 'data': {'error': 'Invalid request data'}})
             
         street = data.get('street', '').strip()
         city = data.get('city', '').strip()
         state = data.get('state', '').strip()
         zipcode = data.get('zipcode', '').strip()
+        recaptcha_token = data.get('recaptcha_token', '')
         
-        if not all([street, city, state, zipcode]):
-            return jsonify({'success': False, 'error': 'All address fields required'})
+        if not all([street, city, state]):
+            return jsonify({'success': False, 'data': {'error': 'Street, city, and state are required'}})
         
-        # Use Geoapify geocoding API
-        address_text = f"{street}, {city}, {state} {zipcode}, USA"
-        api_key = "YOUR_GEOAPIFY_API_KEY"  # Replace with actual key or env var
+        # Verify reCAPTCHA if configured
+        recaptcha_secret = os.getenv('RECAPTCHA_SECRET_KEY')
+        if recaptcha_secret and recaptcha_token:
+            recaptcha_data = {
+                'secret': recaptcha_secret,
+                'response': recaptcha_token
+            }
+            recaptcha_response = requests.post('https://www.google.com/recaptcha/api/siteverify', data=recaptcha_data, timeout=5)
+            if not recaptcha_response.json().get('success'):
+                return jsonify({'success': False, 'data': {'error': 'reCAPTCHA verification failed'}})
         
-        url = "https://api.geoapify.com/v1/geocode/search"
-        params = {
-            'text': address_text,
-            'apiKey': api_key,
-            'limit': 1,
-            'format': 'json'
-        }
+        # Try USPS Address Validation API first
+        usps_user_id = os.getenv('USPS_USER_ID')
+        if usps_user_id:
+            xml_request = f'''
+            <AddressValidateRequest USERID="{usps_user_id}">
+                <Address ID="0">
+                    <Address1></Address1>
+                    <Address2>{street}</Address2>
+                    <City>{city}</City>
+                    <State>{state}</State>
+                    <Zip5>{zipcode[:5] if zipcode else ''}</Zip5>
+                    <Zip4></Zip4>
+                </Address>
+            </AddressValidateRequest>
+            '''
+            
+            try:
+                response = requests.get(
+                    'https://secure.shippingapis.com/ShippingAPI.dll',
+                    params={'API': 'Verify', 'XML': xml_request},
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    root = ET.fromstring(response.text)
+                    address = root.find('Address')
+                    
+                    if address is not None and address.find('Error') is None:
+                        validated_street = address.find('Address2')
+                        validated_city = address.find('City')
+                        validated_state = address.find('State')
+                        validated_zip5 = address.find('Zip5')
+                        validated_zip4 = address.find('Zip4')
+                        
+                        zip_code = validated_zip5.text if validated_zip5 is not None else zipcode
+                        if validated_zip4 is not None and validated_zip4.text:
+                            zip_code += f'-{validated_zip4.text}'
+                        
+                        return jsonify({
+                            'success': True,
+                            'data': {
+                                'street': validated_street.text if validated_street is not None else street,
+                                'city': validated_city.text if validated_city is not None else city,
+                                'state': validated_state.text if validated_state is not None else state,
+                                'zipcode': zip_code,
+                                'plus4': validated_zip4.text if validated_zip4 is not None else ''
+                            }
+                        })
+            except (requests.RequestException, ET.ParseError):
+                pass
         
-        response = requests.get(url, params=params, timeout=10)
+        # Fallback: return original data with basic validation
+        if len(state) != 2:
+            return jsonify({'success': False, 'data': {'error': 'State must be 2-letter code'}})
         
-        if response.status_code == 200:
-            result = response.json()
-            if result.get('results'):
-                addr = result['results'][0]
-                return jsonify({
-                    'success': True,
-                    'data': {
-                        'street': addr.get('street', street),
-                        'city': addr.get('city', city),
-                        'state': addr.get('state', state),
-                        'zipcode': addr.get('postcode', zipcode)
-                    }
-                })
-            else:
-                return jsonify({'success': False, 'data': {'error': 'Address not found'}})
-        else:
-            return jsonify({'success': False, 'data': {'error': 'Validation service unavailable'}})
+        if zipcode and not zipcode.replace('-', '').isdigit():
+            return jsonify({'success': False, 'data': {'error': 'Invalid ZIP code format'}})
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'street': street,
+                'city': city,
+                'state': state.upper(),
+                'zipcode': zipcode
+            }
+        })
             
     except Exception as e:
-        return jsonify({'success': False, 'error': 'Validation failed'}), 500
+        return jsonify({'success': False, 'data': {'error': 'Address validation failed'}})
 
 @api_bp.route('/customers/create', methods=['POST'])
 @login_required

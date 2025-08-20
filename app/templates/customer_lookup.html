@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block head %}
+<script src="https://www.google.com/recaptcha/api.js?render=explicit" async defer></script>
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-12">
@@ -695,17 +699,37 @@ function validateAddress() {
     
     const validation = document.getElementById('addressValidation');
     
-    if (!street || !city || !state || !zip) {
-        validation.innerHTML = '<small class="text-warning">Please fill all address fields</small>';
+    if (!street || !city || !state) {
+        validation.innerHTML = '<small class="text-warning">Please fill street, city, and state fields</small>';
         return false;
     }
     
     validation.innerHTML = '<small class="text-info">Validating address...</small>';
     
+    // Execute reCAPTCHA if available
+    if (typeof grecaptcha !== 'undefined' && window.recaptchaSiteKey) {
+        grecaptcha.execute(window.recaptchaSiteKey, {action: 'validate_address'})
+        .then(token => {
+            performAddressValidation(street, city, state, zip, validation, token);
+        })
+        .catch(() => {
+            performAddressValidation(street, city, state, zip, validation);
+        });
+    } else {
+        performAddressValidation(street, city, state, zip, validation);
+    }
+}
+
+function performAddressValidation(street, city, state, zip, validation, recaptchaToken = null) {
+    const payload = {street, city, state, zipcode: zip};
+    if (recaptchaToken) {
+        payload.recaptcha_token = recaptchaToken;
+    }
+    
     fetch('/api/address/validate', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({street, city, state, zipcode: zip})
+        body: JSON.stringify(payload)
     })
     .then(response => response.json())
     .then(data => {
@@ -714,14 +738,14 @@ function validateAddress() {
             document.getElementById('streetAddress').value = addr.street;
             document.getElementById('city').value = addr.city;
             document.getElementById('state').value = addr.state;
-            document.getElementById('zipCode').value = addr.zipcode + (addr.plus4 ? '-' + addr.plus4 : '');
-            validation.innerHTML = '<small class="text-success">✓ Address validated and corrected</small>';
+            document.getElementById('zipCode').value = addr.zipcode;
+            validation.innerHTML = '<small class="text-success">✓ Address validated</small>';
         } else {
             validation.innerHTML = '<small class="text-danger">⚠ ' + data.data.error + '</small>';
         }
     })
     .catch(error => {
-        validation.innerHTML = '<small class="text-danger">Validation service unavailable</small>';
+        validation.innerHTML = '<small class="text-danger">Validation failed. Please check your connection.</small>';
     });
 }
 
@@ -733,17 +757,36 @@ function validateEditAddress() {
     
     const validation = document.getElementById('editAddressValidation');
     
-    if (!street || !city || !state || !zip) {
-        validation.innerHTML = '<small class="text-warning">Please fill all address fields</small>';
+    if (!street || !city || !state) {
+        validation.innerHTML = '<small class="text-warning">Please fill street, city, and state fields</small>';
         return false;
     }
     
     validation.innerHTML = '<small class="text-info">Validating address...</small>';
     
+    if (typeof grecaptcha !== 'undefined' && window.recaptchaSiteKey) {
+        grecaptcha.execute(window.recaptchaSiteKey, {action: 'validate_address'})
+        .then(token => {
+            performEditAddressValidation(street, city, state, zip, validation, token);
+        })
+        .catch(() => {
+            performEditAddressValidation(street, city, state, zip, validation);
+        });
+    } else {
+        performEditAddressValidation(street, city, state, zip, validation);
+    }
+}
+
+function performEditAddressValidation(street, city, state, zip, validation, recaptchaToken = null) {
+    const payload = {street, city, state, zipcode: zip};
+    if (recaptchaToken) {
+        payload.recaptcha_token = recaptchaToken;
+    }
+    
     fetch('/api/address/validate', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({street, city, state, zipcode: zip})
+        body: JSON.stringify(payload)
     })
     .then(response => response.json())
     .then(data => {
@@ -752,14 +795,14 @@ function validateEditAddress() {
             document.getElementById('editStreet').value = addr.street;
             document.getElementById('editCity').value = addr.city;
             document.getElementById('editState').value = addr.state;
-            document.getElementById('editZip').value = addr.zipcode + (addr.plus4 ? '-' + addr.plus4 : '');
-            validation.innerHTML = '<small class="text-success">✓ Address validated and corrected</small>';
+            document.getElementById('editZip').value = addr.zipcode;
+            validation.innerHTML = '<small class="text-success">✓ Address validated</small>';
         } else {
             validation.innerHTML = '<small class="text-danger">⚠ ' + data.data.error + '</small>';
         }
     })
     .catch(error => {
-        validation.innerHTML = '<small class="text-danger">Validation service unavailable</small>';
+        validation.innerHTML = '<small class="text-danger">Validation failed. Please check your connection.</small>';
     });
 }
 
@@ -778,9 +821,24 @@ function parseAddressForDisplay(address) {
     return address.substring(0, 30) + (address.length > 30 ? '...' : '');
 }
 
+// Initialize reCAPTCHA if site key is available
+window.recaptchaSiteKey = '{{ config.RECAPTCHA_SITE_KEY or "" }}';
+
+function initRecaptcha() {
+    if (window.recaptchaSiteKey && typeof grecaptcha !== 'undefined') {
+        grecaptcha.ready(() => {
+            grecaptcha.render('recaptcha-container', {
+                'sitekey': window.recaptchaSiteKey,
+                'size': 'invisible'
+            });
+        });
+    }
+}
+
 // Load customer list on page load
 document.addEventListener('DOMContentLoaded', function() {
     loadCustomerList();
+    initRecaptcha();
 });
 </script>
 {% endblock %}
