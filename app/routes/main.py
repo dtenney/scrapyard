@@ -365,12 +365,14 @@ def list_customers():
     from app.models.customer import Customer
     
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 50, type=int)
+    per_page = 50
     
-    customers = Customer.query.filter_by(is_active=True).order_by(Customer.name).limit(per_page).offset((page-1)*per_page).all()
+    pagination = Customer.query.filter_by(is_active=True).order_by(Customer.name).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
     
     results = []
-    for customer in customers:
+    for customer in pagination.items:
         results.append({
             'id': customer.id,
             'name': customer.name,
@@ -379,7 +381,17 @@ def list_customers():
             'drivers_license_number': customer.drivers_license_number
         })
     
-    return jsonify({'customers': results})
+    return jsonify({
+        'customers': results,
+        'pagination': {
+            'page': pagination.page,
+            'pages': pagination.pages,
+            'per_page': pagination.per_page,
+            'total': pagination.total,
+            'has_prev': pagination.has_prev,
+            'has_next': pagination.has_next
+        }
+    })
 
 @main_bp.route('/api/customers/<int:customer_id>')
 @login_required
