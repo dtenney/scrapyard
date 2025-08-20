@@ -8,12 +8,16 @@ import os
 import logging
 
 # Setup Geoapify logging
-os.makedirs('logs', exist_ok=True)
 geoapify_logger = logging.getLogger('geoapify')
 geoapify_logger.setLevel(logging.INFO)
-handler = logging.FileHandler('logs/geoapify.log')
-handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-geoapify_logger.addHandler(handler)
+try:
+    import tempfile
+    log_dir = tempfile.gettempdir()
+    handler = logging.FileHandler(os.path.join(log_dir, 'geoapify.log'))
+    handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    geoapify_logger.addHandler(handler)
+except:
+    pass  # Logging disabled if can't create file
 
 api_bp = Blueprint('api', __name__)
 
