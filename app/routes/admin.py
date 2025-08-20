@@ -106,11 +106,18 @@ def devices():
 def create_device():
     data = request.get_json()
     
+    # Handle serial_port - convert empty string to default value
+    serial_port = data.get('serial_port')
+    if not serial_port or serial_port == '':
+        serial_port = 23
+    else:
+        serial_port = int(serial_port)
+    
     device = Device(
         name=data['name'],
         device_type=data['device_type'],
         ip_address=data['ip_address'],
-        serial_port=data.get('serial_port', 23),
+        serial_port=serial_port,
         printer_model=data.get('printer_model'),
         camera_model=data.get('camera_model'),
         stream_url=data.get('stream_url')
