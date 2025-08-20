@@ -12,7 +12,10 @@
 </div>
 
 <div class="row mb-3">
-    <div class="col-12">
+    <div class="col-md-6">
+        <input type="text" class="form-control" id="searchInput" placeholder="Search customers by name, phone, or license number...">
+    </div>
+    <div class="col-md-6">
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">Add New Customer</button>
         <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadCustomersModal">Upload Customers CSV</button>
         <button class="btn btn-warning" onclick="validateAllAddresses()"><i class="fas fa-map-marker-alt"></i> Validate All Addresses</button>
@@ -20,33 +23,10 @@
 </div>
 
 <div class="row">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5>Search Customer</h5>
-            </div>
-            <div class="card-body">
-                <form id="searchForm">
-                    <div class="mb-3">
-                        <input type="text" class="form-control" id="searchInput" placeholder="Search by name or license number">
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-lg">Search</button>
-                </form>
-                
-                <div id="searchResults" class="mt-3"></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <!-- Empty column for layout -->
-    </div>
-</div>
-
-<div class="row mt-4">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5>Customer List</h5>
+                <h5>Customers</h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -625,20 +605,7 @@ function updateCustomer() {
     });
 }
 
-function searchCustomers() {
-    const query = document.getElementById('searchInput').value;
-    
-    if (query.length < 2) {
-        loadCustomerList();
-        return;
-    }
-    
-    fetch(`/api/customers/search?q=${encodeURIComponent(query)}`)
-    .then(response => response.json())
-    .then(data => {
-        updateCustomerTable(data.customers || []);
-    });
-}
+
 
 
 
@@ -723,13 +690,23 @@ function scanLicense() {
     alert('License scanning functionality - integrate with ID scanner hardware');
 }
 
-// Search as user types
-document.getElementById('searchInput').addEventListener('input', searchCustomers);
-
-// Handle search form submission
-document.getElementById('searchForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    searchCustomers();
+// Search as user types - filter table rows
+document.getElementById('searchInput').addEventListener('input', function() {
+    const query = this.value.toLowerCase();
+    const table = document.getElementById('customerTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    for (let row of rows) {
+        const name = row.cells[0].textContent.toLowerCase();
+        const phone = row.cells[1].textContent.toLowerCase();
+        const license = row.cells[2].textContent.toLowerCase();
+        
+        if (name.includes(query) || phone.includes(query) || license.includes(query)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    }
 });
 
 function validateAddress() {
