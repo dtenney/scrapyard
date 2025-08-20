@@ -5,6 +5,14 @@ from app.models.customer import Customer
 from app.services.printer_service import StarPrinterService
 import requests
 import os
+import logging
+
+# Setup Geoapify logging
+geoapify_logger = logging.getLogger('geoapify')
+geoapify_logger.setLevel(logging.INFO)
+handler = logging.FileHandler('logs/geoapify.log')
+handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+geoapify_logger.addHandler(handler)
 
 api_bp = Blueprint('api', __name__)
 
@@ -74,10 +82,13 @@ def validate_address():
             'format': 'json'
         }
         
+        geoapify_logger.info(f"Request: {url} - Params: {params}")
         response = requests.get(url, params=params, timeout=10)
+        geoapify_logger.info(f"Response: {response.status_code}")
         
         if response.status_code == 200:
             result = response.json()
+            geoapify_logger.info(f"Results found: {len(result.get('results', []))}")
             if result.get('results'):
                 addr = result['results'][0]
                 return jsonify({
@@ -90,14 +101,17 @@ def validate_address():
                     }
                 })
             else:
+                geoapify_logger.warning("No results found for address")
                 return jsonify({'success': False, 'data': {'error': 'Address not found'}})
         elif response.status_code == 403:
-            # API requires reCAPTCHA
+            geoapify_logger.warning("reCAPTCHA required")
             return jsonify({'success': False, 'data': {'error': 'reCAPTCHA required', 'requires_recaptcha': True}})
         else:
+            geoapify_logger.error(f"API error: {response.status_code} - {response.text}")
             return jsonify({'success': False, 'data': {'error': 'Validation service unavailable'}})
             
     except Exception as e:
+        geoapify_logger.error(f"Exception: {str(e)}")
         return jsonify({'success': False, 'data': {'error': 'Address validation failed'}})
 
 @api_bp.route('/customers/create', methods=['POST'])
