@@ -540,7 +540,6 @@ function updateCustomerTable(customers) {
                 <td>${customer.drivers_license_number || 'N/A'}</td>
                 <td>${parseAddressForDisplay(customer.address)}</td>
                 <td>
-                    <button class="btn btn-sm btn-primary" onclick="selectCustomer(${customer.id})">Select</button>
                     <button class="btn btn-sm btn-warning" onclick="editCustomer(${customer.id})">Edit</button>
                 </td>
             </tr>
@@ -641,11 +640,7 @@ function searchCustomers() {
     });
 }
 
-function selectCustomer(customerId) {
-    // Store selected customer for transaction
-    sessionStorage.setItem('selectedCustomerId', customerId);
-    alert('Customer selected for transaction');
-}
+
 
 function capturePhoto() {
     // Use camera service to capture license photo
