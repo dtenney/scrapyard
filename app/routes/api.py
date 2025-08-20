@@ -5,9 +5,6 @@ from app.models.customer import Customer
 from app.services.printer_service import StarPrinterService
 import requests
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 api_bp = Blueprint('api', __name__)
 
@@ -57,7 +54,15 @@ def validate_address():
         # Check if reCAPTCHA is required
         api_key = os.getenv('GEOAPIFY_API_KEY')
         if not api_key:
-            return jsonify({'success': False, 'data': {'error': 'API key not configured'}})
+            return jsonify({
+                'success': True,
+                'data': {
+                    'street': street,
+                    'city': city,
+                    'state': state.upper(),
+                    'zipcode': zipcode
+                }
+            })
         
         # Use Geoapify geocoding API
         address_text = f"{street}, {city}, {state} {zipcode}, USA"
