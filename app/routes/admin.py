@@ -147,35 +147,7 @@ def groups():
     groups = UserGroup.query.all()
     return render_template('admin/groups.html', groups=groups)
 
-@admin_bp.route('/settings')
-def settings():
-    from app.models.system_setting import SystemSetting
-    
-    # Get or create default settings
-    camera_username = SystemSetting.get_value('CAMERA_USERNAME', 'admin')
-    camera_password = SystemSetting.get_value('CAMERA_PASSWORD', '')
-    
-    settings = {
-        'camera_username': camera_username,
-        'camera_password': camera_password
-    }
-    
-    return render_template('admin/settings.html', settings=settings)
 
-@admin_bp.route('/settings/update', methods=['POST'])
-def update_settings():
-    from app.models.system_setting import SystemSetting
-    
-    try:
-        data = request.get_json()
-        
-        SystemSetting.set_value('CAMERA_USERNAME', data.get('camera_username', 'admin'), 'Camera authentication username')
-        SystemSetting.set_value('CAMERA_PASSWORD', data.get('camera_password', ''), 'Camera authentication password')
-        
-        return jsonify({'success': True})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 
