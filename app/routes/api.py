@@ -339,6 +339,74 @@ def upload_customers_csv():
         logger.error(f"CSV upload failed for user {current_user.username}: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@api_bp.route('/customers/validate_all_addresses', methods=['POST'])
+@login_required
+def validate_all_addresses():
+    """Validate all customer addresses in database"""
+    try:
+        customers = Customer.query.filter(
+            Customer.is_active.is_(True),
+            Customer.street_address.isnot(None),
+            Customer.city.isnot(None),
+            Customer.state.isnot(None)
+        ).all()
+        
+        validated = 0
+        errors = 0
+        
+        api_key = 'SET_GEOAPIFY_API_KEY'
+        if not api_key:
+            return jsonify({'success': False, 'error': 'API key not configured'})
+        
+        for customer in customers:
+            try:
+                address_text = f"{customer.street_address}, {customer.city}, {customer.state} {customer.zip_code or ''}, USA"
+                url = "https://api.geoapify.com/v1/geocode/search"
+                params = {
+                    'text': address_text,
+                    'apiKey': api_key,
+                    'limit': 1,
+                    'format': 'json'
+                }
+                
+                geoapify_logger.info(f"Bulk validation: {customer.id} - {address_text}")
+                response = requests.get(url, params=params, timeout=10)
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    if result.get('results'):
+                        addr = result['results'][0]
+                        customer.street_address = addr.get('housenumber', '') + ' ' + addr.get('street', customer.street_address)
+                        customer.city = addr.get('city', customer.city)
+                        customer.state = addr.get('state_code', customer.state)
+                        customer.zip_code = addr.get('postcode', customer.zip_code)
+                        customer.update_legacy_address()
+                        validated += 1
+                    else:
+                        errors += 1
+                        geoapify_logger.warning(f"No results for customer {customer.id}")
+                else:
+                    errors += 1
+                    geoapify_logger.error(f"API error for customer {customer.id}: {response.status_code}")
+                    
+            except Exception as e:
+                errors += 1
+                geoapify_logger.error(f"Exception for customer {customer.id}: {str(e)}")
+        
+        db.session.commit()
+        geoapify_logger.info(f"Bulk validation complete: {validated} validated, {errors} errors")
+        
+        return jsonify({
+            'success': True,
+            'validated': validated,
+            'errors': errors
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        geoapify_logger.error(f"Bulk validation failed: {str(e)}")
+        return jsonify({'success': False, 'error': 'Bulk validation failed'})
+
 @api_bp.route('/cash-drawer/open', methods=['POST'])
 @login_required
 def open_cash_drawer():

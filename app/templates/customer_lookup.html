@@ -15,6 +15,7 @@
     <div class="col-12">
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">Add New Customer</button>
         <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadCustomersModal">Upload Customers CSV</button>
+        <button class="btn btn-warning" onclick="validateAllAddresses()">Validate All Addresses</button>
     </div>
 </div>
 
@@ -821,6 +822,40 @@ function parseAddressForDisplay(address) {
         }
     }
     return address.substring(0, 30) + (address.length > 30 ? '...' : '');
+}
+
+function validateAllAddresses() {
+    if (!confirm('This will validate all customer addresses in the database. This may take several minutes. Continue?')) {
+        return;
+    }
+    
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validating...';
+    btn.disabled = true;
+    
+    fetch('/api/customers/validate_all_addresses', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Address validation completed. ${data.validated} addresses validated, ${data.errors} errors.`);
+            loadCustomerList();
+        } else {
+            alert('Address validation failed: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Address validation failed: ' + error.message);
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
 }
 
 // Load customer list on page load
