@@ -37,7 +37,7 @@ def compliance_report():
 @api_bp.route('/address/validate', methods=['POST'])
 @login_required
 def validate_address():
-    """Validate address with basic validation"""
+    """Validate address using Geoapify API"""
     try:
         data = request.get_json()
         if not data:
@@ -51,22 +51,43 @@ def validate_address():
         if not all([street, city, state]):
             return jsonify({'success': False, 'data': {'error': 'Street, city, and state are required'}})
         
-        # Basic validation
-        if len(state) != 2:
-            return jsonify({'success': False, 'data': {'error': 'State must be 2-letter code'}})
+        # Check if reCAPTCHA is required
+        api_key = os.getenv('GEOAPIFY_API_KEY')
+        if not api_key:
+            return jsonify({'success': False, 'data': {'error': 'API key not configured'}})
         
-        if zipcode and not zipcode.replace('-', '').isdigit():
-            return jsonify({'success': False, 'data': {'error': 'Invalid ZIP code format'}})
+        # Use Geoapify geocoding API
+        address_text = f"{street}, {city}, {state} {zipcode}, USA"
+        url = "https://api.geoapify.com/v1/geocode/search"
+        params = {
+            'text': address_text,
+            'apiKey': api_key,
+            'limit': 1,
+            'format': 'json'
+        }
         
-        return jsonify({
-            'success': True,
-            'data': {
-                'street': street,
-                'city': city,
-                'state': state.upper(),
-                'zipcode': zipcode
-            }
-        })
+        response = requests.get(url, params=params, timeout=10)
+        
+        if response.status_code == 200:
+            result = response.json()
+            if result.get('results'):
+                addr = result['results'][0]
+                return jsonify({
+                    'success': True,
+                    'data': {
+                        'street': addr.get('housenumber', '') + ' ' + addr.get('street', street),
+                        'city': addr.get('city', city),
+                        'state': addr.get('state_code', state),
+                        'zipcode': addr.get('postcode', zipcode)
+                    }
+                })
+            else:
+                return jsonify({'success': False, 'data': {'error': 'Address not found'}})
+        elif response.status_code == 403:
+            # API requires reCAPTCHA
+            return jsonify({'success': False, 'data': {'error': 'reCAPTCHA required', 'requires_recaptcha': True}})
+        else:
+            return jsonify({'success': False, 'data': {'error': 'Validation service unavailable'}})
             
     except Exception as e:
         return jsonify({'success': False, 'data': {'error': 'Address validation failed'}})

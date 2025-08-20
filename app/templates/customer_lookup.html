@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block head %}
+<script src="https://www.google.com/recaptcha/api.js?render={{ config.RECAPTCHA_SITE_KEY or '' }}" async defer></script>
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-12">
@@ -702,10 +706,19 @@ function validateAddress() {
     
     validation.innerHTML = '<small class="text-info">Validating address...</small>';
     
+    performAddressValidation(street, city, state, zip, validation);
+}
+
+function performAddressValidation(street, city, state, zip, validation, recaptchaToken = null) {
+    const payload = {street, city, state, zipcode: zip};
+    if (recaptchaToken) {
+        payload.recaptcha_token = recaptchaToken;
+    }
+    
     fetch('/api/address/validate', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({street, city, state, zipcode: zip})
+        body: JSON.stringify(payload)
     })
     .then(response => response.json())
     .then(data => {
@@ -716,8 +729,20 @@ function validateAddress() {
             document.getElementById('state').value = addr.state;
             document.getElementById('zipCode').value = addr.zipcode;
             validation.innerHTML = '<small class="text-success">✓ Address validated</small>';
+        } else if (data.data && data.data.requires_recaptcha) {
+            // Execute reCAPTCHA and retry
+            if (typeof grecaptcha !== 'undefined') {
+                grecaptcha.ready(() => {
+                    grecaptcha.execute('{{ config.RECAPTCHA_SITE_KEY or "" }}', {action: 'validate_address'})
+                    .then(token => {
+                        performAddressValidation(street, city, state, zip, validation, token);
+                    });
+                });
+            } else {
+                validation.innerHTML = '<small class="text-danger">⚠ reCAPTCHA required but not loaded</small>';
+            }
         } else {
-            validation.innerHTML = '<small class="text-danger">⚠ ' + data.data.error + '</small>';
+            validation.innerHTML = '<small class="text-danger">⚠ ' + (data.data ? data.data.error : 'Validation failed') + '</small>';
         }
     })
     .catch(error => {
@@ -740,10 +765,19 @@ function validateEditAddress() {
     
     validation.innerHTML = '<small class="text-info">Validating address...</small>';
     
+    performEditAddressValidation(street, city, state, zip, validation);
+}
+
+function performEditAddressValidation(street, city, state, zip, validation, recaptchaToken = null) {
+    const payload = {street, city, state, zipcode: zip};
+    if (recaptchaToken) {
+        payload.recaptcha_token = recaptchaToken;
+    }
+    
     fetch('/api/address/validate', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({street, city, state, zipcode: zip})
+        body: JSON.stringify(payload)
     })
     .then(response => response.json())
     .then(data => {
@@ -754,8 +788,19 @@ function validateEditAddress() {
             document.getElementById('editState').value = addr.state;
             document.getElementById('editZip').value = addr.zipcode;
             validation.innerHTML = '<small class="text-success">✓ Address validated</small>';
+        } else if (data.data && data.data.requires_recaptcha) {
+            if (typeof grecaptcha !== 'undefined') {
+                grecaptcha.ready(() => {
+                    grecaptcha.execute('{{ config.RECAPTCHA_SITE_KEY or "" }}', {action: 'validate_address'})
+                    .then(token => {
+                        performEditAddressValidation(street, city, state, zip, validation, token);
+                    });
+                });
+            } else {
+                validation.innerHTML = '<small class="text-danger">⚠ reCAPTCHA required but not loaded</small>';
+            }
         } else {
-            validation.innerHTML = '<small class="text-danger">⚠ ' + data.data.error + '</small>';
+            validation.innerHTML = '<small class="text-danger">⚠ ' + (data.data ? data.data.error : 'Validation failed') + '</small>';
         }
     })
     .catch(error => {
