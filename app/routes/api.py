@@ -252,6 +252,16 @@ def upload_customers_csv():
                 skipped += 1
                 continue
             
+            # Parse birthday
+            birthday = None
+            birthday_str = row.get('Birthday', '').strip()
+            if birthday_str:
+                try:
+                    from datetime import datetime
+                    birthday = datetime.strptime(birthday_str, '%m/%d/%Y').date()
+                except:
+                    pass
+            
             # Create new customer
             customer = Customer(
                 name=full_name,
@@ -260,7 +270,10 @@ def upload_customers_csv():
                 state=row.get('State', '').strip(),
                 zip_code=row.get('Zip code', '').strip(),
                 phone=row.get('Phone Number', '').strip(),
-                drivers_license_number=license_num
+                drivers_license_number=license_num,
+                birthday=birthday,
+                gender=row.get('Gender', '').strip(),
+                eye_color=row.get('Eye Color', '').strip()
             )
             
             db.session.add(customer)

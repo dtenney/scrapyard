@@ -93,6 +93,36 @@
                                 <label class="form-label">Driver's License Number</label>
                                 <input type="text" class="form-control" name="drivers_license_number">
                             </div>
+                            <div class="mb-3">
+                                <label class="form-label">Birthday</label>
+                                <input type="date" class="form-control" name="birthday">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Gender</label>
+                                        <select class="form-control" name="gender">
+                                            <option value="">Select Gender</option>
+                                            <option value="M">Male</option>
+                                            <option value="F">Female</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Eye Color</label>
+                                        <select class="form-control" name="eye_color">
+                                            <option value="">Select Eye Color</option>
+                                            <option value="BLU">Blue</option>
+                                            <option value="BRO">Brown</option>
+                                            <option value="GRN">Green</option>
+                                            <option value="HAZ">Hazel</option>
+                                            <option value="GRY">Gray</option>
+                                            <option value="BLK">Black</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -205,6 +235,36 @@
                             <div class="mb-3">
                                 <label class="form-label">Driver's License Number</label>
                                 <input type="text" class="form-control" name="drivers_license_number" id="editLicense">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Birthday</label>
+                                <input type="date" class="form-control" name="birthday" id="editBirthday">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Gender</label>
+                                        <select class="form-control" name="gender" id="editGender">
+                                            <option value="">Select Gender</option>
+                                            <option value="M">Male</option>
+                                            <option value="F">Female</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Eye Color</label>
+                                        <select class="form-control" name="eye_color" id="editEyeColor">
+                                            <option value="">Select Eye Color</option>
+                                            <option value="BLU">Blue</option>
+                                            <option value="BRO">Brown</option>
+                                            <option value="GRN">Green</option>
+                                            <option value="HAZ">Hazel</option>
+                                            <option value="GRY">Gray</option>
+                                            <option value="BLK">Black</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -319,6 +379,9 @@ function editCustomer(customerId) {
         document.getElementById('editPhone').value = customer.phone || '';
         document.getElementById('editEmail').value = customer.email || '';
         document.getElementById('editLicense').value = customer.drivers_license_number || '';
+        document.getElementById('editBirthday').value = customer.birthday || '';
+        document.getElementById('editGender').value = customer.gender || '';
+        document.getElementById('editEyeColor').value = customer.eye_color || '';
         document.getElementById('editStreet').value = customer.street_address || '';
         document.getElementById('editCity').value = customer.city || '';
         document.getElementById('editState').value = customer.state || '';

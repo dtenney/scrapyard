@@ -16,6 +16,9 @@ class Customer(db.Model):
     email = db.Column(db.String(100))
     drivers_license_number = db.Column(db.String(50))
     drivers_license_photo = db.Column(db.String(200))  # filename
+    birthday = db.Column(db.Date)
+    gender = db.Column(db.String(10))
+    eye_color = db.Column(db.String(20))
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
