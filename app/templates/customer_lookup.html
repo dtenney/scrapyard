@@ -48,10 +48,10 @@
                     <table class="table table-striped" id="customerTable">
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th>Phone</th>
-                                <th>License #</th>
-                                <th>City, State</th>
+                                <th data-sort="name" onclick="sortTable('name')" style="cursor: pointer;">Name ↕</th>
+                                <th data-sort="phone" onclick="sortTable('phone')" style="cursor: pointer;">Phone ↕</th>
+                                <th data-sort="drivers_license_number" onclick="sortTable('drivers_license_number')" style="cursor: pointer;">License # ↕</th>
+                                <th data-sort="address" onclick="sortTable('address')" style="cursor: pointer;">City, State ↕</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -434,6 +434,14 @@
 </div>
 {% endblock %}
 
+{% block styles %}
+<style>
+.sorted-asc::after { content: ' ↑'; }
+.sorted-desc::after { content: ' ↓'; }
+th[data-sort]:hover { background-color: #f8f9fa; }
+</style>
+{% endblock %}
+
 {% block scripts %}
 <script>
 function saveCustomer() {
@@ -457,28 +465,71 @@ function saveCustomer() {
     });
 }
 
+let currentCustomers = [];
+let sortColumn = 'name';
+let sortDirection = 'asc';
+
 function loadCustomerList() {
     fetch('/api/customers/list')
     .then(response => response.json())
     .then(data => {
-        const tbody = document.getElementById('customerTableBody');
-        tbody.innerHTML = '';
+        currentCustomers = data.customers || [];
+        updateCustomerTable(currentCustomers);
+    });
+}
+
+function updateCustomerTable(customers) {
+    const tbody = document.getElementById('customerTableBody');
+    tbody.innerHTML = '';
+    
+    customers.forEach(customer => {
+        const row = `
+            <tr>
+                <td>${customer.name}</td>
+                <td>${customer.phone || 'N/A'}</td>
+                <td>${customer.drivers_license_number || 'N/A'}</td>
+                <td>${parseAddressForDisplay(customer.address)}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="selectCustomer(${customer.id})">Select</button>
+                    <button class="btn btn-sm btn-warning" onclick="editCustomer(${customer.id})">Edit</button>
+                </td>
+            </tr>
+        `;
+        tbody.innerHTML += row;
+    });
+}
+
+function sortTable(column) {
+    if (sortColumn === column) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortColumn = column;
+        sortDirection = 'asc';
+    }
+    
+    const sorted = [...currentCustomers].sort((a, b) => {
+        let aVal = a[column] || '';
+        let bVal = b[column] || '';
         
-        data.customers.forEach(customer => {
-            const row = `
-                <tr>
-                    <td>${customer.name}</td>
-                    <td>${customer.phone || 'N/A'}</td>
-                    <td>${customer.drivers_license_number || 'N/A'}</td>
-                    <td>${parseAddressForDisplay(customer.address)}</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" onclick="selectCustomer(${customer.id})">Select</button>
-                        <button class="btn btn-sm btn-warning" onclick="editCustomer(${customer.id})">Edit</button>
-                    </td>
-                </tr>
-            `;
-            tbody.innerHTML += row;
-        });
+        if (column === 'address') {
+            aVal = parseAddressForDisplay(a.address);
+            bVal = parseAddressForDisplay(b.address);
+        }
+        
+        const result = aVal.localeCompare(bVal);
+        return sortDirection === 'asc' ? result : -result;
+    });
+    
+    updateCustomerTable(sorted);
+    updateSortHeaders();
+}
+
+function updateSortHeaders() {
+    document.querySelectorAll('th[data-sort]').forEach(th => {
+        th.classList.remove('sorted-asc', 'sorted-desc');
+        if (th.dataset.sort === sortColumn) {
+            th.classList.add(`sorted-${sortDirection}`);
+        }
     });
 }
 
@@ -529,32 +580,14 @@ function searchCustomers() {
     const query = document.getElementById('searchInput').value;
     
     if (query.length < 2) {
-        document.getElementById('searchResults').innerHTML = '';
+        loadCustomerList();
         return;
     }
     
     fetch(`/api/customers/search?q=${encodeURIComponent(query)}`)
     .then(response => response.json())
     .then(data => {
-        const results = document.getElementById('searchResults');
-        
-        if (data.customers && data.customers.length > 0) {
-            let html = '<div class="list-group">';
-            data.customers.forEach(customer => {
-                html += `
-                    <div class="list-group-item">
-                        <h6>${customer.name}</h6>
-                        <small>${customer.address || 'No address'}</small><br>
-                        <small>License: ${customer.drivers_license_number || 'N/A'}</small>
-                        <button class="btn btn-sm btn-primary float-end" onclick="selectCustomer(${customer.id})">Select</button>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            results.innerHTML = html;
-        } else {
-            results.innerHTML = '<p class="text-muted">No customers found</p>';
-        }
+        updateCustomerTable(data.customers || []);
     });
 }
 
