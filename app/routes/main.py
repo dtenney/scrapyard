@@ -361,13 +361,25 @@ def update_prices():
 @login_required
 @require_permission('customer_lookup')
 def list_customers():
-    """Get customers with pagination"""
+    """Get customers with pagination and search"""
     from app.models.customer import Customer
     
     page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '').strip()
     per_page = 50
     
-    pagination = Customer.query.filter_by(is_active=True).order_by(Customer.name).paginate(
+    query = Customer.query.filter_by(is_active=True)
+    
+    if search:
+        query = query.filter(
+            db.or_(
+                Customer.name.ilike(f'%{search}%'),
+                Customer.phone.ilike(f'%{search}%'),
+                Customer.drivers_license_number.ilike(f'%{search}%')
+            )
+        )
+    
+    pagination = query.order_by(Customer.name).paginate(
         page=page, per_page=per_page, error_out=False
     )
     
@@ -376,9 +388,10 @@ def list_customers():
         results.append({
             'id': customer.id,
             'name': customer.name,
-            'address': customer.full_address,
-            'phone': customer.phone,
-            'drivers_license_number': customer.drivers_license_number
+            'phone': customer.phone or '',
+            'drivers_license_number': customer.drivers_license_number or '',
+            'city': customer.city or '',
+            'state': customer.state or ''
         })
     
     return jsonify({

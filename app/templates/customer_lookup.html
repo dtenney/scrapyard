@@ -455,27 +455,26 @@ function saveCustomer() {
     });
 }
 
-let currentCustomers = [];
-let sortColumn = 'name';
-let sortDirection = 'asc';
 let currentPage = 1;
-let totalPages = 1;
 let currentSearch = '';
 
-function loadCustomerList(page = 1, search = '') {
+function loadCustomerList(page = 1, search = null) {
+    if (search !== null) currentSearch = search;
     currentPage = page;
-    currentSearch = search;
-    let url = `/api/customers/list?page=${page}&per_page=50`;
-    if (search) {
-        url += `&search=${encodeURIComponent(search)}`;
+    
+    let url = `/api/customers/list?page=${page}`;
+    if (currentSearch) {
+        url += `&search=${encodeURIComponent(currentSearch)}`;
     }
     
     fetch(url)
     .then(response => response.json())
     .then(data => {
-        currentCustomers = data.customers || [];
-        updateCustomerTable(currentCustomers);
+        updateCustomerTable(data.customers || []);
         updatePagination(data.pagination);
+    })
+    .catch(error => {
+        console.error('Error loading customers:', error);
     });
 }
 
@@ -519,13 +518,19 @@ function updateCustomerTable(customers) {
     const tbody = document.getElementById('customerTableBody');
     tbody.innerHTML = '';
     
+    if (!customers.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No customers found</td></tr>';
+        return;
+    }
+    
     customers.forEach(customer => {
+        const cityState = customer.city && customer.state ? `${customer.city}, ${customer.state}` : 'No address';
         const row = `
             <tr>
                 <td>${customer.name}</td>
                 <td>${customer.phone || 'N/A'}</td>
                 <td>${customer.drivers_license_number || 'N/A'}</td>
-                <td>${parseAddressForDisplay(customer.address)}</td>
+                <td>${cityState}</td>
                 <td>
                     <button class="btn btn-sm btn-warning" onclick="editCustomer(${customer.id})">Edit</button>
                 </td>
