@@ -460,10 +460,17 @@ let sortColumn = 'name';
 let sortDirection = 'asc';
 let currentPage = 1;
 let totalPages = 1;
+let currentSearch = '';
 
-function loadCustomerList(page = 1) {
+function loadCustomerList(page = 1, search = '') {
     currentPage = page;
-    fetch(`/api/customers/list?page=${page}&per_page=50`)
+    currentSearch = search;
+    let url = `/api/customers/list?page=${page}&per_page=50`;
+    if (search) {
+        url += `&search=${encodeURIComponent(search)}`;
+    }
+    
+    fetch(url)
     .then(response => response.json())
     .then(data => {
         currentCustomers = data.customers || [];
@@ -481,7 +488,7 @@ function updatePagination(pagination) {
     
     // Previous button
     if (pagination.has_prev) {
-        paginationList.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="loadCustomerList(${pagination.page - 1})">Previous</a></li>`;
+        paginationList.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="loadCustomerList(${pagination.page - 1}, '${currentSearch}')">Previous</a></li>`;
     }
     
     // Page numbers
@@ -490,12 +497,12 @@ function updatePagination(pagination) {
     
     for (let i = startPage; i <= endPage; i++) {
         const active = i === pagination.page ? 'active' : '';
-        paginationList.innerHTML += `<li class="page-item ${active}"><a class="page-link" href="#" onclick="loadCustomerList(${i})">${i}</a></li>`;
+        paginationList.innerHTML += `<li class="page-item ${active}"><a class="page-link" href="#" onclick="loadCustomerList(${i}, '${currentSearch}')">${i}</a></li>`;
     }
     
     // Next button
     if (pagination.has_next) {
-        paginationList.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="loadCustomerList(${pagination.page + 1})">Next</a></li>`;
+        paginationList.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="loadCustomerList(${pagination.page + 1}, '${currentSearch}')">Next</a></li>`;
     }
     
     // Show pagination info
@@ -689,23 +696,14 @@ function scanLicense() {
     alert('License scanning functionality - integrate with ID scanner hardware');
 }
 
-// Search as user types - filter table rows
+// Search with debounce for server-side filtering
+let searchTimeout;
 document.getElementById('searchInput').addEventListener('input', function() {
-    const query = this.value.toLowerCase();
-    const table = document.getElementById('customerTable');
-    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-    
-    for (let row of rows) {
-        const name = row.cells[0].textContent.toLowerCase();
-        const phone = row.cells[1].textContent.toLowerCase();
-        const license = row.cells[2].textContent.toLowerCase();
-        
-        if (name.includes(query) || phone.includes(query) || license.includes(query)) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
-    }
+    const query = this.value.trim();
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        loadCustomerList(1, query);
+    }, 300);
 });
 
 function validateAddress() {

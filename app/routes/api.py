@@ -171,9 +171,21 @@ def update_customer(customer_id):
 def list_customers():
     """List customers with pagination"""
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 50, type=int)
+    per_page = 50
+    search = request.args.get('search', '').strip()
     
-    pagination = Customer.query.filter_by(is_active=True).paginate(
+    query = Customer.query.filter_by(is_active=True)
+    
+    if search:
+        query = query.filter(
+            db.or_(
+                Customer.name.ilike(f'%{search}%'),
+                Customer.drivers_license_number.ilike(f'%{search}%'),
+                Customer.phone.ilike(f'%{search}%')
+            )
+        )
+    
+    pagination = query.order_by(Customer.name).paginate(
         page=page, per_page=per_page, error_out=False
     )
     
