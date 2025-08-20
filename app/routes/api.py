@@ -5,6 +5,9 @@ from app.models.customer import Customer
 from app.services.printer_service import StarPrinterService
 import requests
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 api_bp = Blueprint('api', __name__)
 
