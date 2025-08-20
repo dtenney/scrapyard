@@ -207,6 +207,77 @@ def search_customers():
         } for c in customers]
     })
 
+@api_bp.route('/customers/upload_csv', methods=['POST'])
+@login_required
+def upload_customers_csv():
+    """Upload customers from CSV file"""
+    try:
+        if 'csv_file' not in request.files:
+            return jsonify({'success': False, 'error': 'No file uploaded'}), 400
+        
+        file = request.files['csv_file']
+        if not file.filename.endswith('.csv'):
+            return jsonify({'success': False, 'error': 'File must be CSV format'}), 400
+        
+        import csv
+        import io
+        
+        # Read CSV content
+        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+        csv_input = csv.DictReader(stream)
+        
+        imported = 0
+        skipped = 0
+        
+        for row in csv_input:
+            # Combine names
+            first_name = row.get('First Name', '').strip()
+            middle_name = row.get('Middle Name', '').strip()
+            last_name = row.get('Last Name', '').strip()
+            
+            full_name = f"{first_name} {middle_name} {last_name}".strip().replace('  ', ' ')
+            
+            if not full_name:
+                continue
+            
+            # Check for existing customer by license or name
+            license_num = row.get('Drivers License', '').strip()
+            existing = None
+            if license_num:
+                existing = Customer.query.filter_by(drivers_license_number=license_num).first()
+            if not existing:
+                existing = Customer.query.filter_by(name=full_name).first()
+            
+            if existing:
+                skipped += 1
+                continue
+            
+            # Create new customer
+            customer = Customer(
+                name=full_name,
+                street_address=row.get('Street Address', '').strip(),
+                city=row.get('City', '').strip(),
+                state=row.get('State', '').strip(),
+                zip_code=row.get('Zip code', '').strip(),
+                phone=row.get('Phone Number', '').strip(),
+                drivers_license_number=license_num
+            )
+            
+            db.session.add(customer)
+            imported += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'imported': imported,
+            'skipped': skipped
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @api_bp.route('/cash-drawer/open', methods=['POST'])
 @login_required
 def open_cash_drawer():

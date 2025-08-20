@@ -10,6 +10,7 @@
 <div class="row mb-3">
     <div class="col-12">
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">Add New Customer</button>
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadCustomersModal">Upload Customers CSV</button>
     </div>
 </div>
 
@@ -145,6 +146,32 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="saveCustomer()">Save Customer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Customers CSV Modal -->
+<div class="modal fade" id="uploadCustomersModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Customers CSV</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadCustomersForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">CSV File</label>
+                        <input type="file" class="form-control" name="csv_file" accept=".csv" required>
+                        <div class="form-text">Expected headers: Last Name, Middle Name, First Name, Drivers License, Street Address, City, State, Zip code, Birthday, Gender, Eye Color, Phone Number</div>
+                    </div>
+                    <div id="uploadProgress" class="mt-3"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="uploadCustomersCSV()">Upload</button>
             </div>
         </div>
     </div>
@@ -372,6 +399,34 @@ function capturePhoto() {
         } else {
             alert('Error capturing photo');
         }
+    });
+}
+
+function uploadCustomersCSV() {
+    const form = document.getElementById('uploadCustomersForm');
+    const formData = new FormData(form);
+    const progress = document.getElementById('uploadProgress');
+    
+    progress.innerHTML = '<div class="text-info">Uploading and processing CSV...</div>';
+    
+    fetch('/api/customers/upload_csv', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            progress.innerHTML = `<div class="text-success">Successfully imported ${data.imported} customers. ${data.skipped} duplicates skipped.</div>`;
+            setTimeout(() => {
+                bootstrap.Modal.getInstance(document.getElementById('uploadCustomersModal')).hide();
+                loadCustomerList();
+            }, 2000);
+        } else {
+            progress.innerHTML = `<div class="text-danger">Error: ${data.error}</div>`;
+        }
+    })
+    .catch(error => {
+        progress.innerHTML = '<div class="text-danger">Upload failed. Please try again.</div>';
     });
 }
 
