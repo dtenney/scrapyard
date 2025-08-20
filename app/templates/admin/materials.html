@@ -254,15 +254,50 @@ function updateMaterial() {
 
 function updatePrices() {
     if (confirm('Update material prices from SGT Scrap?')) {
+        const btn = event.target;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating Prices...';
+        btn.disabled = true;
+        
+        // Create status display
+        let statusDiv = document.getElementById('priceUpdateStatus');
+        if (!statusDiv) {
+            statusDiv = document.createElement('div');
+            statusDiv.id = 'priceUpdateStatus';
+            statusDiv.className = 'alert alert-info mt-2';
+            btn.parentNode.appendChild(statusDiv);
+        }
+        
+        statusDiv.innerHTML = 'Fetching prices from SGT Scrap website...';
+        
         fetch('/admin/materials/update_prices', {method: 'POST'})
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert(`Updated SGT Scrap prices for ${data.updated} materials`);
-                location.reload();
+                btn.innerHTML = '<i class="fas fa-check"></i> Update Complete';
+                statusDiv.className = 'alert alert-success mt-2';
+                statusDiv.innerHTML = `Successfully updated SGT Scrap prices for ${data.updated} materials`;
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
             } else {
-                alert('Error updating SGT Scrap prices: ' + data.error);
+                btn.innerHTML = originalText;
+                statusDiv.className = 'alert alert-danger mt-2';
+                statusDiv.innerHTML = 'Error updating SGT Scrap prices: ' + data.error;
+                setTimeout(() => statusDiv.remove(), 5000);
             }
+        })
+        .catch(error => {
+            btn.innerHTML = originalText;
+            statusDiv.className = 'alert alert-danger mt-2';
+            statusDiv.innerHTML = 'Network error: ' + error.message;
+            setTimeout(() => statusDiv.remove(), 5000);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+            }, 2000);
         });
     }
 }
