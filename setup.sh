@@ -65,6 +65,13 @@ echo "Copying application files..."
 sudo cp -r . /var/www/scrapyard/
 sudo chown -R scrapyard:www-data /var/www/scrapyard
 
+# Generate Flask secret key
+echo "Generating Flask secret key..."
+SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+echo "SECRET_KEY=$SECRET_KEY" | sudo tee /var/www/scrapyard/.env > /dev/null
+sudo chown scrapyard:www-data /var/www/scrapyard/.env
+sudo chmod 600 /var/www/scrapyard/.env
+
 # Create Python virtual environment
 echo "Creating Python virtual environment..."
 cd /var/www/scrapyard
