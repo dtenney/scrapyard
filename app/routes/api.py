@@ -65,17 +65,9 @@ def validate_address():
             return jsonify({'success': False, 'data': {'error': 'Street, city, and state are required'}})
         
         # Check if reCAPTCHA is required
-        api_key = os.getenv('GEOAPIFY_API_KEY')
+        api_key = 'SET_GEOAPIFY_API_KEY'
         if not api_key:
-            return jsonify({
-                'success': True,
-                'data': {
-                    'street': street,
-                    'city': city,
-                    'state': state.upper(),
-                    'zipcode': zipcode
-                }
-            })
+             return jsonify({'success': False, 'data': {'error': 'API key error'}})
         
         # Use Geoapify geocoding API
         address_text = f"{street}, {city}, {state} {zipcode}, USA"
