@@ -168,8 +168,14 @@ def update_customer(customer_id):
 @api_bp.route('/customers/list')
 @login_required
 def list_customers():
-    """List all customers"""
-    customers = Customer.query.filter_by(is_active=True).all()
+    """List customers with pagination"""
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
+    
+    pagination = Customer.query.filter_by(is_active=True).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
     return jsonify({
         'customers': [{
             'id': c.id,
@@ -181,7 +187,15 @@ def list_customers():
             'state': c.state,
             'zip_code': c.zip_code,
             'address': c.full_address
-        } for c in customers]
+        } for c in pagination.items],
+        'pagination': {
+            'page': pagination.page,
+            'pages': pagination.pages,
+            'per_page': pagination.per_page,
+            'total': pagination.total,
+            'has_prev': pagination.has_prev,
+            'has_next': pagination.has_next
+        }
     })
 
 @api_bp.route('/customers/<int:customer_id>')
