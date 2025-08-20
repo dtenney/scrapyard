@@ -15,7 +15,7 @@
     <div class="col-12">
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">Add New Customer</button>
         <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadCustomersModal">Upload Customers CSV</button>
-        <button class="btn btn-warning" onclick="validateAllAddresses()">Validate All Addresses</button>
+        <button class="btn btn-warning" onclick="validateAllAddresses()"><i class="fas fa-map-marker-alt"></i> Validate All Addresses</button>
     </div>
 </div>
 
@@ -831,30 +831,67 @@ function validateAllAddresses() {
     
     const btn = event.target;
     const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validating...';
     btn.disabled = true;
     
-    fetch('/api/customers/validate_all_addresses', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
+    // Create status display
+    let statusDiv = document.getElementById('validationStatus');
+    if (!statusDiv) {
+        statusDiv = document.createElement('div');
+        statusDiv.id = 'validationStatus';
+        statusDiv.className = 'alert alert-info mt-2';
+        btn.parentNode.appendChild(statusDiv);
+    }
+    
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting validation...';
+    statusDiv.innerHTML = 'Preparing to validate addresses...';
+    
+    let validated = 0;
+    let errors = 0;
+    let total = 0;
+    
+    // Get customer count first
+    fetch('/api/customers/count_addresses')
+    .then(response => response.json())
+    .then(countData => {
+        total = countData.count || 0;
+        statusDiv.innerHTML = `Found ${total} addresses to validate...`;
+        
+        // Start validation
+        return fetch('/api/customers/validate_all_addresses', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert(`Address validation completed. ${data.validated} addresses validated, ${data.errors} errors.`);
-            loadCustomerList();
+            btn.innerHTML = '<i class="fas fa-check"></i> Validation Complete';
+            statusDiv.className = 'alert alert-success mt-2';
+            statusDiv.innerHTML = `Completed: ${data.validated} addresses validated, ${data.errors} errors`;
+            setTimeout(() => {
+                loadCustomerList();
+                statusDiv.remove();
+            }, 3000);
         } else {
-            alert('Address validation failed: ' + data.error);
+            btn.innerHTML = originalText;
+            statusDiv.className = 'alert alert-danger mt-2';
+            statusDiv.innerHTML = 'Validation failed: ' + data.error;
+            setTimeout(() => statusDiv.remove(), 5000);
         }
     })
     .catch(error => {
-        alert('Address validation failed: ' + error.message);
+        btn.innerHTML = originalText;
+        statusDiv.className = 'alert alert-danger mt-2';
+        statusDiv.innerHTML = 'Validation failed: ' + error.message;
+        setTimeout(() => statusDiv.remove(), 5000);
     })
     .finally(() => {
-        btn.innerHTML = originalText;
         btn.disabled = false;
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+        }, 3000);
     });
 }
 

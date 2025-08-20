@@ -339,6 +339,18 @@ def upload_customers_csv():
         logger.error(f"CSV upload failed for user {current_user.username}: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@api_bp.route('/customers/count_addresses')
+@login_required
+def count_addresses():
+    """Count addresses to be validated"""
+    count = Customer.query.filter(
+        Customer.is_active.is_(True),
+        Customer.street_address.isnot(None),
+        Customer.city.isnot(None),
+        Customer.state.isnot(None)
+    ).count()
+    return jsonify({'count': count})
+
 @api_bp.route('/customers/validate_all_addresses', methods=['POST'])
 @login_required
 def validate_all_addresses():
@@ -353,12 +365,13 @@ def validate_all_addresses():
         
         validated = 0
         errors = 0
+        total = len(customers)
         
         api_key = 'SET_GEOAPIFY_API_KEY'
         if not api_key:
             return jsonify({'success': False, 'error': 'API key not configured'})
         
-        for customer in customers:
+        for i, customer in enumerate(customers, 1):
             try:
                 address_text = f"{customer.street_address}, {customer.city}, {customer.state} {customer.zip_code or ''}, USA"
                 url = "https://api.geoapify.com/v1/geocode/search"
@@ -369,7 +382,7 @@ def validate_all_addresses():
                     'format': 'json'
                 }
                 
-                geoapify_logger.info(f"Bulk validation: {customer.id} - {address_text}")
+                geoapify_logger.info(f"Bulk validation {i}/{total}: {customer.name} - {address_text}")
                 response = requests.get(url, params=params, timeout=10)
                 
                 if response.status_code == 200:
@@ -384,14 +397,14 @@ def validate_all_addresses():
                         validated += 1
                     else:
                         errors += 1
-                        geoapify_logger.warning(f"No results for customer {customer.id}")
+                        geoapify_logger.warning(f"No results for {customer.name}")
                 else:
                     errors += 1
-                    geoapify_logger.error(f"API error for customer {customer.id}: {response.status_code}")
+                    geoapify_logger.error(f"API error for {customer.name}: {response.status_code}")
                     
             except Exception as e:
                 errors += 1
-                geoapify_logger.error(f"Exception for customer {customer.id}: {str(e)}")
+                geoapify_logger.error(f"Exception for {customer.name}: {str(e)}")
         
         db.session.commit()
         geoapify_logger.info(f"Bulk validation complete: {validated} validated, {errors} errors")
@@ -399,7 +412,8 @@ def validate_all_addresses():
         return jsonify({
             'success': True,
             'validated': validated,
-            'errors': errors
+            'errors': errors,
+            'total': total
         })
         
     except Exception as e:
