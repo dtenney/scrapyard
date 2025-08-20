@@ -854,7 +854,12 @@ function validateAllAddresses() {
     .then(response => response.json())
     .then(countData => {
         total = countData.count || 0;
-        statusDiv.innerHTML = `Found ${total} addresses to validate...`;
+        const totalAvailable = countData.total_available || 0;
+        if (totalAvailable > 50) {
+            statusDiv.innerHTML = `Found ${totalAvailable} addresses, validating first ${total} to prevent timeout...`;
+        } else {
+            statusDiv.innerHTML = `Found ${total} addresses to validate...`;
+        }
         
         // Start validation
         return fetch('/api/customers/validate_all_addresses', {
@@ -869,11 +874,15 @@ function validateAllAddresses() {
         if (data.success) {
             btn.innerHTML = '<i class="fas fa-check"></i> Validation Complete';
             statusDiv.className = 'alert alert-success mt-2';
-            statusDiv.innerHTML = `Completed: ${data.validated} addresses validated, ${data.errors} errors`;
+            let message = `Completed: ${data.validated} addresses validated, ${data.errors} errors`;
+            if (data.note) {
+                message += `<br><small>${data.note}</small>`;
+            }
+            statusDiv.innerHTML = message;
             setTimeout(() => {
                 loadCustomerList();
                 statusDiv.remove();
-            }, 3000);
+            }, 5000);
         } else {
             btn.innerHTML = originalText;
             statusDiv.className = 'alert alert-danger mt-2';

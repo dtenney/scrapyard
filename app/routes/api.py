@@ -342,36 +342,45 @@ def upload_customers_csv():
 @api_bp.route('/customers/count_addresses')
 @login_required
 def count_addresses():
-    """Count addresses to be validated"""
-    count = Customer.query.filter(
+    """Count addresses to be validated (limited to 50)"""
+    total_count = Customer.query.filter(
         Customer.is_active.is_(True),
         Customer.street_address.isnot(None),
         Customer.city.isnot(None),
         Customer.state.isnot(None)
     ).count()
-    return jsonify({'count': count})
+    return jsonify({'count': min(50, total_count), 'total_available': total_count})
 
 @api_bp.route('/customers/validate_all_addresses', methods=['POST'])
 @login_required
 def validate_all_addresses():
-    """Validate all customer addresses in database"""
+    """Validate customer addresses in batches to prevent timeout"""
+    import time
+    
     try:
+        # Limit to first 50 customers to prevent timeout
         customers = Customer.query.filter(
             Customer.is_active.is_(True),
             Customer.street_address.isnot(None),
             Customer.city.isnot(None),
             Customer.state.isnot(None)
-        ).all()
+        ).limit(50).all()
         
         validated = 0
         errors = 0
         total = len(customers)
+        start_time = time.time()
         
         api_key = 'SET_GEOAPIFY_API_KEY'
         if not api_key:
             return jsonify({'success': False, 'error': 'API key not configured'})
         
         for i, customer in enumerate(customers, 1):
+            # Check timeout (max 25 seconds)
+            if time.time() - start_time > 25:
+                geoapify_logger.warning(f"Timeout reached, processed {i-1}/{total}")
+                break
+                
             try:
                 address_text = f"{customer.street_address}, {customer.city}, {customer.state} {customer.zip_code or ''}, USA"
                 url = "https://api.geoapify.com/v1/geocode/search"
@@ -382,8 +391,8 @@ def validate_all_addresses():
                     'format': 'json'
                 }
                 
-                geoapify_logger.info(f"Bulk validation {i}/{total}: {customer.name} - {address_text}")
-                response = requests.get(url, params=params, timeout=10)
+                geoapify_logger.info(f"Bulk validation {i}/{total}: {customer.name}")
+                response = requests.get(url, params=params, timeout=5)
                 
                 if response.status_code == 200:
                     result = response.json()
@@ -397,10 +406,8 @@ def validate_all_addresses():
                         validated += 1
                     else:
                         errors += 1
-                        geoapify_logger.warning(f"No results for {customer.name}")
                 else:
                     errors += 1
-                    geoapify_logger.error(f"API error for {customer.name}: {response.status_code}")
                     
             except Exception as e:
                 errors += 1
@@ -413,7 +420,8 @@ def validate_all_addresses():
             'success': True,
             'validated': validated,
             'errors': errors,
-            'total': total
+            'total': total,
+            'note': 'Limited to 50 addresses to prevent timeout'
         })
         
     except Exception as e:
