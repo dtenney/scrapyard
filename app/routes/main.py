@@ -227,38 +227,135 @@ def reports():
 @main_bp.route('/materials')
 @login_required
 def materials():
-    """Materials management page - redirect to admin materials"""
+    """Materials management page"""
     if not (current_user.has_permission('transaction') or current_user.is_admin):
         abort(403)
     
-    from flask import redirect, url_for
-    return redirect(url_for('admin.materials'))
+    from app.models.material import Material
+    search = request.args.get('search', '').strip()
+    page = request.args.get('page', 1, type=int)
+    per_page = 50
+    
+    query = Material.query
+    
+    if search:
+        query = query.filter(
+            db.or_(
+                Material.code.ilike(f'%{search}%'),
+                Material.description.ilike(f'%{search}%'),
+                Material.category.ilike(f'%{search}%')
+            )
+        )
+    
+    pagination = query.order_by(Material.category, Material.code).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    return render_template('materials.html', 
+                         materials=pagination.items, 
+                         pagination=pagination,
+                         search=search)
 
-@main_bp.route('/api/materials/update/<int:material_id>', methods=['POST'])
+@main_bp.route('/materials/create', methods=['POST'])
 @login_required
-def update_material_price(material_id):
-    """Update material price - accessible to cashiers and admins"""
+def create_material():
+    """Create new material"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Admin access required'}), 403
+        
+    from app.models.material import Material
+    try:
+        data = request.get_json()
+        if not data or 'code' not in data or 'description' not in data:
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        material = Material(
+            code=data['code'],
+            description=data['description'],
+            category=data['category'],
+            is_ferrous=data.get('is_ferrous', 'false').lower() == 'true',
+            price_per_pound=data.get('price_per_pound', 0.0)
+        )
+        
+        db.session.add(material)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'material_id': material.id})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': 'Database error'}), 500
+
+@main_bp.route('/materials/<int:material_id>')
+@login_required
+def get_material(material_id):
+    """Get material details"""
     if not (current_user.has_permission('transaction') or current_user.is_admin):
         return jsonify({'success': False, 'error': 'Permission denied'}), 403
-    
+        
+    from app.models.material import Material
+    try:
+        material = Material.query.get_or_404(material_id)
+        return jsonify({
+            'success': True,
+            'material': {
+                'id': material.id,
+                'code': material.code,
+                'description': material.description,
+                'category': material.category,
+                'is_ferrous': material.is_ferrous,
+                'price_per_pound': float(material.price_per_pound),
+                'is_active': material.is_active
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/materials/update/<int:material_id>', methods=['POST'])
+@login_required
+def update_material(material_id):
+    """Update material details"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Admin access required'}), 403
+        
     from app.models.material import Material
     try:
         material = Material.query.get_or_404(material_id)
         data = request.get_json()
         
-        if 'price_per_pound' in data:
-            price_str = str(data['price_per_pound']).lower()
-            if price_str in ['nan', 'inf', '-inf']:
-                return jsonify({'success': False, 'error': 'Invalid price value'}), 400
-            material.price_per_pound = float(data['price_per_pound'])
-            db.session.commit()
-            return jsonify({'success': True})
-        else:
-            return jsonify({'success': False, 'error': 'Price required'}), 400
-            
+        if not data or 'code' not in data or 'description' not in data:
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        material.code = data['code']
+        material.description = data['description']
+        material.category = data['category']
+        material.is_ferrous = data.get('is_ferrous', 'false').lower() == 'true'
+        material.price_per_pound = data.get('price_per_pound', 0.0)
+        material.is_active = data.get('is_active', 'true').lower() == 'true'
+        
+        db.session.commit()
+        
+        return jsonify({'success': True})
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': 'Update failed'}), 500
+        return jsonify({'success': False, 'error': 'Database error'}), 500
+
+@main_bp.route('/materials/update_prices', methods=['POST'])
+@login_required
+def update_prices():
+    """Update prices from SGT Scrap website"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Admin access required'}), 403
+        
+    from app.services.sgt_scraper import SGTScraper
+    
+    try:
+        scraper = SGTScraper()
+        updated_count = scraper.update_material_prices()
+        return jsonify({'success': True, 'updated': updated_count})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 
 @main_bp.route('/api/customers/list')
 @login_required
