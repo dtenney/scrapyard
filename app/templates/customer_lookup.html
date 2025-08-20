@@ -596,7 +596,6 @@ function updateCustomer() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Customer updated successfully');
             bootstrap.Modal.getInstance(document.getElementById('editCustomerModal')).hide();
             loadCustomerList(currentPage);
         } else {
