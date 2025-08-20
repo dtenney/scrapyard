@@ -37,9 +37,7 @@ def compliance_report():
 @api_bp.route('/address/validate', methods=['POST'])
 @login_required
 def validate_address():
-    """Validate address using USPS API"""
-    import xml.etree.ElementTree as ET
-    
+    """Validate address with basic validation"""
     try:
         data = request.get_json()
         if not data:
@@ -53,58 +51,7 @@ def validate_address():
         if not all([street, city, state]):
             return jsonify({'success': False, 'data': {'error': 'Street, city, and state are required'}})
         
-        # Try USPS Address Validation API
-        usps_user_id = os.getenv('USPS_USER_ID')
-        if usps_user_id:
-            xml_request = f'''
-            <AddressValidateRequest USERID="{usps_user_id}">
-                <Address ID="0">
-                    <Address1></Address1>
-                    <Address2>{street}</Address2>
-                    <City>{city}</City>
-                    <State>{state}</State>
-                    <Zip5>{zipcode[:5] if zipcode else ''}</Zip5>
-                    <Zip4></Zip4>
-                </Address>
-            </AddressValidateRequest>
-            '''
-            
-            try:
-                response = requests.get(
-                    'https://secure.shippingapis.com/ShippingAPI.dll',
-                    params={'API': 'Verify', 'XML': xml_request},
-                    timeout=10
-                )
-                
-                if response.status_code == 200:
-                    root = ET.fromstring(response.text)
-                    address = root.find('Address')
-                    
-                    if address is not None and address.find('Error') is None:
-                        validated_street = address.find('Address2')
-                        validated_city = address.find('City')
-                        validated_state = address.find('State')
-                        validated_zip5 = address.find('Zip5')
-                        validated_zip4 = address.find('Zip4')
-                        
-                        zip_code = validated_zip5.text if validated_zip5 is not None else zipcode
-                        if validated_zip4 is not None and validated_zip4.text:
-                            zip_code += f'-{validated_zip4.text}'
-                        
-                        return jsonify({
-                            'success': True,
-                            'data': {
-                                'street': validated_street.text if validated_street is not None else street,
-                                'city': validated_city.text if validated_city is not None else city,
-                                'state': validated_state.text if validated_state is not None else state,
-                                'zipcode': zip_code,
-                                'plus4': validated_zip4.text if validated_zip4 is not None else ''
-                            }
-                        })
-            except (requests.RequestException, ET.ParseError):
-                pass
-        
-        # Fallback: return original data with basic validation
+        # Basic validation
         if len(state) != 2:
             return jsonify({'success': False, 'data': {'error': 'State must be 2-letter code'}})
         
