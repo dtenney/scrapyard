@@ -66,14 +66,9 @@ def validate_address():
         if not all([street, city, state]):
             return jsonify({'success': False, 'data': {'error': 'Street, city, and state are required'}})
         
-        # Load environment variables
-        from dotenv import load_dotenv
-        load_dotenv()
-        
-        api_key = os.getenv('GEOAPIFY_API_KEY')
+        api_key = 'SET_GEOAPIFY_KEY'
         if not api_key:
-             geoapify_logger.error("GEOAPIFY_API_KEY not configured")
-             return jsonify({'success': False, 'data': {'error': 'API key not configured'}})
+             return jsonify({'success': False, 'data': {'error': 'API key error'}})
         
         # Use Geoapify geocoding API
         address_text = f"{street}, {city}, {state} {zipcode}, USA"
@@ -391,7 +386,7 @@ def validate_all_addresses():
         total = len(customers)
         start_time = time.time()
         
-        api_key = 'SET_GEOAPIFY_API_KEY'
+        api_key = 'SET_GEOAPIFY_KEY'
         if not api_key:
             return jsonify({'success': False, 'error': 'API key not configured'})
         
