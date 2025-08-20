@@ -37,8 +37,7 @@ def compliance_report():
 @api_bp.route('/address/validate', methods=['POST'])
 @login_required
 def validate_address():
-    """Validate address using USPS API with reCAPTCHA"""
-    import os
+    """Validate address using USPS API"""
     import xml.etree.ElementTree as ET
     
     try:
@@ -50,23 +49,11 @@ def validate_address():
         city = data.get('city', '').strip()
         state = data.get('state', '').strip()
         zipcode = data.get('zipcode', '').strip()
-        recaptcha_token = data.get('recaptcha_token', '')
         
         if not all([street, city, state]):
             return jsonify({'success': False, 'data': {'error': 'Street, city, and state are required'}})
         
-        # Verify reCAPTCHA if configured
-        recaptcha_secret = os.getenv('RECAPTCHA_SECRET_KEY')
-        if recaptcha_secret and recaptcha_token:
-            recaptcha_data = {
-                'secret': recaptcha_secret,
-                'response': recaptcha_token
-            }
-            recaptcha_response = requests.post('https://www.google.com/recaptcha/api/siteverify', data=recaptcha_data, timeout=5)
-            if not recaptcha_response.json().get('success'):
-                return jsonify({'success': False, 'data': {'error': 'reCAPTCHA verification failed'}})
-        
-        # Try USPS Address Validation API first
+        # Try USPS Address Validation API
         usps_user_id = os.getenv('USPS_USER_ID')
         if usps_user_id:
             xml_request = f'''
