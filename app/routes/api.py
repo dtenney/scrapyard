@@ -10,14 +10,16 @@ import logging
 # Setup Geoapify logging
 geoapify_logger = logging.getLogger('geoapify')
 geoapify_logger.setLevel(logging.INFO)
+geoapify_logger.propagate = False
 try:
     import tempfile
     log_dir = tempfile.gettempdir()
-    handler = logging.FileHandler(os.path.join(log_dir, 'geoapify.log'))
+    log_file = os.path.join(log_dir, 'geoapify.log')
+    handler = logging.FileHandler(log_file)
     handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
     geoapify_logger.addHandler(handler)
-except:
-    pass  # Logging disabled if can't create file
+except Exception as e:
+    print(f"Failed to setup geoapify logger: {e}")
 
 api_bp = Blueprint('api', __name__)
 
@@ -64,10 +66,14 @@ def validate_address():
         if not all([street, city, state]):
             return jsonify({'success': False, 'data': {'error': 'Street, city, and state are required'}})
         
-        # Check if reCAPTCHA is required
-        api_key = 'SET_GEOAPIFY_API_KEY'
+        # Load environment variables
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        api_key = os.getenv('GEOAPIFY_API_KEY')
         if not api_key:
-             return jsonify({'success': False, 'data': {'error': 'API key error'}})
+             geoapify_logger.error("GEOAPIFY_API_KEY not configured")
+             return jsonify({'success': False, 'data': {'error': 'API key not configured'}})
         
         # Use Geoapify geocoding API
         address_text = f"{street}, {city}, {state} {zipcode}, USA"
