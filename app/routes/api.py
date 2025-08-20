@@ -8,6 +8,7 @@ import os
 import logging
 
 # Setup Geoapify logging
+os.makedirs('logs', exist_ok=True)
 geoapify_logger = logging.getLogger('geoapify')
 geoapify_logger.setLevel(logging.INFO)
 handler = logging.FileHandler('logs/geoapify.log')
