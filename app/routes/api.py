@@ -274,18 +274,18 @@ def upload_customers_csv():
                     except ValueError:
                         errors.append(f"Row {row_num}: Invalid birthday format '{birthday_str}'")
                 
-                # Create new customer
+                # Create new customer with field length validation
                 customer = Customer(
-                    name=full_name,
-                    street_address=row.get('Street Address', '').strip(),
-                    city=row.get('City', '').strip(),
-                    state=row.get('State', '').strip(),
-                    zip_code=row.get('Zip code', '').strip(),
-                    phone=row.get('Phone Number', '').strip(),
-                    drivers_license_number=license_num,
+                    name=full_name[:100],
+                    street_address=row.get('Street Address', '').strip()[:200],
+                    city=row.get('City', '').strip()[:100],
+                    state=row.get('State', '').strip()[:2],
+                    zip_code=row.get('Zip code', '').strip()[:10],
+                    phone=row.get('Phone Number', '').strip()[:20],
+                    drivers_license_number=license_num[:50],
                     birthday=birthday,
-                    gender=row.get('Gender', '').strip(),
-                    eye_color=row.get('Eye Color', '').strip()
+                    gender=row.get('Gender', '').strip()[:10],
+                    eye_color=row.get('Eye Color', '').strip()[:20]
                 )
                 
                 db.session.add(customer)

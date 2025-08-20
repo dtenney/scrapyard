@@ -141,11 +141,57 @@
                                         <label class="form-label">State</label>
                                         <select class="form-control" name="state" id="state">
                                             <option value="">Select State</option>
-                                            <option value="NJ">NJ - New Jersey</option>
-                                            <option value="NY">NY - New York</option>
-                                            <option value="PA">PA - Pennsylvania</option>
-                                            <option value="DE">DE - Delaware</option>
+                                            <option value="AL">AL - Alabama</option>
+                                            <option value="AK">AK - Alaska</option>
+                                            <option value="AZ">AZ - Arizona</option>
+                                            <option value="AR">AR - Arkansas</option>
+                                            <option value="CA">CA - California</option>
+                                            <option value="CO">CO - Colorado</option>
                                             <option value="CT">CT - Connecticut</option>
+                                            <option value="DE">DE - Delaware</option>
+                                            <option value="FL">FL - Florida</option>
+                                            <option value="GA">GA - Georgia</option>
+                                            <option value="HI">HI - Hawaii</option>
+                                            <option value="ID">ID - Idaho</option>
+                                            <option value="IL">IL - Illinois</option>
+                                            <option value="IN">IN - Indiana</option>
+                                            <option value="IA">IA - Iowa</option>
+                                            <option value="KS">KS - Kansas</option>
+                                            <option value="KY">KY - Kentucky</option>
+                                            <option value="LA">LA - Louisiana</option>
+                                            <option value="ME">ME - Maine</option>
+                                            <option value="MD">MD - Maryland</option>
+                                            <option value="MA">MA - Massachusetts</option>
+                                            <option value="MI">MI - Michigan</option>
+                                            <option value="MN">MN - Minnesota</option>
+                                            <option value="MS">MS - Mississippi</option>
+                                            <option value="MO">MO - Missouri</option>
+                                            <option value="MT">MT - Montana</option>
+                                            <option value="NE">NE - Nebraska</option>
+                                            <option value="NV">NV - Nevada</option>
+                                            <option value="NH">NH - New Hampshire</option>
+                                            <option value="NJ">NJ - New Jersey</option>
+                                            <option value="NM">NM - New Mexico</option>
+                                            <option value="NY">NY - New York</option>
+                                            <option value="NC">NC - North Carolina</option>
+                                            <option value="ND">ND - North Dakota</option>
+                                            <option value="OH">OH - Ohio</option>
+                                            <option value="OK">OK - Oklahoma</option>
+                                            <option value="OR">OR - Oregon</option>
+                                            <option value="PA">PA - Pennsylvania</option>
+                                            <option value="RI">RI - Rhode Island</option>
+                                            <option value="SC">SC - South Carolina</option>
+                                            <option value="SD">SD - South Dakota</option>
+                                            <option value="TN">TN - Tennessee</option>
+                                            <option value="TX">TX - Texas</option>
+                                            <option value="UT">UT - Utah</option>
+                                            <option value="VT">VT - Vermont</option>
+                                            <option value="VA">VA - Virginia</option>
+                                            <option value="WA">WA - Washington</option>
+                                            <option value="WV">WV - West Virginia</option>
+                                            <option value="WI">WI - Wisconsin</option>
+                                            <option value="WY">WY - Wyoming</option>
+                                            <option value="DC">DC - District of Columbia</option>
                                         </select>
                                     </div>
                                 </div>
@@ -183,18 +229,39 @@
 
 <!-- Upload Customers CSV Modal -->
 <div class="modal fade" id="uploadCustomersModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Upload Customers CSV</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+                <div class="alert alert-info">
+                    <h6>CSV Format Requirements:</h6>
+                    <p><strong>Expected headers:</strong> Last Name, Middle Name, First Name, Drivers License, Street Address, City, State, Zip code, Birthday, Gender, Eye Color, Phone Number</p>
+                    <p><strong>Data will be automatically processed:</strong></p>
+                    <ul class="mb-0">
+                        <li>Names will be combined into single field</li>
+                        <li>Dates converted from M/D/YYYY format</li>
+                        <li>Gender standardized (MALE/FEMALE → M/F)</li>
+                        <li>Fields truncated to fit database limits</li>
+                        <li>Duplicates skipped based on license number or name</li>
+                    </ul>
+                </div>
+                <div class="alert alert-warning">
+                    <h6>Data Validation Notes:</h6>
+                    <ul class="mb-0">
+                        <li>Street addresses limited to 200 characters</li>
+                        <li>Driver's license numbers limited to 50 characters</li>
+                        <li>Phone numbers limited to 20 characters</li>
+                        <li>City names limited to 100 characters</li>
+                        <li>Eye color codes will be preserved as-is</li>
+                    </ul>
+                </div>
                 <form id="uploadCustomersForm" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label class="form-label">CSV File</label>
                         <input type="file" class="form-control" name="csv_file" accept=".csv" required>
-                        <div class="form-text">Expected headers: Last Name, Middle Name, First Name, Drivers License, Street Address, City, State, Zip code, Birthday, Gender, Eye Color, Phone Number</div>
                     </div>
                     <div id="uploadProgress" class="mt-3"></div>
                 </form>
@@ -284,11 +351,57 @@
                                         <label class="form-label">State</label>
                                         <select class="form-control" name="state" id="editState">
                                             <option value="">Select State</option>
-                                            <option value="NJ">NJ - New Jersey</option>
-                                            <option value="NY">NY - New York</option>
-                                            <option value="PA">PA - Pennsylvania</option>
-                                            <option value="DE">DE - Delaware</option>
+                                            <option value="AL">AL - Alabama</option>
+                                            <option value="AK">AK - Alaska</option>
+                                            <option value="AZ">AZ - Arizona</option>
+                                            <option value="AR">AR - Arkansas</option>
+                                            <option value="CA">CA - California</option>
+                                            <option value="CO">CO - Colorado</option>
                                             <option value="CT">CT - Connecticut</option>
+                                            <option value="DE">DE - Delaware</option>
+                                            <option value="FL">FL - Florida</option>
+                                            <option value="GA">GA - Georgia</option>
+                                            <option value="HI">HI - Hawaii</option>
+                                            <option value="ID">ID - Idaho</option>
+                                            <option value="IL">IL - Illinois</option>
+                                            <option value="IN">IN - Indiana</option>
+                                            <option value="IA">IA - Iowa</option>
+                                            <option value="KS">KS - Kansas</option>
+                                            <option value="KY">KY - Kentucky</option>
+                                            <option value="LA">LA - Louisiana</option>
+                                            <option value="ME">ME - Maine</option>
+                                            <option value="MD">MD - Maryland</option>
+                                            <option value="MA">MA - Massachusetts</option>
+                                            <option value="MI">MI - Michigan</option>
+                                            <option value="MN">MN - Minnesota</option>
+                                            <option value="MS">MS - Mississippi</option>
+                                            <option value="MO">MO - Missouri</option>
+                                            <option value="MT">MT - Montana</option>
+                                            <option value="NE">NE - Nebraska</option>
+                                            <option value="NV">NV - Nevada</option>
+                                            <option value="NH">NH - New Hampshire</option>
+                                            <option value="NJ">NJ - New Jersey</option>
+                                            <option value="NM">NM - New Mexico</option>
+                                            <option value="NY">NY - New York</option>
+                                            <option value="NC">NC - North Carolina</option>
+                                            <option value="ND">ND - North Dakota</option>
+                                            <option value="OH">OH - Ohio</option>
+                                            <option value="OK">OK - Oklahoma</option>
+                                            <option value="OR">OR - Oregon</option>
+                                            <option value="PA">PA - Pennsylvania</option>
+                                            <option value="RI">RI - Rhode Island</option>
+                                            <option value="SC">SC - South Carolina</option>
+                                            <option value="SD">SD - South Dakota</option>
+                                            <option value="TN">TN - Tennessee</option>
+                                            <option value="TX">TX - Texas</option>
+                                            <option value="UT">UT - Utah</option>
+                                            <option value="VT">VT - Vermont</option>
+                                            <option value="VA">VA - Virginia</option>
+                                            <option value="WA">WA - Washington</option>
+                                            <option value="WV">WV - West Virginia</option>
+                                            <option value="WI">WI - Wisconsin</option>
+                                            <option value="WY">WY - Wyoming</option>
+                                            <option value="DC">DC - District of Columbia</option>
                                         </select>
                                     </div>
                                 </div>
@@ -470,7 +583,21 @@ function uploadCustomersCSV() {
     const formData = new FormData(form);
     const progress = document.getElementById('uploadProgress');
     
-    progress.innerHTML = '<div class="text-info">Uploading and processing CSV...</div>';
+    const fileInput = form.querySelector('input[type="file"]');
+    if (!fileInput.files.length) {
+        progress.innerHTML = '<div class="alert alert-danger">Please select a CSV file to upload.</div>';
+        return;
+    }
+    
+    progress.innerHTML = `
+        <div class="alert alert-info">
+            <div class="d-flex align-items-center">
+                <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                <div>Processing CSV file: ${fileInput.files[0].name}...</div>
+            </div>
+            <small>Validating data format and importing customers...</small>
+        </div>
+    `;
     
     fetch('/api/customers/upload_csv', {
         method: 'POST',
@@ -479,17 +606,38 @@ function uploadCustomersCSV() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            progress.innerHTML = `<div class="text-success">Successfully imported ${data.imported} customers. ${data.skipped} duplicates skipped.</div>`;
+            progress.innerHTML = `
+                <div class="alert alert-success">
+                    <h6>Upload Complete!</h6>
+                    <ul class="mb-0">
+                        <li><strong>${data.imported}</strong> customers successfully imported</li>
+                        <li><strong>${data.skipped}</strong> duplicates skipped</li>
+                    </ul>
+                    <small class="text-muted">Customer list will refresh automatically...</small>
+                </div>
+            `;
             setTimeout(() => {
                 bootstrap.Modal.getInstance(document.getElementById('uploadCustomersModal')).hide();
+                form.reset();
                 loadCustomerList();
-            }, 2000);
+            }, 3000);
         } else {
-            progress.innerHTML = `<div class="text-danger">Error: ${data.error}</div>`;
+            progress.innerHTML = `
+                <div class="alert alert-danger">
+                    <h6>Upload Failed</h6>
+                    <p>${data.error}</p>
+                    <small>Please check your CSV format and try again.</small>
+                </div>
+            `;
         }
     })
     .catch(error => {
-        progress.innerHTML = '<div class="text-danger">Upload failed. Please try again.</div>';
+        progress.innerHTML = `
+            <div class="alert alert-danger">
+                <h6>Upload Error</h6>
+                <p>Network error or server unavailable. Please try again.</p>
+            </div>
+        `;
     });
 }
 
