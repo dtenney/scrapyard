@@ -211,16 +211,26 @@ def search_customers():
 @login_required
 def upload_customers_csv():
     """Upload customers from CSV file"""
+    import logging
+    import csv
+    import io
+    from datetime import datetime
+    
+    logger = logging.getLogger(__name__)
+    
     try:
         if 'csv_file' not in request.files:
+            logger.warning(f"CSV upload failed - no file uploaded by user {current_user.username}")
             return jsonify({'success': False, 'error': 'No file uploaded'}), 400
         
         file = request.files['csv_file']
-        if not file.filename.endswith('.csv'):
+        filename = file.filename
+        
+        if not filename.endswith('.csv'):
+            logger.warning(f"CSV upload failed - invalid file format '{filename}' by user {current_user.username}")
             return jsonify({'success': False, 'error': 'File must be CSV format'}), 400
         
-        import csv
-        import io
+        logger.info(f"Starting CSV customer upload: '{filename}' by user {current_user.username}")
         
         # Read CSV content
         stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
@@ -228,58 +238,69 @@ def upload_customers_csv():
         
         imported = 0
         skipped = 0
+        errors = []
         
-        for row in csv_input:
-            # Combine names
-            first_name = row.get('First Name', '').strip()
-            middle_name = row.get('Middle Name', '').strip()
-            last_name = row.get('Last Name', '').strip()
-            
-            full_name = f"{first_name} {middle_name} {last_name}".strip().replace('  ', ' ')
-            
-            if not full_name:
+        for row_num, row in enumerate(csv_input, start=2):
+            try:
+                # Combine names
+                first_name = row.get('First Name', '').strip()
+                middle_name = row.get('Middle Name', '').strip()
+                last_name = row.get('Last Name', '').strip()
+                
+                full_name = f"{first_name} {middle_name} {last_name}".strip().replace('  ', ' ')
+                
+                if not full_name:
+                    errors.append(f"Row {row_num}: Missing name")
+                    continue
+                
+                # Check for existing customer by license or name
+                license_num = row.get('Drivers License', '').strip()
+                existing = None
+                if license_num:
+                    existing = Customer.query.filter_by(drivers_license_number=license_num).first()
+                if not existing:
+                    existing = Customer.query.filter_by(name=full_name).first()
+                
+                if existing:
+                    skipped += 1
+                    continue
+                
+                # Parse birthday
+                birthday = None
+                birthday_str = row.get('Birthday', '').strip()
+                if birthday_str:
+                    try:
+                        birthday = datetime.strptime(birthday_str, '%m/%d/%Y').date()
+                    except ValueError:
+                        errors.append(f"Row {row_num}: Invalid birthday format '{birthday_str}'")
+                
+                # Create new customer
+                customer = Customer(
+                    name=full_name,
+                    street_address=row.get('Street Address', '').strip(),
+                    city=row.get('City', '').strip(),
+                    state=row.get('State', '').strip(),
+                    zip_code=row.get('Zip code', '').strip(),
+                    phone=row.get('Phone Number', '').strip(),
+                    drivers_license_number=license_num,
+                    birthday=birthday,
+                    gender=row.get('Gender', '').strip(),
+                    eye_color=row.get('Eye Color', '').strip()
+                )
+                
+                db.session.add(customer)
+                imported += 1
+                
+            except Exception as row_error:
+                errors.append(f"Row {row_num}: {str(row_error)}")
                 continue
-            
-            # Check for existing customer by license or name
-            license_num = row.get('Drivers License', '').strip()
-            existing = None
-            if license_num:
-                existing = Customer.query.filter_by(drivers_license_number=license_num).first()
-            if not existing:
-                existing = Customer.query.filter_by(name=full_name).first()
-            
-            if existing:
-                skipped += 1
-                continue
-            
-            # Parse birthday
-            birthday = None
-            birthday_str = row.get('Birthday', '').strip()
-            if birthday_str:
-                try:
-                    from datetime import datetime
-                    birthday = datetime.strptime(birthday_str, '%m/%d/%Y').date()
-                except:
-                    pass
-            
-            # Create new customer
-            customer = Customer(
-                name=full_name,
-                street_address=row.get('Street Address', '').strip(),
-                city=row.get('City', '').strip(),
-                state=row.get('State', '').strip(),
-                zip_code=row.get('Zip code', '').strip(),
-                phone=row.get('Phone Number', '').strip(),
-                drivers_license_number=license_num,
-                birthday=birthday,
-                gender=row.get('Gender', '').strip(),
-                eye_color=row.get('Eye Color', '').strip()
-            )
-            
-            db.session.add(customer)
-            imported += 1
         
         db.session.commit()
+        
+        logger.info(f"CSV upload completed: '{filename}' - {imported} imported, {skipped} skipped, {len(errors)} errors by user {current_user.username}")
+        
+        if errors:
+            logger.warning(f"CSV upload errors for '{filename}': {'; '.join(errors[:5])}{'...' if len(errors) > 5 else ''}")
         
         return jsonify({
             'success': True,
@@ -289,6 +310,7 @@ def upload_customers_csv():
         
     except Exception as e:
         db.session.rollback()
+        logger.error(f"CSV upload failed for user {current_user.username}: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @api_bp.route('/cash-drawer/open', methods=['POST'])
