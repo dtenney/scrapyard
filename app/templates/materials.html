@@ -7,6 +7,16 @@
     </div>
 </div>
 
+<div class="row mb-3">
+    <div class="col-md-6">
+        <input type="text" class="form-control" id="materialSearch" placeholder="Search materials by code, description, or category..." value="{{ search or '' }}">
+    </div>
+    <div class="col-md-6">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMaterialModal">Add Material</button>
+        <button class="btn btn-warning" onclick="updatePrices()"><i class="fas fa-sync"></i> Update SGT Scrap Prices</button>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-12">
         <div class="card">
@@ -18,12 +28,13 @@
                     <table class="table table-striped" id="materialsTable">
                         <thead>
                             <tr>
-                                <th>Code</th>
-                                <th>Description</th>
-                                <th>Category</th>
-                                <th>Type</th>
-                                <th>Price/lb</th>
-                                <th>Market Price/lb</th>
+                                <th onclick="sortTable(0)" style="cursor: pointer;">Code ↕</th>
+                                <th onclick="sortTable(1)" style="cursor: pointer;">Description ↕</th>
+                                <th onclick="sortTable(2)" style="cursor: pointer;">Category ↕</th>
+                                <th onclick="sortTable(3)" style="cursor: pointer;">Type ↕</th>
+                                <th onclick="sortTable(4)" style="cursor: pointer;">Our Price/lb ↕</th>
+                                <th onclick="sortTable(5)" style="cursor: pointer;">SGT Scrap Price/lb ↕</th>
+                                <th onclick="sortTable(6)" style="cursor: pointer;">Status ↕</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -38,92 +49,120 @@
                                         {{ 'Ferrous' if material.is_ferrous else 'Non-Ferrous' }}
                                     </span>
                                 </td>
+                                <td>${{ "%.4f"|format(material.price_per_pound) }}</td>
+                                <td>${{ "%.4f"|format(material.market_price or 0) }}</td>
                                 <td>
-                                    <input type="number" class="form-control form-control-sm price-input" 
-                                           value="{{ '%.4f'|format(material.price_per_pound) }}" 
-                                           step="0.0001" min="0" data-material-id="{{ material.id }}">
+                                    <span class="badge bg-{{ 'success' if material.is_active else 'secondary' }}">
+                                        {{ 'Active' if material.is_active else 'Inactive' }}
+                                    </span>
                                 </td>
                                 <td>
-                                    <span class="text-muted">N/A</span>
-                                </td>
-                                <td>
-                                    <button class="btn btn-sm btn-success" onclick="updatePrice({{ material.id }})">Update</button>
+                                    <button class="btn btn-sm btn-warning" onclick="editMaterial({{ material.id }})">Edit</button>
                                 </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
+                {% if pagination.pages > 1 %}
+                <nav class="mt-3">
+                    <ul class="pagination justify-content-center">
+                        {% if pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('main.materials', page=pagination.prev_num, search=search) }}">Previous</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in pagination.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != pagination.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('main.materials', page=page_num, search=search) }}">{{ page_num }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('main.materials', page=pagination.next_num, search=search) }}">Next</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                    <div class="text-center mt-2">
+                        <small>Showing {{ (pagination.page - 1) * pagination.per_page + 1 }}-{{ pagination.page * pagination.per_page if pagination.page * pagination.per_page < pagination.total else pagination.total }} of {{ pagination.total }} materials</small>
+                    </div>
+                </nav>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
-<script>
-function updatePrice(materialId) {
-    const input = document.querySelector(`input[data-material-id="${materialId}"]`);
-    const price = parseFloat(input.value);
-    
-    if (isNaN(price) || price < 0) {
-        alert('Please enter a valid price');
-        return;
-    }
-    
-    fetch(`/api/materials/update/${materialId}`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({price_per_pound: price})
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            input.style.backgroundColor = '#d4edda';
-            setTimeout(() => {
-                input.style.backgroundColor = '';
-            }, 2000);
-        } else {
-            alert('Error updating price: ' + data.error);
-        }
-    })
-    .catch(error => {
-        alert('Error updating price');
-    });
-}
-
-// Allow Enter key to update price
-document.addEventListener('keypress', function(e) {
-    if (e.target.classList.contains('price-input') && e.key === 'Enter') {
-        const materialId = e.target.getAttribute('data-material-id');
-        updatePrice(materialId);
-    }
-});
-
-function updateMaterial() {
-    const id = document.getElementById('editMaterialId').value;
-    const form = document.getElementById('editMaterialForm');
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData);
-    
-    fetch(`/materials/update/${id}`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Error updating material: ' + (data.error || 'Unknown error'));
-        }
-    });
-}
-</script>
+<!-- Add Material Modal -->
+<div class="modal fade" id="addMaterialModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Material</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addMaterialForm">
+                    <div class="mb-3">
+                        <label class="form-label">Code</label>
+                        <input type="text" class="form-control" name="code" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-control" name="description" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <select class="form-control" name="category" required>
+                            <option value="ALUMINUM">ALUMINUM</option>
+                            <option value="BRASS">BRASS</option>
+                            <option value="COPPER">COPPER</option>
+                            <option value="LEAD">LEAD</option>
+                            <option value="TRUCK SCALE">TRUCK SCALE</option>
+                            <option value="STAINLESS STEEL">STAINLESS STEEL</option>
+                            <option value="ELECTRONICS">ELECTRONICS</option>
+                            <option value="RADIATORS">RADIATORS</option>
+                            <option value="WIRE">WIRE</option>
+                            <option value="MISC">MISC</option>
+                            <option value="ALLOYS">ALLOYS</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Material Type</label>
+                        <select class="form-control" name="is_ferrous" required>
+                            <option value="false">Non-Ferrous</option>
+                            <option value="true">Ferrous</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Price per Pound</label>
+                        <input type="number" class="form-control" name="price_per_pound" step="0.0001" min="0">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveMaterial()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Edit Material Modal -->
-{% if current_user.is_admin %}
 <div class="modal fade" id="editMaterialModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -185,5 +224,171 @@ function updateMaterial() {
         </div>
     </div>
 </div>
-{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function saveMaterial() {
+    const form = document.getElementById('addMaterialForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    fetch('/materials/create', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error saving material');
+        }
+    });
+}
+
+function editMaterial(id) {
+    fetch(`/materials/${id}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const material = data.material;
+            document.getElementById('editMaterialId').value = material.id;
+            document.getElementById('editCode').value = material.code;
+            document.getElementById('editDescription').value = material.description;
+            document.getElementById('editCategory').value = material.category;
+            document.getElementById('editIsFerrous').value = material.is_ferrous.toString();
+            document.getElementById('editPrice').value = material.price_per_pound;
+            document.getElementById('editIsActive').value = material.is_active.toString();
+            
+            new bootstrap.Modal(document.getElementById('editMaterialModal')).show();
+        } else {
+            alert('Error loading material data');
+        }
+    });
+}
+
+function updateMaterial() {
+    const id = document.getElementById('editMaterialId').value;
+    const form = document.getElementById('editMaterialForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    fetch(`/materials/update/${id}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error updating material: ' + (data.error || 'Unknown error'));
+        }
+    });
+}
+
+function updatePrices() {
+    if (confirm('Update material prices from SGT Scrap?')) {
+        const btn = event.target;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating Prices...';
+        btn.disabled = true;
+        
+        let statusDiv = document.getElementById('priceUpdateStatus');
+        if (!statusDiv) {
+            statusDiv = document.createElement('div');
+            statusDiv.id = 'priceUpdateStatus';
+            statusDiv.className = 'alert alert-info mt-2';
+            btn.parentNode.appendChild(statusDiv);
+        }
+        
+        statusDiv.innerHTML = 'Fetching prices from SGT Scrap website...';
+        
+        fetch('/materials/update_prices', {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                btn.innerHTML = '<i class="fas fa-check"></i> Update Complete';
+                statusDiv.className = 'alert alert-success mt-2';
+                statusDiv.innerHTML = `Successfully updated SGT Scrap prices for ${data.updated} materials`;
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                btn.innerHTML = originalText;
+                statusDiv.className = 'alert alert-danger mt-2';
+                statusDiv.innerHTML = 'Error updating SGT Scrap prices: ' + data.error;
+                setTimeout(() => statusDiv.remove(), 5000);
+            }
+        })
+        .catch(error => {
+            btn.innerHTML = originalText;
+            statusDiv.className = 'alert alert-danger mt-2';
+            statusDiv.innerHTML = 'Network error: ' + error.message;
+            setTimeout(() => statusDiv.remove(), 5000);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+            }, 2000);
+        });
+    }
+}
+
+let sortDirection = {};
+
+function sortTable(columnIndex) {
+    const table = document.getElementById('materialsTable');
+    const tbody = table.getElementsByTagName('tbody')[0];
+    const rows = Array.from(tbody.getElementsByTagName('tr'));
+    
+    sortDirection[columnIndex] = !sortDirection[columnIndex];
+    const ascending = sortDirection[columnIndex];
+    
+    rows.sort((a, b) => {
+        let aVal = a.cells[columnIndex].textContent.trim();
+        let bVal = b.cells[columnIndex].textContent.trim();
+        
+        if (columnIndex === 4 || columnIndex === 5) {
+            aVal = parseFloat(aVal.replace('$', '')) || 0;
+            bVal = parseFloat(bVal.replace('$', '')) || 0;
+            return ascending ? aVal - bVal : bVal - aVal;
+        }
+        
+        if (ascending) {
+            return aVal.localeCompare(bVal);
+        } else {
+            return bVal.localeCompare(aVal);
+        }
+    });
+    
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('materialSearch');
+    const table = document.getElementById('materialsTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        
+        for (let row of rows) {
+            const code = row.cells[0].textContent.toLowerCase();
+            const description = row.cells[1].textContent.toLowerCase();
+            const category = row.cells[2].textContent.toLowerCase();
+            
+            if (code.includes(query) || description.includes(query) || category.includes(query)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    });
+});
+</script>
 {% endblock %}

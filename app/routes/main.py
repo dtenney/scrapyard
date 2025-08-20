@@ -260,8 +260,8 @@ def materials():
 @login_required
 def create_material():
     """Create new material"""
-    if not current_user.is_admin:
-        return jsonify({'success': False, 'error': 'Admin access required'}), 403
+    if not (current_user.has_permission('transaction') or current_user.is_admin):
+        return jsonify({'success': False, 'error': 'Permission denied'}), 403
         
     from app.models.material import Material
     try:
@@ -314,8 +314,8 @@ def get_material(material_id):
 @login_required
 def update_material(material_id):
     """Update material details"""
-    if not current_user.is_admin:
-        return jsonify({'success': False, 'error': 'Admin access required'}), 403
+    if not (current_user.has_permission('transaction') or current_user.is_admin):
+        return jsonify({'success': False, 'error': 'Permission denied'}), 403
         
     from app.models.material import Material
     try:
@@ -343,8 +343,8 @@ def update_material(material_id):
 @login_required
 def update_prices():
     """Update prices from SGT Scrap website"""
-    if not current_user.is_admin:
-        return jsonify({'success': False, 'error': 'Admin access required'}), 403
+    if not (current_user.has_permission('transaction') or current_user.is_admin):
+        return jsonify({'success': False, 'error': 'Permission denied'}), 403
         
     from app.services.sgt_scraper import SGTScraper
     
