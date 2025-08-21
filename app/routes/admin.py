@@ -227,6 +227,7 @@ def test_device(device_id):
         from app.services.camera_service import AxisCameraService
         username = device.camera_username or 'admin'
         password = device.camera_password or 'admin'
+        logger.info(f"Testing camera {device.ip_address} with username: {username}")
         service = AxisCameraService(device.ip_address, username, password)
         result = service.test_connection()
     else:

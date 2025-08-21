@@ -194,6 +194,10 @@ function addDevice(type) {
     document.getElementById('deviceType').value = type;
     document.getElementById('deviceModalTitle').textContent = `Add ${type.charAt(0).toUpperCase() + type.slice(1)}`;
     
+    // Clear form and remove device ID for new devices
+    document.getElementById('deviceForm').reset();
+    delete document.getElementById('deviceForm').dataset.deviceId;
+    
     // Hide all device-specific fields
     document.getElementById('scaleFields').style.display = 'none';
     document.getElementById('printerFields').style.display = 'none';

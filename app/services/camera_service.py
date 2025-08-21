@@ -34,7 +34,10 @@ class AxisCameraService:
         # Sanitize stream_path to prevent XSS
         import html
         safe_path = html.escape(stream_path)
-        return f"http://{self.username}:{self.password}@{self.ip_address}{safe_path}?resolution=640x480&fps=15"
+        if self.username and self.password:
+            return f"http://{self.username}:{self.password}@{self.ip_address}{safe_path}?resolution=640x480&fps=15"
+        else:
+            return f"http://{self.ip_address}{safe_path}?resolution=640x480&fps=15"
     
     def capture_image(self) -> Optional[bytes]:
         """Capture single image from camera"""
