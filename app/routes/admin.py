@@ -243,6 +243,34 @@ def create_virtual_serial(device_id):
     else:
         return jsonify({'success': False, 'message': 'Socat test failed', 'details': test_result})
 
+@admin_bp.route('/devices/camera_stream/<int:device_id>')
+def camera_stream(device_id):
+    """Proxy camera stream to avoid CORS and auth issues"""
+    device = Device.query.get_or_404(device_id)
+    
+    if device.device_type != 'camera':
+        return 'Not a camera device', 400
+    
+    import requests
+    from flask import Response
+    
+    username = device.camera_username or 'admin'
+    password = device.camera_password or 'admin'
+    
+    try:
+        stream_url = f"http://{device.ip_address}/axis-cgi/mjpg/video.cgi?resolution=640x480&fps=15"
+        
+        def generate():
+            with requests.get(stream_url, auth=(username, password), stream=True, timeout=10) as r:
+                for chunk in r.iter_content(chunk_size=1024):
+                    if chunk:
+                        yield chunk
+        
+        return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=myboundary')
+        
+    except Exception as e:
+        return f'Stream error: {str(e)}', 500
+
 @admin_bp.route('/devices/test/<int:device_id>', methods=['POST'])
 def test_device(device_id):
     device = Device.query.get_or_404(device_id)

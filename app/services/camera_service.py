@@ -113,21 +113,16 @@ class AxisCameraService:
             )
             
             if response.status_code == 200:
-                stream_url = self.get_stream_url()
                 return {
                     'status': 'online', 
                     'message': 'Camera accessible - Live feed available',
-                    'stream_url': stream_url,
                     'camera_type': 'AXIS',
                     'ip_address': self.ip_address
                 }
             elif response.status_code == 401:
-                # Still provide stream URL for testing even with auth error
-                stream_url = self.get_stream_url()
                 return {
                     'status': 'auth_error', 
                     'message': 'Authentication required - trying live feed anyway',
-                    'stream_url': stream_url,
                     'camera_type': 'AXIS',
                     'ip_address': self.ip_address
                 }
