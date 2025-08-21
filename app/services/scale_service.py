@@ -80,14 +80,38 @@ class USRScaleService:
             return False
     
     def test_connection(self) -> dict:
-        """Test connection to scale device"""
-        if self.connect():
-            weight = self.get_weight()
-            self.disconnect()
-            
-            if weight is not None:
-                return {'status': 'online', 'message': f'Connected, weight: {weight} lbs'}
+        """Test connection to scale device with live weight reading"""
+        try:
+            if self.connect():
+                weight = self.get_weight()
+                self.disconnect()
+                
+                if weight is not None:
+                    return {
+                        'status': 'online', 
+                        'message': f'ModbusTCP Connected - Live Weight: {weight:.2f} lbs',
+                        'weight': weight,
+                        'connection_type': 'ModbusTCP',
+                        'port': self.port
+                    }
+                else:
+                    return {
+                        'status': 'connected', 
+                        'message': f'ModbusTCP Connected to {self.ip_address}:{self.port} but no weight data',
+                        'connection_type': 'ModbusTCP',
+                        'port': self.port
+                    }
             else:
-                return {'status': 'connected', 'message': 'Connected but no weight data'}
-        else:
-            return {'status': 'offline', 'message': 'Connection failed'}
+                return {
+                    'status': 'offline', 
+                    'message': f'ModbusTCP Connection failed to {self.ip_address}:{self.port}',
+                    'connection_type': 'ModbusTCP',
+                    'port': self.port
+                }
+        except Exception as e:
+            return {
+                'status': 'error',
+                'message': f'ModbusTCP Error: {str(e)[:100]}',
+                'connection_type': 'ModbusTCP',
+                'port': self.port
+            }

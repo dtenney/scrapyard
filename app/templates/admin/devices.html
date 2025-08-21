@@ -192,10 +192,31 @@ function deleteDevice(deviceId) {
 }
 
 function testDevice(deviceId) {
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.textContent = 'Testing...';
+    btn.disabled = true;
+    
     fetch(`/admin/devices/test/${deviceId}`, {method: 'POST'})
     .then(response => response.json())
     .then(data => {
-        alert(data.message);
+        let message = data.message;
+        if (data.connection_type === 'ModbusTCP') {
+            message += `\n\nConnection Details:`;
+            message += `\n• Protocol: ModbusTCP`;
+            message += `\n• Port: ${data.port}`;
+            if (data.weight !== undefined) {
+                message += `\n• Live Weight: ${data.weight} lbs`;
+            }
+        }
+        alert(message);
+    })
+    .catch(error => {
+        alert('Test failed: ' + error.message);
+    })
+    .finally(() => {
+        btn.textContent = originalText;
+        btn.disabled = false;
     });
 }
 </script>
