@@ -192,7 +192,9 @@ def test_device(device_id):
         result = service.test_connection()
     elif device.device_type == 'camera':
         from app.services.camera_service import AxisCameraService
-        service = AxisCameraService(device.ip_address, device.camera_username, device.camera_password)
+        username = device.camera_username or 'admin'
+        password = device.camera_password or 'admin'
+        service = AxisCameraService(device.ip_address, username, password)
         result = service.test_connection()
     else:
         result = {'status': 'unknown', 'message': 'Unknown device type'}
