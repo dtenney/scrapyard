@@ -105,6 +105,25 @@
         </div>
     </div>
 </div>
+
+<!-- Camera Test Modal -->
+<div class="modal fade" id="cameraTestModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Camera Live Feed Test</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="cameraStatus" class="mb-3"></div>
+                <img id="cameraFeed" style="max-width: 100%; display: none;" alt="Camera Feed">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -200,16 +219,25 @@ function testDevice(deviceId) {
     fetch(`/admin/devices/test/${deviceId}`, {method: 'POST'})
     .then(response => response.json())
     .then(data => {
-        let message = data.message;
-        if (data.connection_type === 'ModbusTCP') {
-            message += `\n\nConnection Details:`;
-            message += `\n• Protocol: ModbusTCP`;
-            message += `\n• Port: ${data.port}`;
-            if (data.weight !== undefined) {
-                message += `\n• Live Weight: ${data.weight} lbs`;
+        if (data.camera_type === 'AXIS' && data.stream_url) {
+            // Show camera live feed
+            document.getElementById('cameraStatus').innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+            const img = document.getElementById('cameraFeed');
+            img.src = data.stream_url;
+            img.style.display = 'block';
+            new bootstrap.Modal(document.getElementById('cameraTestModal')).show();
+        } else {
+            let message = data.message;
+            if (data.connection_type === 'ModbusTCP') {
+                message += `\n\nConnection Details:`;
+                message += `\n• Protocol: ModbusTCP`;
+                message += `\n• Port: ${data.port}`;
+                if (data.weight !== undefined) {
+                    message += `\n• Live Weight: ${data.weight} lbs`;
+                }
             }
+            alert(message);
         }
-        alert(message);
     })
     .catch(error => {
         alert('Test failed: ' + error.message);

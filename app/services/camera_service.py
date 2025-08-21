@@ -35,11 +35,11 @@ class AxisCameraService:
         self.base_url = f"http://{ip_address}"
         
     def get_stream_url(self, stream_path: str = "/axis-cgi/mjpg/video.cgi") -> str:
-        """Get MJPEG stream URL"""
+        """Get MJPEG stream URL with auth"""
         # Sanitize stream_path to prevent XSS
         import html
         safe_path = html.escape(stream_path)
-        return f"{self.base_url}{safe_path}?resolution=640x480&fps=15"
+        return f"http://{self.username}:{self.password}@{self.ip_address}{safe_path}?resolution=640x480&fps=15"
     
     def capture_image(self) -> Optional[bytes]:
         """Capture single image from camera"""
@@ -101,7 +101,7 @@ class AxisCameraService:
         return None
     
     def test_connection(self) -> dict:
-        """Test connection to camera"""
+        """Test connection to camera and return stream info"""
         try:
             url = f"{self.base_url}/axis-cgi/param.cgi?action=list&group=Properties.System"
             
@@ -112,7 +112,14 @@ class AxisCameraService:
             )
             
             if response.status_code == 200:
-                return {'status': 'online', 'message': 'Camera accessible'}
+                stream_url = self.get_stream_url()
+                return {
+                    'status': 'online', 
+                    'message': 'Camera accessible - Live feed available',
+                    'stream_url': stream_url,
+                    'camera_type': 'AXIS',
+                    'ip_address': self.ip_address
+                }
             elif response.status_code == 401:
                 return {'status': 'auth_error', 'message': 'Authentication required'}
             else:
