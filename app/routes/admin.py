@@ -137,11 +137,24 @@ def create_device():
     # Create virtual serial device for scales
     if data['device_type'] == 'scale' and serial_port:
         from app.services.virtual_serial_service import VirtualSerialService
-        success = VirtualSerialService.create_virtual_serial(serial_port, data['ip_address'])
-        if not success:
-            logger.warning(f"Failed to create virtual serial device: {serial_port}")
+        try:
+            success = VirtualSerialService.create_virtual_serial(serial_port, data['ip_address'])
+            if success:
+                logger.info(f"Virtual serial device created: {serial_port}")
+            else:
+                logger.warning(f"Failed to create virtual serial device: {serial_port}")
+        except Exception as e:
+            logger.error(f"Error creating virtual serial device: {str(e)[:100]}")
     
-    return jsonify({'success': True, 'device_id': device.id})
+    response_data = {'success': True, 'device_id': device.id}
+    
+    # Add virtual serial device status for scales
+    if data['device_type'] == 'scale' and serial_port:
+        import os
+        response_data['virtual_device_created'] = os.path.exists(serial_port)
+        response_data['virtual_device_path'] = serial_port
+    
+    return jsonify(response_data)
 
 @admin_bp.route('/devices/<int:device_id>')
 def get_device(device_id):

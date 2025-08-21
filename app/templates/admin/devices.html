@@ -35,6 +35,9 @@
                             </td>
                             <td>
                                 <button class="btn btn-sm btn-info" onclick="testDevice({{ device.id }})">Test</button>
+                                {% if device.device_type == 'scale' %}
+                                <button class="btn btn-sm btn-secondary" onclick="createVirtualSerial({{ device.id }})">Create Serial</button>
+                                {% endif %}
                                 <button class="btn btn-sm btn-warning" onclick="editDevice({{ device.id }})">Edit</button>
                                 <button class="btn btn-sm btn-danger" onclick="deleteDevice({{ device.id }})">Delete</button>
                             </td>
@@ -295,6 +298,30 @@ function deleteDevice(deviceId) {
             }
         });
     }
+}
+
+function createVirtualSerial(deviceId) {
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.textContent = 'Creating...';
+    btn.disabled = true;
+    
+    fetch(`/admin/devices/create_virtual_serial/${deviceId}`, {method: 'POST'})
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Virtual serial device created successfully!');
+        } else {
+            alert('Failed to create virtual serial device: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+    })
+    .finally(() => {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    });
 }
 
 function testDevice(deviceId) {
