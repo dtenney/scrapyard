@@ -35,7 +35,8 @@
                             </td>
                             <td>
                                 <button class="btn btn-sm btn-info" onclick="testDevice({{ device.id }})">Test</button>
-                                <button class="btn btn-sm btn-warning">Edit</button>
+                                <button class="btn btn-sm btn-warning" onclick="editDevice({{ device.id }})">Edit</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteDevice({{ device.id }})">Delete</button>
                             </td>
                         </tr>
                         {% endfor %}
@@ -133,8 +134,11 @@ function saveDevice() {
     const form = document.getElementById('deviceForm');
     const formData = new FormData(form);
     const data = Object.fromEntries(formData);
+    const deviceId = form.dataset.deviceId;
     
-    fetch('/admin/devices/create', {
+    const url = deviceId ? `/admin/devices/update/${deviceId}` : '/admin/devices/create';
+    
+    fetch(url, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(data)
@@ -147,6 +151,44 @@ function saveDevice() {
             alert('Error saving device');
         }
     });
+}
+
+function editDevice(deviceId) {
+    fetch(`/admin/devices/${deviceId}`)
+    .then(response => response.json())
+    .then(data => {
+        const device = data.device;
+        document.getElementById('deviceType').value = device.device_type;
+        document.querySelector('[name="name"]').value = device.name;
+        document.querySelector('[name="ip_address"]').value = device.ip_address;
+        
+        if (device.device_type === 'scale') {
+            document.querySelector('[name="serial_port"]').value = device.serial_port || 502;
+        } else if (device.device_type === 'printer') {
+            document.querySelector('[name="printer_model"]').value = device.printer_model || '';
+        } else if (device.device_type === 'camera') {
+            document.querySelector('[name="camera_model"]').value = device.camera_model || '';
+            document.querySelector('[name="stream_url"]').value = device.stream_url || '';
+        }
+        
+        document.getElementById('deviceModalTitle').textContent = 'Edit Device';
+        document.getElementById('deviceForm').dataset.deviceId = deviceId;
+        addDevice(device.device_type);
+    });
+}
+
+function deleteDevice(deviceId) {
+    if (confirm('Are you sure you want to delete this device?')) {
+        fetch(`/admin/devices/delete/${deviceId}`, {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting device');
+            }
+        });
+    }
 }
 
 function testDevice(deviceId) {

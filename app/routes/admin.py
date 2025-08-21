@@ -128,6 +128,50 @@ def create_device():
     
     return jsonify({'success': True, 'device_id': device.id})
 
+@admin_bp.route('/devices/<int:device_id>')
+def get_device(device_id):
+    device = Device.query.get_or_404(device_id)
+    return jsonify({
+        'device': {
+            'id': device.id,
+            'name': device.name,
+            'device_type': device.device_type,
+            'ip_address': device.ip_address,
+            'serial_port': device.serial_port,
+            'printer_model': device.printer_model,
+            'camera_model': device.camera_model,
+            'stream_url': device.stream_url
+        }
+    })
+
+@admin_bp.route('/devices/update/<int:device_id>', methods=['POST'])
+def update_device(device_id):
+    device = Device.query.get_or_404(device_id)
+    data = request.get_json()
+    
+    device.name = data['name']
+    device.ip_address = data['ip_address']
+    
+    serial_port = data.get('serial_port')
+    if not serial_port or serial_port == '':
+        device.serial_port = 502 if data['device_type'] == 'scale' else None
+    else:
+        device.serial_port = int(serial_port)
+    
+    device.printer_model = data.get('printer_model')
+    device.camera_model = data.get('camera_model')
+    device.stream_url = data.get('stream_url')
+    
+    db.session.commit()
+    return jsonify({'success': True})
+
+@admin_bp.route('/devices/delete/<int:device_id>', methods=['POST'])
+def delete_device(device_id):
+    device = Device.query.get_or_404(device_id)
+    db.session.delete(device)
+    db.session.commit()
+    return jsonify({'success': True})
+
 @admin_bp.route('/devices/test/<int:device_id>', methods=['POST'])
 def test_device(device_id):
     device = Device.query.get_or_404(device_id)
