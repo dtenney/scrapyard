@@ -7,10 +7,8 @@ set -e
 
 echo "=== Scrap Yard Management System Setup ==="
 
-# Clean up existing Celery processes
-echo "Cleaning up existing Celery processes..."
-sudo pkill -f celery || true
-sudo rm -f /tmp/celery*.pid
+# Clean up existing processes
+echo "Cleaning up existing processes..."
 sudo supervisorctl stop all || true
 sudo rm -f /etc/supervisor/conf.d/scrapyard.conf
 
@@ -36,7 +34,6 @@ sudo apt-get install -y \
     libcups2-dev \
     python3-opencv \
     git \
-    redis-server \
     supervisor \
     ufw \
     fail2ban
@@ -122,10 +119,7 @@ sudo systemctl enable cups
 sudo systemctl start cups
 sudo usermod -aG lpadmin scrapyard
 
-# Configure Redis
-echo "Configuring Redis..."
-sudo systemctl enable redis-server
-sudo systemctl start redis-server
+# Redis removed - no longer needed
 
 # Configure Supervisor
 echo "Configuring Supervisor..."
@@ -576,16 +570,13 @@ sudo chmod -R 755 /var/www/scrapyard
 sudo chmod -R 644 /var/www/scrapyard/app/static
 sudo chmod +x /var/www/scrapyard/app.py
 
-# Start Celery services
-echo "Starting Celery services..."
-sudo chmod +x /var/www/scrapyard/scripts/start_celery.sh
-sudo -u scrapyard /var/www/scrapyard/scripts/start_celery.sh
+# Celery services removed - no longer needed
 
 # Restart services
 echo "Restarting services..."
 sudo systemctl restart apache2
 sudo systemctl restart postgresql
-sudo systemctl restart redis-server
+# Redis removed
 sudo supervisorctl reread
 sudo supervisorctl update
 
