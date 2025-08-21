@@ -224,12 +224,18 @@ def test_device(device_id):
         service = StarPrinterService(device.ip_address)
         result = service.test_connection()
     elif device.device_type == 'camera':
-        from app.services.camera_service import AxisCameraService
-        username = device.camera_username or 'admin'
-        password = device.camera_password or 'admin'
-        logger.info(f"Testing camera {device.ip_address} with username: {username}")
-        service = AxisCameraService(device.ip_address, username, password)
-        result = service.test_connection()
+        if not device.ip_address or device.ip_address.strip() == '':
+            result = {'status': 'error', 'message': 'Camera IP address is required'}
+        else:
+            from app.services.camera_service import AxisCameraService
+            username = device.camera_username or 'admin'
+            password = device.camera_password or 'admin'
+            logger.info(f"Testing camera {device.ip_address} with username: {username}")
+            try:
+                service = AxisCameraService(device.ip_address, username, password)
+                result = service.test_connection()
+            except ValueError as e:
+                result = {'status': 'error', 'message': str(e)}
     else:
         result = {'status': 'unknown', 'message': 'Unknown device type'}
     

@@ -9,10 +9,13 @@ class AxisCameraService:
     """Service for AXIS M2025-LE Network Camera"""
     
     def __init__(self, ip_address: str, username: str = None, password: str = None):
+        if not ip_address or ip_address.strip() == '':
+            raise ValueError("IP address cannot be empty")
+            
         import ipaddress
         # Validate IP address to prevent SSRF
         try:
-            ip = ipaddress.ip_address(ip_address)
+            ip = ipaddress.ip_address(ip_address.strip())
             if ip.is_private or ip.is_loopback:
                 # Allow private/local IPs for legitimate camera access
                 pass
@@ -21,7 +24,7 @@ class AxisCameraService:
         except ValueError:
             raise ValueError(f"Invalid IP address: {ip_address}")
         
-        self.ip_address = ip_address
+        self.ip_address = ip_address.strip()
         
         # Use provided credentials or defaults
         self.username = username or 'admin'
