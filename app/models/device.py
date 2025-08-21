@@ -18,6 +18,8 @@ class Device(db.Model):
     # Camera-specific fields
     camera_model = db.Column(db.String(50))
     stream_url = db.Column(db.String(200))
+    camera_username = db.Column(db.String(50))
+    camera_password = db.Column(db.String(100))
     
     is_active = db.Column(db.Boolean, default=True)
     last_seen = db.Column(db.DateTime)

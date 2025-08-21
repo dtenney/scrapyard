@@ -120,7 +120,9 @@ def create_device():
         serial_port=serial_port,
         printer_model=data.get('printer_model'),
         camera_model=data.get('camera_model'),
-        stream_url=data.get('stream_url')
+        stream_url=data.get('stream_url'),
+        camera_username=data.get('camera_username'),
+        camera_password=data.get('camera_password')
     )
     
     db.session.add(device)
@@ -140,7 +142,9 @@ def get_device(device_id):
             'serial_port': device.serial_port,
             'printer_model': device.printer_model,
             'camera_model': device.camera_model,
-            'stream_url': device.stream_url
+            'stream_url': device.stream_url,
+            'camera_username': device.camera_username,
+            'camera_password': device.camera_password
         }
     })
 
@@ -161,6 +165,8 @@ def update_device(device_id):
     device.printer_model = data.get('printer_model')
     device.camera_model = data.get('camera_model')
     device.stream_url = data.get('stream_url')
+    device.camera_username = data.get('camera_username')
+    device.camera_password = data.get('camera_password')
     
     db.session.commit()
     return jsonify({'success': True})
@@ -186,7 +192,7 @@ def test_device(device_id):
         result = service.test_connection()
     elif device.device_type == 'camera':
         from app.services.camera_service import AxisCameraService
-        service = AxisCameraService(device.ip_address)
+        service = AxisCameraService(device.ip_address, device.camera_username, device.camera_password)
         result = service.test_connection()
     else:
         result = {'status': 'unknown', 'message': 'Unknown device type'}

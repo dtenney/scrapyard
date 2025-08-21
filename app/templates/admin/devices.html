@@ -95,6 +95,14 @@
                             <label class="form-label">Stream URL</label>
                             <input type="text" class="form-control" name="stream_url" placeholder="/axis-cgi/mjpg/video.cgi">
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control" name="camera_username" placeholder="admin">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" name="camera_password" placeholder="admin">
+                        </div>
                     </div>
                 </form>
             </div>
@@ -188,6 +196,8 @@ function editDevice(deviceId) {
         } else if (device.device_type === 'camera') {
             document.querySelector('[name="camera_model"]').value = device.camera_model || '';
             document.querySelector('[name="stream_url"]').value = device.stream_url || '';
+            document.querySelector('[name="camera_username"]').value = device.camera_username || '';
+            document.querySelector('[name="camera_password"]').value = device.camera_password || '';
         }
         
         document.getElementById('deviceModalTitle').textContent = 'Edit Device';
