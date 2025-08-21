@@ -34,7 +34,7 @@ class USRScaleService:
     
     def get_weight(self) -> Optional[float]:
         """Get current weight reading from scale"""
-        if not self.client or not self.client.is_connected:
+        if not self.client or not self.client.connected:
             if not self.connect():
                 return None
         
@@ -59,7 +59,7 @@ class USRScaleService:
     
     def tare_scale(self) -> bool:
         """Tare (zero) the scale"""
-        if not self.client or not self.client.is_connected:
+        if not self.client or not self.client.connected:
             if not self.connect():
                 return False
         
