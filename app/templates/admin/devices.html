@@ -308,7 +308,8 @@ function testDevice(deviceId) {
     .then(data => {
         if (data.camera_type === 'AXIS' && data.stream_url) {
             // Show camera live feed
-            document.getElementById('cameraStatus').innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+            const alertClass = data.status === 'online' ? 'alert-success' : 'alert-warning';
+            document.getElementById('cameraStatus').innerHTML = `<div class="alert ${alertClass}">${data.message}</div>`;
             const img = document.getElementById('cameraFeed');
             img.src = data.stream_url;
             img.style.display = 'block';
