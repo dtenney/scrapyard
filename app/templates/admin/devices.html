@@ -244,8 +244,8 @@ function editDevice(deviceId) {
     .then(data => {
         const device = data.device;
         document.getElementById('deviceType').value = device.device_type;
-        document.querySelector('[name="name"]').value = device.name;
-        document.querySelector('[name="ip_address"]').value = device.ip_address;
+        document.querySelector('#deviceForm [name="name"]').value = device.name || '';
+        document.querySelector('#deviceForm [name="ip_address"]').value = device.ip_address || '';
         
         if (device.device_type === 'scale') {
             document.querySelector('[name="serial_port"]').value = device.serial_port || '';
@@ -265,7 +265,21 @@ function editDevice(deviceId) {
         
         document.getElementById('deviceModalTitle').textContent = 'Edit Device';
         document.getElementById('deviceForm').dataset.deviceId = deviceId;
-        addDevice(device.device_type);
+        
+        // Show device-specific fields
+        document.getElementById('scaleFields').style.display = 'none';
+        document.getElementById('printerFields').style.display = 'none';
+        document.getElementById('cameraFields').style.display = 'none';
+        
+        if (device.device_type === 'scale') {
+            document.getElementById('scaleFields').style.display = 'block';
+        } else if (device.device_type === 'printer') {
+            document.getElementById('printerFields').style.display = 'block';
+        } else if (device.device_type === 'camera') {
+            document.getElementById('cameraFields').style.display = 'block';
+        }
+        
+        new bootstrap.Modal(document.getElementById('addDeviceModal')).show();
     });
 }
 
