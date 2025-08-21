@@ -23,14 +23,9 @@ class AxisCameraService:
         
         self.ip_address = ip_address
         
-        # Get credentials from database settings or use provided values
-        if username is None or password is None:
-            from app.models.system_setting import SystemSetting
-            self.username = username or SystemSetting.get_value('CAMERA_USERNAME', 'admin')
-            self.password = password or SystemSetting.get_value('CAMERA_PASSWORD', '')
-        else:
-            self.username = username
-            self.password = password
+        # Use provided credentials or defaults
+        self.username = username or 'admin'
+        self.password = password or 'admin'
             
         self.base_url = f"http://{ip_address}"
         

@@ -7,7 +7,6 @@ Werkzeug>=3.0.6
 
 # Database
 psycopg2-binary==2.9.7
-alembic==1.12.0
 
 # Hardware Integration
 pyserial==3.5
@@ -16,29 +15,10 @@ requests==2.32.4
 Pillow==10.3.0
 beautifulsoup4==4.12.2
 
-# Network Communication
-websockets==11.0.3
-aiohttp>=3.12.14
-
 # Security
 cryptography>=43.0.4
 bcrypt==4.0.1
-PyJWT==2.8.0
-
-# Printing
-reportlab==4.0.4
 
 # Utilities
 python-dotenv==1.0.0
-celery==5.3.4
-redis==5.0.1
 gunicorn==22.0.0
-
-# Development & Testing
-pytest==7.4.3
-pytest-flask==1.3.0
-black==24.3.0
-flake8==6.1.0
-
-# Monitoring
-prometheus-client==0.18.0
