@@ -13,12 +13,8 @@ fi
 
 echo "Stopping services..."
 sudo systemctl stop apache2
-sudo systemctl stop celery-scrapyard || true
-sudo systemctl stop redis-server || true
 
-echo "Cleaning up Celery processes..."
-sudo pkill -f celery || true
-sudo rm -f /tmp/celery*.pid
+echo "Cleaning up supervisor processes..."
 sudo supervisorctl stop scrapyard:* || true
 sudo rm -f /etc/supervisor/conf.d/scrapyard.conf
 sudo supervisorctl reread || true
@@ -39,8 +35,7 @@ sudo rm -rf /var/www/scrapyard
 echo "Removing system user..."
 sudo userdel -r scrapyard || true
 
-echo "Removing systemd services..."
-sudo rm -f /etc/systemd/system/celery-scrapyard.service
+echo "Cleaning up systemd..."
 sudo systemctl daemon-reload
 
 echo "Restarting Apache..."
