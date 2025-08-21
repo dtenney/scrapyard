@@ -1,4 +1,6 @@
 from pymodbus.client import ModbusTcpClient
+from pymodbus.constants import Endian
+from pymodbus.payload import BinaryPayloadDecoder
 import logging
 from typing import Optional
 
@@ -39,17 +41,21 @@ class USRScaleService:
                 return None
         
         try:
-            # Read holding registers (address 0, count 2 for 32-bit float)
+            # Read holding registers (standard Modbus address 40001 = register 0)
             result = self.client.read_holding_registers(address=0, count=2, unit=1)
             
             if not result.isError():
-                # Convert registers to float (implementation depends on scale)
-                raw_value = (result.registers[0] << 16) | result.registers[1]
-                weight = raw_value / 100.0  # Scale factor depends on device
-                logger.debug(f"Weight reading: {weight}")
+                # Decode using BinaryPayloadDecoder for proper float32 conversion
+                decoder = BinaryPayloadDecoder.fromRegisters(
+                    result.registers, 
+                    byteorder=Endian.Big, 
+                    wordorder=Endian.Little
+                )
+                weight = decoder.decode_32bit_float()
+                logger.debug(f"Weight reading: {weight:.2f}")
                 return weight
             else:
-                logger.warning("Error reading weight registers")
+                logger.warning(f"Modbus Error: {result}")
                 return None
                 
         except Exception as e:
