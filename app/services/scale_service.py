@@ -1,80 +1,81 @@
-import socket
-import time
+from pymodbus.client import ModbusTcpClient
 import logging
 from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 class USRScaleService:
-    """Service for USR-TCP232-410S serial to ethernet scale devices"""
+    """Service for USR-TCP232-410S with Modbus RTU to TCP conversion"""
     
-    def __init__(self, ip_address: str, port: int = 23):
+    def __init__(self, ip_address: str, port: int = 502):
         self.ip_address = ip_address
         self.port = port
-        self.socket = None
+        self.client = None
         
     def connect(self) -> bool:
-        """Connect to scale device"""
+        """Connect to scale device via Modbus TCP"""
         try:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.settimeout(5)
-            self.socket.connect((self.ip_address, self.port))
-            logger.info("Connected to scale successfully")
-            return True
+            self.client = ModbusTcpClient(self.ip_address, port=self.port)
+            if self.client.connect():
+                logger.info("Connected to scale via Modbus TCP")
+                return True
+            else:
+                logger.error("Failed to connect to scale")
+                return False
         except Exception as e:
-            logger.error(f"Failed to connect to scale: {str(e)[:100]}")
+            logger.error(f"Connection error: {str(e)[:100]}")
             return False
     
     def disconnect(self):
         """Disconnect from scale device"""
-        if self.socket:
-            self.socket.close()
-            self.socket = None
+        if self.client:
+            self.client.close()
+            self.client = None
     
     def get_weight(self) -> Optional[float]:
         """Get current weight reading from scale"""
-        if not self.socket:
+        if not self.client or not self.client.is_connected:
             if not self.connect():
                 return None
         
         try:
-            # Send weight request command (varies by scale manufacturer)
-            self.socket.send(b'W\\r\\n')  # Common weight request command
+            # Read holding registers (address 0, count 2 for 32-bit float)
+            result = self.client.read_holding_registers(address=0, count=2, unit=1)
             
-            # Read response
-            response = self.socket.recv(1024).decode('ascii').strip()
-            
-            # Parse weight from response (format varies by scale)
-            # Common formats: "W 123.45 lb" or "123.45"
-            import re
-            weight_match = re.search(r'([+-]?\\d+\\.?\\d*)', response)
-            
-            if weight_match:
-                weight = float(weight_match.group(1))
-                logger.debug("Weight reading obtained")
+            if not result.isError():
+                # Convert registers to float (implementation depends on scale)
+                raw_value = (result.registers[0] << 16) | result.registers[1]
+                weight = raw_value / 100.0  # Scale factor depends on device
+                logger.debug(f"Weight reading: {weight}")
                 return weight
             else:
-                logger.warning("Could not parse weight from response")
+                logger.warning("Error reading weight registers")
                 return None
                 
         except Exception as e:
-            logger.error("Error reading weight")
+            logger.error(f"Error reading weight: {str(e)[:100]}")
             self.disconnect()
             return None
     
     def tare_scale(self) -> bool:
         """Tare (zero) the scale"""
-        if not self.socket:
+        if not self.client or not self.client.is_connected:
             if not self.connect():
                 return False
         
         try:
-            self.socket.send(b'T\\r\\n')  # Common tare command
-            response = self.socket.recv(1024).decode('ascii').strip()
-            logger.info("Tare command executed")
-            return True
+            # Write tare command to coil (depends on scale)
+            result = self.client.write_coil(address=0, value=True, unit=1)
+            
+            if not result.isError():
+                logger.info("Tare command executed")
+                return True
+            else:
+                logger.error("Error executing tare command")
+                return False
+                
         except Exception as e:
-            logger.error("Error taring scale")
+            logger.error(f"Error taring scale: {str(e)[:100]}")
             self.disconnect()
             return False
     
@@ -85,7 +86,7 @@ class USRScaleService:
             self.disconnect()
             
             if weight is not None:
-                return {'status': 'online', 'weight': weight}
+                return {'status': 'online', 'message': f'Connected, weight: {weight} lbs'}
             else:
                 return {'status': 'connected', 'message': 'Connected but no weight data'}
         else:
