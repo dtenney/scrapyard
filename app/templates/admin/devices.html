@@ -336,8 +336,26 @@ function testDevice(deviceId) {
         if (data.camera_type === 'AXIS' && data.stream_url) {
             // Show camera live feed
             const alertClass = data.status === 'online' ? 'alert-success' : 'alert-warning';
-            document.getElementById('cameraStatus').innerHTML = `<div class="alert ${alertClass}">${data.message}</div>`;
+            document.getElementById('cameraStatus').innerHTML = `
+                <div class="alert ${alertClass}">${data.message}</div>
+                <p><strong>Stream URL:</strong> <a href="${data.stream_url}" target="_blank">${data.stream_url}</a></p>
+            `;
             const img = document.getElementById('cameraFeed');
+            
+            // Add error handling for image load
+            img.onerror = function() {
+                document.getElementById('cameraStatus').innerHTML += `
+                    <div class="alert alert-danger">Failed to load camera stream. Try opening the URL directly above.</div>
+                `;
+                img.style.display = 'none';
+            };
+            
+            img.onload = function() {
+                document.getElementById('cameraStatus').innerHTML += `
+                    <div class="alert alert-success">Camera stream loaded successfully!</div>
+                `;
+            };
+            
             img.src = data.stream_url;
             img.style.display = 'block';
             new bootstrap.Modal(document.getElementById('cameraTestModal')).show();
