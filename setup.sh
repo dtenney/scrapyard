@@ -34,6 +34,7 @@ sudo apt-get install -y \
     libcups2-dev \
     python3-opencv \
     git \
+    socat \
     supervisor \
     ufw \
     fail2ban
