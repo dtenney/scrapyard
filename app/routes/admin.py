@@ -204,21 +204,43 @@ def delete_device(device_id):
     db.session.commit()
     return jsonify({'success': True})
 
+@admin_bp.route('/devices/create_virtual_serial/<int:device_id>', methods=['POST'])
+def create_virtual_serial(device_id):
+    """Manually create virtual serial device for scale"""
+    device = Device.query.get_or_404(device_id)
+    
+    if device.device_type != 'scale':
+        return jsonify({'success': False, 'message': 'Not a scale device'})
+    
+    if not device.serial_port or not device.ip_address:
+        return jsonify({'success': False, 'message': 'Serial port and IP address required'})
+    
+    from app.services.virtual_serial_service import VirtualSerialService
+    success = VirtualSerialService.create_virtual_serial(device.serial_port, device.ip_address)
+    
+    if success:
+        return jsonify({'success': True, 'message': f'Virtual serial device created: {device.serial_port}'})
+    else:
+        return jsonify({'success': False, 'message': 'Failed to create virtual serial device'})
+
 @admin_bp.route('/devices/test/<int:device_id>', methods=['POST'])
 def test_device(device_id):
     device = Device.query.get_or_404(device_id)
     
     if device.device_type == 'scale':
-        from app.services.scale_service import USRScaleService
-        service = USRScaleService(
-            serial_port=device.serial_port,
-            baud_rate=device.baud_rate or 9600,
-            data_bits=device.data_bits or 8,
-            parity=device.parity or 'N',
-            stop_bits=device.stop_bits or 1,
-            flow_control=device.flow_control or 'none'
-        )
-        result = service.test_connection()
+        if not device.serial_port or device.serial_port.strip() == '':
+            result = {'status': 'error', 'message': 'Scale serial port is required'}
+        else:
+            from app.services.scale_service import USRScaleService
+            service = USRScaleService(
+                serial_port=device.serial_port,
+                baud_rate=device.baud_rate or 9600,
+                data_bits=device.data_bits or 8,
+                parity=device.parity or 'N',
+                stop_bits=device.stop_bits or 1,
+                flow_control=device.flow_control or 'none'
+            )
+            result = service.test_connection()
     elif device.device_type == 'printer':
         from app.services.printer_service import StarPrinterService
         service = StarPrinterService(device.ip_address)

@@ -16,6 +16,11 @@ class VirtualSerialService:
             # Kill any existing socat process for this device
             VirtualSerialService.destroy_virtual_serial(device_path)
             
+            # Ensure directory exists
+            device_dir = os.path.dirname(device_path)
+            if device_dir and not os.path.exists(device_dir):
+                os.makedirs(device_dir, mode=0o755, exist_ok=True)
+            
             # Create socat command
             socat_cmd = [
                 'socat', 
@@ -23,27 +28,34 @@ class VirtualSerialService:
                 f'tcp:{ip_address}:{port}'
             ]
             
+            logger.info(f"Creating virtual serial device: {' '.join(socat_cmd)}")
+            
             # Start socat process in background
             process = subprocess.Popen(
                 socat_cmd, 
-                stdout=subprocess.DEVNULL, 
-                stderr=subprocess.DEVNULL,
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.PIPE,
                 preexec_fn=os.setsid  # Create new process group
             )
             
             # Wait for device to be created
-            for _ in range(10):  # Wait up to 5 seconds
+            for i in range(20):  # Wait up to 10 seconds
                 if os.path.exists(device_path):
                     break
                 time.sleep(0.5)
+                logger.debug(f"Waiting for device creation... attempt {i+1}")
             
             if os.path.exists(device_path):
                 # Set permissions
                 os.chmod(device_path, 0o666)
-                logger.info(f"Virtual serial device created: {device_path}")
+                logger.info(f"Virtual serial device created successfully: {device_path}")
                 return True
             else:
+                # Check if socat process failed
+                stdout, stderr = process.communicate(timeout=1)
                 logger.error(f"Failed to create virtual serial device: {device_path}")
+                logger.error(f"Socat stdout: {stdout.decode() if stdout else 'None'}")
+                logger.error(f"Socat stderr: {stderr.decode() if stderr else 'None'}")
                 return False
                 
         except Exception as e:
