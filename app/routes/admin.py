@@ -216,12 +216,19 @@ def create_virtual_serial(device_id):
         return jsonify({'success': False, 'message': 'Serial port and IP address required'})
     
     from app.services.virtual_serial_service import VirtualSerialService
-    success = VirtualSerialService.create_virtual_serial(device.serial_port, device.ip_address)
     
-    if success:
-        return jsonify({'success': True, 'message': f'Virtual serial device created: {device.serial_port}'})
+    # Test socat creation first
+    test_result = VirtualSerialService.test_socat_creation(device.serial_port, device.ip_address)
+    
+    if test_result['success']:
+        # Now create the actual device
+        success = VirtualSerialService.create_virtual_serial(device.serial_port, device.ip_address)
+        if success:
+            return jsonify({'success': True, 'message': f'Virtual serial device created: {device.serial_port}'})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to create persistent virtual serial device'})
     else:
-        return jsonify({'success': False, 'message': 'Failed to create virtual serial device'})
+        return jsonify({'success': False, 'message': 'Socat test failed', 'details': test_result})
 
 @admin_bp.route('/devices/test/<int:device_id>', methods=['POST'])
 def test_device(device_id):

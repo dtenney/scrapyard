@@ -21,6 +21,13 @@ class VirtualSerialService:
             if device_dir and not os.path.exists(device_dir):
                 os.makedirs(device_dir, mode=0o755, exist_ok=True)
             
+            # Check if socat is available
+            try:
+                subprocess.run(['which', 'socat'], check=True, capture_output=True)
+            except subprocess.CalledProcessError:
+                logger.error("socat is not installed. Install with: sudo apt-get install socat")
+                return False
+            
             # Create socat command
             socat_cmd = [
                 'socat', 
@@ -30,16 +37,21 @@ class VirtualSerialService:
             
             logger.info(f"Creating virtual serial device: {' '.join(socat_cmd)}")
             
+            # Try to create device with nohup for persistence
+            nohup_cmd = ['nohup'] + socat_cmd
+            
             # Start socat process in background
-            process = subprocess.Popen(
-                socat_cmd, 
-                stdout=subprocess.PIPE, 
-                stderr=subprocess.PIPE,
-                preexec_fn=os.setsid  # Create new process group
-            )
+            with open('/dev/null', 'w') as devnull:
+                process = subprocess.Popen(
+                    nohup_cmd,
+                    stdout=devnull,
+                    stderr=subprocess.PIPE,
+                    preexec_fn=os.setsid,
+                    cwd='/tmp'
+                )
             
             # Wait for device to be created
-            for i in range(20):  # Wait up to 10 seconds
+            for i in range(30):  # Wait up to 15 seconds
                 if os.path.exists(device_path):
                     break
                 time.sleep(0.5)
@@ -47,15 +59,22 @@ class VirtualSerialService:
             
             if os.path.exists(device_path):
                 # Set permissions
-                os.chmod(device_path, 0o666)
-                logger.info(f"Virtual serial device created successfully: {device_path}")
-                return True
+                try:
+                    os.chmod(device_path, 0o666)
+                    logger.info(f"Virtual serial device created successfully: {device_path}")
+                    return True
+                except OSError as e:
+                    logger.warning(f"Could not set permissions on {device_path}: {e}")
+                    return True  # Device exists, permission error is not critical
             else:
                 # Check if socat process failed
-                stdout, stderr = process.communicate(timeout=1)
-                logger.error(f"Failed to create virtual serial device: {device_path}")
-                logger.error(f"Socat stdout: {stdout.decode() if stdout else 'None'}")
-                logger.error(f"Socat stderr: {stderr.decode() if stderr else 'None'}")
+                try:
+                    _, stderr = process.communicate(timeout=2)
+                    logger.error(f"Failed to create virtual serial device: {device_path}")
+                    if stderr:
+                        logger.error(f"Socat stderr: {stderr.decode()}")
+                except subprocess.TimeoutExpired:
+                    logger.error(f"Socat process timeout for device: {device_path}")
                 return False
                 
         except Exception as e:
@@ -89,6 +108,51 @@ class VirtualSerialService:
         except Exception as e:
             logger.error(f"Error destroying virtual serial device: {str(e)[:100]}")
             return False
+    
+    @staticmethod
+    def test_socat_creation(device_path: str, ip_address: str) -> dict:
+        """Test socat device creation with detailed output"""
+        try:
+            # Check socat availability
+            result = subprocess.run(['which', 'socat'], capture_output=True, text=True)
+            if result.returncode != 0:
+                return {'success': False, 'error': 'socat not found', 'install_cmd': 'sudo apt-get install socat'}
+            
+            # Test socat command
+            test_cmd = [
+                'socat', 
+                f'pty,link={device_path},raw,echo=0,waitslave',
+                f'tcp:{ip_address}:23'
+            ]
+            
+            logger.info(f"Testing socat command: {' '.join(test_cmd)}")
+            
+            # Run command and capture output
+            process = subprocess.Popen(
+                test_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            # Wait briefly and check if device was created
+            time.sleep(2)
+            
+            if os.path.exists(device_path):
+                process.terminate()
+                return {'success': True, 'message': f'Device {device_path} created successfully'}
+            else:
+                stdout, stderr = process.communicate(timeout=5)
+                return {
+                    'success': False, 
+                    'error': 'Device not created',
+                    'stdout': stdout,
+                    'stderr': stderr,
+                    'command': ' '.join(test_cmd)
+                }
+                
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
     
     @staticmethod
     def is_device_active(device_path: str) -> bool:
