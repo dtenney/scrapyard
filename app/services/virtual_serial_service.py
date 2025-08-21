@@ -23,7 +23,8 @@ class VirtualSerialService:
             
             # Check if socat is available
             try:
-                subprocess.run(['which', 'socat'], check=True, capture_output=True)
+                result = subprocess.run(['which', 'socat'], check=True, capture_output=True, text=True)
+                logger.info(f"socat found at: {result.stdout.strip()}")
             except subprocess.CalledProcessError:
                 logger.error("socat is not installed. Install with: sudo apt-get install socat")
                 return False

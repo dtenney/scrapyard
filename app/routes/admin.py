@@ -241,7 +241,10 @@ def create_virtual_serial(device_id):
         else:
             return jsonify({'success': False, 'message': 'Failed to create persistent virtual serial device'})
     else:
-        return jsonify({'success': False, 'message': 'Socat test failed', 'details': test_result})
+        error_msg = f"Socat test failed: {test_result.get('error', 'Unknown error')}"
+        if 'install_cmd' in test_result:
+            error_msg += f". Install socat with: {test_result['install_cmd']}"
+        return jsonify({'success': False, 'message': error_msg, 'details': test_result})
 
 @admin_bp.route('/devices/camera_stream/<int:device_id>')
 def camera_stream(device_id):
