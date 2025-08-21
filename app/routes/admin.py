@@ -3,6 +3,9 @@ from flask_login import login_required, current_user
 from app.models.user import User, UserGroup
 from app.models.device import Device
 from app import db
+import logging
+
+logger = logging.getLogger(__name__)
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -131,6 +134,13 @@ def create_device():
     db.session.add(device)
     db.session.commit()
     
+    # Create virtual serial device for scales
+    if data['device_type'] == 'scale' and serial_port:
+        from app.services.virtual_serial_service import VirtualSerialService
+        success = VirtualSerialService.create_virtual_serial(serial_port, data['ip_address'])
+        if not success:
+            logger.warning(f"Failed to create virtual serial device: {serial_port}")
+    
     return jsonify({'success': True, 'device_id': device.id})
 
 @admin_bp.route('/devices/<int:device_id>')
@@ -184,6 +194,12 @@ def update_device(device_id):
 @admin_bp.route('/devices/delete/<int:device_id>', methods=['POST'])
 def delete_device(device_id):
     device = Device.query.get_or_404(device_id)
+    
+    # Clean up virtual serial device for scales
+    if device.device_type == 'scale' and device.serial_port:
+        from app.services.virtual_serial_service import VirtualSerialService
+        VirtualSerialService.destroy_virtual_serial(device.serial_port)
+    
     db.session.delete(device)
     db.session.commit()
     return jsonify({'success': True})
