@@ -87,11 +87,12 @@ def create_virtual_serial(device_path, ip_address, port=23):
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: python3 create_virtual_serial.py <device_path> <ip_address>")
-        print("Example: python3 create_virtual_serial.py /dev/ttyV0 192.168.1.100")
+        print("Example: python3 create_virtual_serial.py /tmp/ttyV0 192.168.1.100")
         sys.exit(1)
     
     device_path = sys.argv[1]
     ip_address = sys.argv[2]
     
+    print(f"Creating virtual serial device: {device_path} -> {ip_address}:23")
     success = create_virtual_serial(device_path, ip_address)
     sys.exit(0 if success else 1)
