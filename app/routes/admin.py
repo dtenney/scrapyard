@@ -263,13 +263,18 @@ def camera_stream(device_id):
     try:
         stream_url = f"http://{device.ip_address}/axis-cgi/mjpg/video.cgi?resolution=640x480&fps=15"
         
-        def generate():
-            with requests.get(stream_url, auth=(username, password), stream=True, timeout=10) as r:
-                for chunk in r.iter_content(chunk_size=1024):
-                    if chunk:
-                        yield chunk
+        response = requests.get(stream_url, auth=(username, password), stream=True, timeout=10)
         
-        return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=myboundary')
+        if response.status_code != 200:
+            return f'Camera error: HTTP {response.status_code}', response.status_code
+        
+        def generate():
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    yield chunk
+        
+        content_type = response.headers.get('content-type', 'multipart/x-mixed-replace')
+        return Response(generate(), mimetype=content_type)
         
     except Exception as e:
         return f'Stream error: {str(e)}', 500
