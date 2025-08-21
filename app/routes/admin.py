@@ -106,10 +106,10 @@ def devices():
 def create_device():
     data = request.get_json()
     
-    # Handle serial_port - convert empty string to default value
+    # Handle serial_port - convert empty string to default value for all device types
     serial_port = data.get('serial_port')
     if not serial_port or serial_port == '':
-        serial_port = 23
+        serial_port = 502 if data['device_type'] == 'scale' else None
     else:
         serial_port = int(serial_port)
     

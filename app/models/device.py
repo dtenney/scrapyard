@@ -10,7 +10,7 @@ class Device(db.Model):
     ip_address = db.Column(db.String(15), nullable=False)
     
     # Scale-specific fields
-    serial_port = db.Column(db.Integer, default=23)
+    serial_port = db.Column(db.Integer, nullable=True, default=502)
     
     # Printer-specific fields
     printer_model = db.Column(db.String(50))
