@@ -72,8 +72,62 @@
                     </div>
                     <div id="scaleFields" style="display:none;">
                         <div class="mb-3">
-                            <label class="form-label">Serial Port (USR-TCP232-410S)</label>
-                            <input type="number" class="form-control" name="serial_port" placeholder="23">
+                            <label class="form-label">Virtual Serial Device</label>
+                            <input type="text" class="form-control" name="serial_port" placeholder="/dev/ttyV0">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Baud Rate</label>
+                                    <select class="form-control" name="baud_rate">
+                                        <option value="9600">9600</option>
+                                        <option value="19200">19200</option>
+                                        <option value="38400">38400</option>
+                                        <option value="57600">57600</option>
+                                        <option value="115200">115200</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Data Bits</label>
+                                    <select class="form-control" name="data_bits">
+                                        <option value="7">7</option>
+                                        <option value="8" selected>8</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Parity</label>
+                                    <select class="form-control" name="parity">
+                                        <option value="N" selected>None</option>
+                                        <option value="E">Even</option>
+                                        <option value="O">Odd</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Stop Bits</label>
+                                    <select class="form-control" name="stop_bits">
+                                        <option value="1" selected>1</option>
+                                        <option value="2">2</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Flow Control</label>
+                                    <select class="form-control" name="flow_control">
+                                        <option value="none" selected>None</option>
+                                        <option value="xonxoff">XON/XOFF</option>
+                                        <option value="rtscts">RTS/CTS</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div id="printerFields" style="display:none;">
@@ -190,7 +244,12 @@ function editDevice(deviceId) {
         document.querySelector('[name="ip_address"]').value = device.ip_address;
         
         if (device.device_type === 'scale') {
-            document.querySelector('[name="serial_port"]').value = device.serial_port || 502;
+            document.querySelector('[name="serial_port"]').value = device.serial_port || '';
+            document.querySelector('[name="baud_rate"]').value = device.baud_rate || 9600;
+            document.querySelector('[name="data_bits"]').value = device.data_bits || 8;
+            document.querySelector('[name="parity"]').value = device.parity || 'N';
+            document.querySelector('[name="stop_bits"]').value = device.stop_bits || 1;
+            document.querySelector('[name="flow_control"]').value = device.flow_control || 'none';
         } else if (device.device_type === 'printer') {
             document.querySelector('[name="printer_model"]').value = device.printer_model || '';
         } else if (device.device_type === 'camera') {
@@ -238,10 +297,12 @@ function testDevice(deviceId) {
             new bootstrap.Modal(document.getElementById('cameraTestModal')).show();
         } else {
             let message = data.message;
-            if (data.connection_type === 'ModbusTCP') {
+            if (data.connection_type === 'Serial') {
                 message += `\n\nConnection Details:`;
-                message += `\n• Protocol: ModbusTCP`;
+                message += `\n• Protocol: Serial`;
                 message += `\n• Port: ${data.port}`;
+                message += `\n• Baud Rate: ${data.baud_rate}`;
+                message += `\n• Config: ${data.config}`;
                 if (data.weight !== undefined) {
                     message += `\n• Live Weight: ${data.weight} lbs`;
                 }

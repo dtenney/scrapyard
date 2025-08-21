@@ -106,18 +106,21 @@ def devices():
 def create_device():
     data = request.get_json()
     
-    # Handle serial_port - convert empty string to default value for all device types
+    # Handle serial_port for different device types
     serial_port = data.get('serial_port')
-    if not serial_port or serial_port == '':
-        serial_port = 502 if data['device_type'] == 'scale' else None
-    else:
-        serial_port = int(serial_port)
+    if data['device_type'] != 'scale':
+        serial_port = None
     
     device = Device(
         name=data['name'],
         device_type=data['device_type'],
         ip_address=data['ip_address'],
         serial_port=serial_port,
+        baud_rate=int(data.get('baud_rate', 9600)) if data['device_type'] == 'scale' else None,
+        data_bits=int(data.get('data_bits', 8)) if data['device_type'] == 'scale' else None,
+        parity=data.get('parity', 'N') if data['device_type'] == 'scale' else None,
+        stop_bits=int(data.get('stop_bits', 1)) if data['device_type'] == 'scale' else None,
+        flow_control=data.get('flow_control', 'none') if data['device_type'] == 'scale' else None,
         printer_model=data.get('printer_model'),
         camera_model=data.get('camera_model'),
         stream_url=data.get('stream_url'),
@@ -140,6 +143,11 @@ def get_device(device_id):
             'device_type': device.device_type,
             'ip_address': device.ip_address,
             'serial_port': device.serial_port,
+            'baud_rate': device.baud_rate,
+            'data_bits': device.data_bits,
+            'parity': device.parity,
+            'stop_bits': device.stop_bits,
+            'flow_control': device.flow_control,
             'printer_model': device.printer_model,
             'camera_model': device.camera_model,
             'stream_url': device.stream_url,
@@ -155,12 +163,14 @@ def update_device(device_id):
     
     device.name = data['name']
     device.ip_address = data['ip_address']
+    device.serial_port = data.get('serial_port')
     
-    serial_port = data.get('serial_port')
-    if not serial_port or serial_port == '':
-        device.serial_port = 502 if data['device_type'] == 'scale' else None
-    else:
-        device.serial_port = int(serial_port)
+    if data['device_type'] == 'scale':
+        device.baud_rate = int(data.get('baud_rate', 9600))
+        device.data_bits = int(data.get('data_bits', 8))
+        device.parity = data.get('parity', 'N')
+        device.stop_bits = int(data.get('stop_bits', 1))
+        device.flow_control = data.get('flow_control', 'none')
     
     device.printer_model = data.get('printer_model')
     device.camera_model = data.get('camera_model')
@@ -184,7 +194,14 @@ def test_device(device_id):
     
     if device.device_type == 'scale':
         from app.services.scale_service import USRScaleService
-        service = USRScaleService(device.ip_address, device.serial_port)
+        service = USRScaleService(
+            serial_port=device.serial_port,
+            baud_rate=device.baud_rate or 9600,
+            data_bits=device.data_bits or 8,
+            parity=device.parity or 'N',
+            stop_bits=device.stop_bits or 1,
+            flow_control=device.flow_control or 'none'
+        )
         result = service.test_connection()
     elif device.device_type == 'printer':
         from app.services.printer_service import StarPrinterService

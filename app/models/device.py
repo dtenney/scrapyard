@@ -10,7 +10,12 @@ class Device(db.Model):
     ip_address = db.Column(db.String(15), nullable=False)
     
     # Scale-specific fields
-    serial_port = db.Column(db.Integer, nullable=True, default=502)
+    serial_port = db.Column(db.String(50))  # Virtual serial device path
+    baud_rate = db.Column(db.Integer, default=9600)
+    data_bits = db.Column(db.Integer, default=8)
+    parity = db.Column(db.String(10), default='N')  # N, E, O
+    stop_bits = db.Column(db.Integer, default=1)
+    flow_control = db.Column(db.String(10), default='none')  # none, xonxoff, rtscts
     
     # Printer-specific fields
     printer_model = db.Column(db.String(50))

@@ -1,62 +1,89 @@
-from pymodbus.client import ModbusTcpClient
-from pymodbus.constants import Endian
-from pymodbus.payload import BinaryPayloadDecoder
+import serial
 import logging
+import re
+import time
 from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 class USRScaleService:
-    """Service for USR-TCP232-410S with Modbus RTU to TCP conversion"""
+    """Service for scale devices via virtual serial connection using socat"""
     
-    def __init__(self, ip_address: str, port: int = 502):
-        self.ip_address = ip_address
-        self.port = port
-        self.client = None
+    def __init__(self, serial_port: str, baud_rate: int = 9600, data_bits: int = 8, 
+                 parity: str = 'N', stop_bits: int = 1, flow_control: str = 'none'):
+        self.serial_port = serial_port
+        self.baud_rate = baud_rate
+        self.data_bits = data_bits
+        self.parity = parity.upper()
+        self.stop_bits = stop_bits
+        self.flow_control = flow_control.lower()
+        self.connection = None
         
     def connect(self) -> bool:
-        """Connect to scale device via Modbus TCP"""
+        """Connect to scale device via serial"""
         try:
-            self.client = ModbusTcpClient(self.ip_address, port=self.port)
-            if self.client.connect():
-                logger.info("Connected to scale via Modbus TCP")
-                return True
-            else:
-                logger.error("Failed to connect to scale")
-                return False
+            # Map parity settings
+            parity_map = {'N': serial.PARITY_NONE, 'E': serial.PARITY_EVEN, 'O': serial.PARITY_ODD}
+            
+            # Map flow control settings
+            xonxoff = self.flow_control == 'xonxoff'
+            rtscts = self.flow_control == 'rtscts'
+            
+            self.connection = serial.Serial(
+                port=self.serial_port,
+                baudrate=self.baud_rate,
+                bytesize=self.data_bits,
+                parity=parity_map.get(self.parity, serial.PARITY_NONE),
+                stopbits=self.stop_bits,
+                timeout=2,
+                xonxoff=xonxoff,
+                rtscts=rtscts
+            )
+            
+            logger.info(f"Connected to scale at {self.serial_port}")
+            return True
+            
         except Exception as e:
-            logger.error(f"Connection error: {str(e)[:100]}")
+            logger.error(f"Failed to connect to scale: {str(e)[:100]}")
             return False
     
     def disconnect(self):
         """Disconnect from scale device"""
-        if self.client:
-            self.client.close()
-            self.client = None
+        if self.connection and self.connection.is_open:
+            self.connection.close()
+            self.connection = None
     
     def get_weight(self) -> Optional[float]:
         """Get current weight reading from scale"""
-        if not self.client or not self.client.connected:
+        if not self.connection or not self.connection.is_open:
             if not self.connect():
                 return None
         
         try:
-            # Read holding registers (standard Modbus address 40001 = register 0)
-            result = self.client.read_holding_registers(address=0, count=2, unit=1)
+            # Send weight request command (common commands: 'W\r\n', 'P\r\n', or just read continuously)
+            self.connection.write(b'W\r\n')
+            time.sleep(0.1)
             
-            if not result.isError():
-                # Decode using BinaryPayloadDecoder for proper float32 conversion
-                decoder = BinaryPayloadDecoder.fromRegisters(
-                    result.registers, 
-                    byteorder=Endian.Big, 
-                    wordorder=Endian.Little
-                )
-                weight = decoder.decode_32bit_float()
-                logger.debug(f"Weight reading: {weight:.2f}")
-                return weight
-            else:
-                logger.warning(f"Modbus Error: {result}")
-                return None
+            # Read response
+            response = self.connection.readline().decode('ascii', errors='ignore').strip()
+            
+            # Parse weight from response using regex
+            # Common formats: "W 123.45 lb", "123.45", "ST,GS,+123.45,lb"
+            weight_patterns = [
+                r'([+-]?\d+\.?\d*)\s*(?:lb|kg|g)?',  # Simple number with optional unit
+                r'ST,GS,([+-]?\d+\.?\d*),',          # Toledo format
+                r'W\s+([+-]?\d+\.?\d*)',             # W command response
+            ]
+            
+            for pattern in weight_patterns:
+                match = re.search(pattern, response)
+                if match:
+                    weight = float(match.group(1))
+                    logger.debug(f"Weight reading: {weight}")
+                    return weight
+            
+            logger.warning(f"Could not parse weight from response: {response}")
+            return None
                 
         except Exception as e:
             logger.error(f"Error reading weight: {str(e)[:100]}")
@@ -65,21 +92,19 @@ class USRScaleService:
     
     def tare_scale(self) -> bool:
         """Tare (zero) the scale"""
-        if not self.client or not self.client.connected:
+        if not self.connection or not self.connection.is_open:
             if not self.connect():
                 return False
         
         try:
-            # Write tare command to coil (depends on scale)
-            result = self.client.write_coil(address=0, value=True, unit=1)
+            # Send tare command (common commands: 'T\r\n', 'Z\r\n')
+            self.connection.write(b'T\r\n')
+            time.sleep(0.5)
             
-            if not result.isError():
-                logger.info("Tare command executed")
-                return True
-            else:
-                logger.error("Error executing tare command")
-                return False
-                
+            response = self.connection.readline().decode('ascii', errors='ignore').strip()
+            logger.info(f"Tare command executed, response: {response}")
+            return True
+            
         except Exception as e:
             logger.error(f"Error taring scale: {str(e)[:100]}")
             self.disconnect()
@@ -95,29 +120,35 @@ class USRScaleService:
                 if weight is not None:
                     return {
                         'status': 'online', 
-                        'message': f'ModbusTCP Connected - Live Weight: {weight:.2f} lbs',
+                        'message': f'Serial Connected - Live Weight: {weight:.2f} lbs',
                         'weight': weight,
-                        'connection_type': 'ModbusTCP',
-                        'port': self.port
+                        'connection_type': 'Serial',
+                        'port': self.serial_port,
+                        'baud_rate': self.baud_rate,
+                        'config': f'{self.data_bits}{self.parity}{self.stop_bits}'
                     }
                 else:
                     return {
                         'status': 'connected', 
-                        'message': f'ModbusTCP Connected to {self.ip_address}:{self.port} but no weight data',
-                        'connection_type': 'ModbusTCP',
-                        'port': self.port
+                        'message': f'Serial Connected to {self.serial_port} but no weight data',
+                        'connection_type': 'Serial',
+                        'port': self.serial_port,
+                        'baud_rate': self.baud_rate,
+                        'config': f'{self.data_bits}{self.parity}{self.stop_bits}'
                     }
             else:
                 return {
                     'status': 'offline', 
-                    'message': f'ModbusTCP Connection failed to {self.ip_address}:{self.port}',
-                    'connection_type': 'ModbusTCP',
-                    'port': self.port
+                    'message': f'Serial Connection failed to {self.serial_port}',
+                    'connection_type': 'Serial',
+                    'port': self.serial_port,
+                    'baud_rate': self.baud_rate,
+                    'config': f'{self.data_bits}{self.parity}{self.stop_bits}'
                 }
         except Exception as e:
             return {
                 'status': 'error',
-                'message': f'ModbusTCP Error: {str(e)[:100]}',
-                'connection_type': 'ModbusTCP',
-                'port': self.port
+                'message': f'Serial Error: {str(e)[:100]}',
+                'connection_type': 'Serial',
+                'port': self.serial_port
             }
