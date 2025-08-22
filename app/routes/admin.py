@@ -300,13 +300,49 @@ def camera_feed(device_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@admin_bp.route('/devices/camera_view/<int:device_id>')
-def camera_view(device_id):
-    """Camera view page using AXIS snapshot approach"""
+@admin_bp.route('/devices/camera_proxy/<int:device_id>')
+def camera_proxy(device_id):
+    """Proxy camera stream through Flask server"""
     device = Device.query.get_or_404(device_id)
     
-    username = device.camera_username or 'admin'
-    password = device.camera_password or 'admin'
+    if device.device_type != 'camera' or not device.ip_address:
+        from flask import abort
+        abort(404)
+    
+    try:
+        import requests
+        from flask import Response
+        import time
+        
+        username = device.camera_username or 'admin'
+        password = device.camera_password or 'admin'
+        auth = (username, password)
+        url = f"http://{device.ip_address}/axis-cgi/jpg/image.cgi?resolution=640x480"
+        
+        def generate():
+            while True:
+                try:
+                    response = requests.get(url, auth=auth, timeout=5)
+                    if response.status_code == 200:
+                        yield b'--frame\r\n'
+                        yield b'Content-Type: image/jpeg\r\n\r\n'
+                        yield response.content
+                        yield b'\r\n'
+                    else:
+                        break
+                except:
+                    break
+                time.sleep(0.1)
+        
+        return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    except Exception as e:
+        from flask import abort
+        abort(500)
+
+@admin_bp.route('/devices/camera_view/<int:device_id>')
+def camera_view(device_id):
+    """Camera view page using server proxy"""
+    device = Device.query.get_or_404(device_id)
     
     html = f'''
     <!DOCTYPE html>
@@ -327,39 +363,20 @@ def camera_view(device_id):
         <div class="controls">
             <button onclick="startLive()">Start Live</button>
             <button onclick="stopLive()">Stop Live</button>
-            <button onclick="takeSnapshot()">Take Snapshot</button>
         </div>
-        <img id="cameraImage" alt="Camera Feed">
-        <div class="status" id="status">Ready</div>
+        <img id="cameraImage" alt="Camera Feed" src="/admin/devices/camera_proxy/{device.id}">
+        <div class="status" id="status">Live feed active</div>
         
         <script>
-            let liveInterval = null;
-            
-            function takeSnapshot() {{
-                const timestamp = new Date().getTime();
-                const imageUrl = `http://{username}:{password}@{device.ip_address}/axis-cgi/jpg/image.cgi?resolution=640x480&timestamp=${{timestamp}}`;
-                
-                document.getElementById('cameraImage').src = imageUrl;
-                document.getElementById('status').textContent = 'Snapshot taken - ' + new Date().toLocaleTimeString();
-            }}
-            
             function startLive() {{
-                if (liveInterval) return;
-                
-                liveInterval = setInterval(takeSnapshot, 1000);
+                document.getElementById('cameraImage').src = '/admin/devices/camera_proxy/{device.id}?' + new Date().getTime();
                 document.getElementById('status').textContent = 'Live feed started';
             }}
             
             function stopLive() {{
-                if (liveInterval) {{
-                    clearInterval(liveInterval);
-                    liveInterval = null;
-                    document.getElementById('status').textContent = 'Live feed stopped';
-                }}
+                document.getElementById('cameraImage').src = '';
+                document.getElementById('status').textContent = 'Live feed stopped';
             }}
-            
-            // Take initial snapshot
-            takeSnapshot();
         </script>
     </body>
     </html>
