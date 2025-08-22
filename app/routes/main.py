@@ -192,7 +192,7 @@ def cors_test():
     try:
         response = requests.get(
             'http://10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480',
-            auth=HTTPBasicAuth('root', 'dialog'),
+            auth=HTTPBasicAuth('admin', 'admin'),
             timeout=3,
             stream=False
         )
@@ -351,13 +351,25 @@ def camera_proxy():
     
     try:
         logger.info("Starting camera proxy stream to 10.0.10.39")
+        # Try without auth first
         response = requests.get(
             'http://10.0.10.39/axis-cgi/mjpg/video.cgi?resolution=640x480',
-            auth=HTTPBasicAuth('root', 'dialog'),
             stream=True,
             timeout=10,
             headers={'User-Agent': 'ScrapYard/1.0'}
         )
+        
+        # If 401, try with different credentials
+        if response.status_code == 401:
+            logger.info("Camera requires auth, trying admin:admin")
+            response = requests.get(
+                'http://10.0.10.39/axis-cgi/mjpg/video.cgi?resolution=640x480',
+                auth=HTTPBasicAuth('admin', 'admin'),
+                stream=True,
+                timeout=10,
+                headers={'User-Agent': 'ScrapYard/1.0'}
+            )
+        
         logger.info(f"Camera response: {response.status_code}")
         
         if response.status_code != 200:
