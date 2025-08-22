@@ -201,13 +201,33 @@ def test_camera_connection():
         network_reachable = False
         logger.error(f"Network test failed: {net_error}")
     
+    # Test without auth first
+    try:
+        logger.info("Testing camera without authentication")
+        response = requests.get(
+            'http://10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480',
+            timeout=5
+        )
+        if response.status_code != 401:
+            return jsonify({
+                'success': True,
+                'status_code': response.status_code,
+                'accessible': True,
+                'working_credentials': 'no_auth_required',
+                'network_reachable': network_reachable
+            })
+    except Exception as e:
+        logger.info(f"No auth test failed: {e}")
+    
     # Try common credentials
     credentials = [
         ('root', 'dialog'),
         ('admin', 'admin'),
-        ('root', 'pass'),
+        ('viewer', 'viewer'),
+        ('user', 'user'),
+        ('', ''),
         ('admin', ''),
-        ('', '')
+        ('root', '')
     ]
     
     for username, password in credentials:
@@ -249,9 +269,19 @@ def camera_proxy():
     
     try:
         logger.info("Starting camera proxy stream to 10.0.10.39")
+        # Try without auth first
         response = requests.get(
             'http://10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480',
-            auth=HTTPBasicAuth('root', 'dialog'),
+            timeout=10,
+            headers={'User-Agent': 'ScrapYard/1.0'}
+        )
+        
+        # If 401, try with auth
+        if response.status_code == 401:
+            logger.info("Camera requires auth, trying root:dialog")
+            response = requests.get(
+                'http://10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480',
+                auth=HTTPBasicAuth('root', 'dialog'),
             stream=True,
             timeout=10,
             headers={'User-Agent': 'ScrapYard/1.0'}
