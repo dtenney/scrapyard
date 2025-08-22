@@ -302,7 +302,7 @@ def camera_feed(device_id):
 
 @admin_bp.route('/devices/camera_proxy/<int:device_id>')
 def camera_proxy(device_id):
-    """Proxy camera stream through Flask server"""
+    """Proxy single camera image through Flask server"""
     device = Device.query.get_or_404(device_id)
     
     if device.device_type != 'camera' or not device.ip_address:
@@ -312,36 +312,26 @@ def camera_proxy(device_id):
     try:
         import requests
         from flask import Response
-        import time
         
         username = device.camera_username or 'admin'
         password = device.camera_password or 'admin'
         auth = (username, password)
         url = f"http://{device.ip_address}/axis-cgi/jpg/image.cgi?resolution=640x480"
         
-        def generate():
-            while True:
-                try:
-                    response = requests.get(url, auth=auth, timeout=5)
-                    if response.status_code == 200:
-                        yield b'--frame\r\n'
-                        yield b'Content-Type: image/jpeg\r\n\r\n'
-                        yield response.content
-                        yield b'\r\n'
-                    else:
-                        break
-                except:
-                    break
-                time.sleep(0.1)
+        response = requests.get(url, auth=auth, timeout=5)
         
-        return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+        if response.status_code == 200:
+            return Response(response.content, mimetype='image/jpeg')
+        else:
+            abort(response.status_code)
+            
     except Exception as e:
         from flask import abort
         abort(500)
 
 @admin_bp.route('/devices/camera_view/<int:device_id>')
 def camera_view(device_id):
-    """Camera view page using server proxy"""
+    """Camera view page using server proxy with auto-refresh"""
     device = Device.query.get_or_404(device_id)
     
     html = f'''
@@ -363,20 +353,42 @@ def camera_view(device_id):
         <div class="controls">
             <button onclick="startLive()">Start Live</button>
             <button onclick="stopLive()">Stop Live</button>
+            <button onclick="takeSnapshot()">Snapshot</button>
         </div>
-        <img id="cameraImage" alt="Camera Feed" src="/admin/devices/camera_proxy/{device.id}">
-        <div class="status" id="status">Live feed active</div>
+        <img id="cameraImage" alt="Camera Feed">
+        <div class="status" id="status">Ready</div>
         
         <script>
+            let liveInterval = null;
+            
+            function refreshImage() {{
+                const img = document.getElementById('cameraImage');
+                img.src = '/admin/devices/camera_proxy/{device.id}?' + new Date().getTime();
+            }}
+            
             function startLive() {{
-                document.getElementById('cameraImage').src = '/admin/devices/camera_proxy/{device.id}?' + new Date().getTime();
-                document.getElementById('status').textContent = 'Live feed started';
+                if (liveInterval) return;
+                
+                refreshImage();
+                liveInterval = setInterval(refreshImage, 1000);
+                document.getElementById('status').textContent = 'Live feed active (1 FPS)';
             }}
             
             function stopLive() {{
-                document.getElementById('cameraImage').src = '';
+                if (liveInterval) {{
+                    clearInterval(liveInterval);
+                    liveInterval = null;
+                }}
                 document.getElementById('status').textContent = 'Live feed stopped';
             }}
+            
+            function takeSnapshot() {{
+                refreshImage();
+                document.getElementById('status').textContent = 'Snapshot taken - ' + new Date().toLocaleTimeString();
+            }}
+            
+            // Auto-start live feed
+            startLive();
         </script>
     </body>
     </html>
