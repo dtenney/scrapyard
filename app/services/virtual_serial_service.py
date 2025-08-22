@@ -43,8 +43,7 @@ class VirtualSerialService:
                 socat_cmd,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                preexec_fn=os.setsid,  # Create new process group
-                start_new_session=True  # Detach from parent
+                preexec_fn=os.setsid  # Create new process group
             )
             
             # Wait for device to be created
