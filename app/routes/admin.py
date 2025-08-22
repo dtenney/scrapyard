@@ -110,8 +110,25 @@ def create_device():
     data = request.get_json()
     
     # Handle serial_port for different device types
-    serial_port = data.get('serial_port')
-    if data['device_type'] != 'scale':
+    if data['device_type'] == 'scale':
+        # Auto-assign next available virtual serial device
+        existing_scales = Device.query.filter_by(device_type='scale').all()
+        used_numbers = []
+        for scale in existing_scales:
+            if scale.serial_port and scale.serial_port.startswith('/tmp/ttyV'):
+                try:
+                    num = int(scale.serial_port.replace('/tmp/ttyV', ''))
+                    used_numbers.append(num)
+                except ValueError:
+                    pass
+        
+        # Find next available number
+        next_num = 0
+        while next_num in used_numbers:
+            next_num += 1
+        
+        serial_port = f'/tmp/ttyV{next_num}'
+    else:
         serial_port = None
     
     device = Device(
@@ -153,6 +170,7 @@ def create_device():
         import os
         response_data['virtual_device_created'] = os.path.exists(serial_port)
         response_data['virtual_device_path'] = serial_port
+        response_data['message'] = f'Scale created with virtual serial device: {serial_port}'
     
     return jsonify(response_data)
 
