@@ -375,9 +375,39 @@ def test_camera_connection():
 @main_bp.route('/api/camera/proxy')
 @login_required
 def camera_proxy():
-    """Simple proxy test"""
-    logger.info("Camera proxy route accessed")
-    return '<html><body><h1>Proxy Route Working</h1><p>Server: 10.0.10.178</p></body></html>'
+    """Proxy camera stream"""
+    import requests
+    from flask import Response
+    from requests.auth import HTTPBasicAuth
+    
+    logger.info("Camera proxy accessed via HTTPS")
+    
+    try:
+        response = requests.get(
+            'http://10.0.10.39/axis-cgi/mjpg/video.cgi?resolution=640x480',
+            auth=HTTPBasicAuth('admin', 'admin'),
+            stream=True,
+            timeout=5
+        )
+        
+        logger.info(f"Camera response: {response.status_code}")
+        
+        if response.status_code != 200:
+            return f'<html><body><h3>Camera Error</h3><p>Status: {response.status_code}</p><p>{response.text[:200]}</p></body></html>', response.status_code
+        
+        def generate():
+            for chunk in response.iter_content(chunk_size=1024):
+                if chunk:
+                    yield chunk
+        
+        return Response(
+            generate(),
+            mimetype=response.headers.get('Content-Type', 'multipart/x-mixed-replace')
+        )
+        
+    except Exception as e:
+        logger.error(f"Camera proxy error: {e}")
+        return f'<html><body><h3>Camera Error</h3><p>{str(e)}</p></body></html>', 500
 
 @main_bp.route('/api/camera/capture', methods=['POST'])
 @login_required
