@@ -109,10 +109,15 @@ function refreshStream() {
 }
 
 function testConnection() {
+    console.log('Test connection clicked');
     showStatus('Testing camera connection...');
     fetch('/api/camera/test')
-    .then(response => response.json())
+    .then(response => {
+        console.log('Test response:', response.status);
+        return response.json();
+    })
     .then(data => {
+        console.log('Test data:', data);
         if (data.accessible) {
             showStatus('Camera accessible - Status: ' + data.status_code);
         } else {
@@ -120,18 +125,25 @@ function testConnection() {
         }
     })
     .catch(err => {
+        console.error('Test error:', err);
         showError('Test failed: ' + err.message);
     });
 }
 
 function debugCamera() {
+    console.log('Debug camera clicked');
     showStatus('Running debug tests...');
     fetch('/api/camera/debug')
-    .then(response => response.json())
+    .then(response => {
+        console.log('Debug response:', response.status);
+        return response.json();
+    })
     .then(data => {
-        showStatus('Debug results: ' + data.debug_results.join(', '));
+        console.log('Debug data:', data);
+        showStatus('Debug results: ' + data.debug_results.join(' | '));
     })
     .catch(err => {
+        console.error('Debug error:', err);
         showError('Debug failed: ' + err.message);
     });
 }
