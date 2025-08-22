@@ -185,42 +185,37 @@ def camera_stream():
 @main_bp.route('/api/camera/debug')
 @login_required
 def debug_camera():
-    """Debug camera connection step by step"""
+    """Test camera credentials"""
     import requests
-    import socket
+    from requests.auth import HTTPBasicAuth
     
     results = []
     
-    # 1. Test network connectivity
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(3)
-        result = sock.connect_ex(('10.0.10.39', 80))
-        sock.close()
-        results.append(f"Network test: {'SUCCESS' if result == 0 else 'FAILED'}")
-    except Exception as e:
-        results.append(f"Network test: ERROR - {e}")
-    
-    # 2. Test basic HTTP
-    try:
-        response = requests.get('http://10.0.10.39/', timeout=5)
-        results.append(f"HTTP root: {response.status_code}")
-    except Exception as e:
-        results.append(f"HTTP root: ERROR - {e}")
-    
-    # 3. Test camera endpoints
-    urls = [
-        'http://10.0.10.39/axis-cgi/mjpg/video.cgi',
-        'http://10.0.10.39/mjpg/video.mjpg',
-        'http://10.0.10.39/video.cgi'
+    # Test common credentials
+    credentials = [
+        ('admin', 'admin'),
+        ('root', 'dialog'),
+        ('admin', 'password'),
+        ('admin', ''),
+        ('user', 'user'),
+        ('viewer', 'viewer'),
+        ('', ''),
+        ('axis', 'axis')
     ]
     
-    for url in urls:
+    for username, password in credentials:
         try:
-            response = requests.get(url, timeout=5)
-            results.append(f"{url}: {response.status_code}")
+            auth = HTTPBasicAuth(username, password) if username or password else None
+            response = requests.get(
+                'http://10.0.10.39/axis-cgi/mjpg/video.cgi?resolution=640x480',
+                auth=auth,
+                timeout=5
+            )
+            results.append(f"{username}:{password} -> {response.status_code}")
+            if response.status_code == 200:
+                results.append(f"*** WORKING CREDENTIALS: {username}:{password} ***")
         except Exception as e:
-            results.append(f"{url}: ERROR - {e}")
+            results.append(f"{username}:{password} -> ERROR: {e}")
     
     return jsonify({'debug_results': results})
 
