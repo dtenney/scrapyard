@@ -273,51 +273,37 @@ def create_virtual_serial(device_id):
             error_msg += f". Install socat with: {test_result['install_cmd']}"
         return jsonify({'success': False, 'message': error_msg, 'details': test_result})
 
-@admin_bp.route('/devices/camera_stream/<int:device_id>')
-def camera_stream(device_id):
-    """Proxy camera stream to avoid CORS and auth issues"""
+@admin_bp.route('/devices/camera_view/<int:device_id>')
+def camera_view(device_id):
+    """Simple HTML page with camera stream"""
     device = Device.query.get_or_404(device_id)
     
     if device.device_type != 'camera':
         return 'Not a camera device', 400
     
-    import requests
-    from flask import Response
-    
     username = device.camera_username or 'admin'
     password = device.camera_password or 'admin'
+    stream_url = f"http://{username}:{password}@{device.ip_address}/axis-cgi/mjpg/video.cgi?resolution=640x480&fps=15"
     
-    try:
-        stream_url = f"http://{device.ip_address}/axis-cgi/mjpg/video.cgi?resolution=640x480&fps=15"
-        logger.info(f"Proxying camera stream: {stream_url} with user: {username}")
-        
-        response = requests.get(stream_url, auth=(username, password), stream=True, timeout=5)
-        logger.info(f"Camera response: {response.status_code} {response.headers.get('content-type')}")
-        
-        if response.status_code == 401:
-            return 'Authentication failed - check camera credentials', 401
-        elif response.status_code != 200:
-            return f'Camera error: HTTP {response.status_code}', response.status_code
-        
-        def generate():
-            try:
-                for chunk in response.iter_content(chunk_size=1024):
-                    if chunk:
-                        yield chunk
-            except Exception as e:
-                logger.error(f"Stream generation error: {e}")
-                yield f'Stream interrupted: {str(e)}'.encode()
-        
-        content_type = response.headers.get('content-type', 'multipart/x-mixed-replace')
-        return Response(generate(), mimetype=content_type)
-        
-    except requests.exceptions.ConnectTimeout:
-        return 'Camera connection timeout', 504
-    except requests.exceptions.ConnectionError:
-        return 'Cannot connect to camera', 502
-    except Exception as e:
-        logger.error(f"Camera stream error: {str(e)}")
-        return f'Stream error: {str(e)}', 500
+    html = f'''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Camera Feed</title>
+        <style>
+            body {{ margin: 0; padding: 20px; background: #000; text-align: center; }}
+            img {{ max-width: 100%; height: auto; border: 2px solid #333; }}
+            .info {{ color: white; margin-bottom: 10px; }}
+        </style>
+    </head>
+    <body>
+        <div class="info">Camera: {device.name} ({device.ip_address})</div>
+        <img src="{stream_url}" alt="Camera Feed">
+    </body>
+    </html>
+    '''
+    
+    return html
 
 @admin_bp.route('/devices/test/<int:device_id>', methods=['POST'])
 def test_device(device_id):

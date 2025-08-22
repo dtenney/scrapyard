@@ -363,20 +363,13 @@ function testDevice(deviceId) {
     .then(response => response.json())
     .then(data => {
         if (data.camera_type === 'AXIS') {
-            // Show camera live feed using server proxy
-            const alertClass = data.status === 'online' ? 'alert-success' : 'alert-warning';
-            const proxyUrl = `/admin/devices/camera_stream/${deviceId}`;
+            // Open camera feed in new window
+            const cameraUrl = `/admin/devices/camera_view/${deviceId}`;
             const directUrl = `http://${data.ip_address}/axis-cgi/mjpg/video.cgi?resolution=640x480&fps=15`;
             
-            document.getElementById('cameraStatus').innerHTML = `
-                <div class="alert ${alertClass}">${data.message}</div>
-                <p><strong>Direct URL:</strong> <a href="${directUrl}" target="_blank">${directUrl}</a></p>
-            `;
+            window.open(cameraUrl, 'cameraFeed', 'width=800,height=600,scrollbars=yes,resizable=yes');
             
-            const img = document.getElementById('cameraFeed');
-            img.src = proxyUrl;
-            img.style.display = 'block';
-            new bootstrap.Modal(document.getElementById('cameraTestModal')).show();
+            alert(`Camera test completed.\n\nStatus: ${data.message}\n\nDirect URL: ${directUrl}`);
         } else if (data.connection_type === 'Serial') {
             // Show scale live weight stream
             document.getElementById('scaleStatus').innerHTML = `
