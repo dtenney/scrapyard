@@ -38,25 +38,26 @@ class VirtualSerialService:
             
             logger.info(f"Creating virtual serial device: {' '.join(socat_cmd)}")
             
-            # Try to create device with nohup for persistence
-            nohup_cmd = ['nohup'] + socat_cmd
-            
-            # Start socat process in background
-            with open('/dev/null', 'w') as devnull:
-                process = subprocess.Popen(
-                    nohup_cmd,
-                    stdout=devnull,
-                    stderr=subprocess.PIPE,
-                    preexec_fn=os.setsid,
-                    cwd='/tmp'
-                )
+            # Start socat process as daemon
+            process = subprocess.Popen(
+                socat_cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                preexec_fn=os.setsid,  # Create new process group
+                start_new_session=True  # Detach from parent
+            )
             
             # Wait for device to be created
-            for i in range(30):  # Wait up to 15 seconds
+            for i in range(20):  # Wait up to 10 seconds
                 if os.path.exists(device_path):
                     break
                 time.sleep(0.5)
                 logger.debug(f"Waiting for device creation... attempt {i+1}")
+                
+                # Check if process died early
+                if process.poll() is not None:
+                    logger.error(f"Socat process died early with code: {process.returncode}")
+                    break
             
             if os.path.exists(device_path):
                 # Set permissions
@@ -69,13 +70,11 @@ class VirtualSerialService:
                     return True  # Device exists, permission error is not critical
             else:
                 # Check if socat process failed
-                try:
-                    _, stderr = process.communicate(timeout=2)
-                    logger.error(f"Failed to create virtual serial device: {device_path}")
-                    if stderr:
-                        logger.error(f"Socat stderr: {stderr.decode()}")
-                except subprocess.TimeoutExpired:
-                    logger.error(f"Socat process timeout for device: {device_path}")
+                # Don't wait for process to complete - it should run indefinitely
+                logger.error(f"Failed to create virtual serial device: {device_path}")
+                # Check if process is still running
+                if process.poll() is not None:
+                    logger.error(f"Socat process exited with code: {process.returncode}")
                 return False
                 
         except Exception as e:
