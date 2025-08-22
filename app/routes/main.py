@@ -209,6 +209,11 @@ def cors_test():
             'cors_issue': False
         })
 
+@main_bp.route('/api/camera/ping')
+def ping_test():
+    """Basic route test - no auth required"""
+    return jsonify({'status': 'alive', 'server': '10.0.10.178', 'timestamp': str(__import__('datetime').datetime.now())})
+
 @main_bp.route('/api/camera/simple')
 @login_required
 def simple_camera_test():
@@ -370,65 +375,9 @@ def test_camera_connection():
 @main_bp.route('/api/camera/proxy')
 @login_required
 def camera_proxy():
-    """Proxy camera stream to bypass CORS"""
-    import requests
-    from flask import Response
-    from requests.auth import HTTPBasicAuth
-    
-    try:
-        logger.info("Starting camera proxy stream to 10.0.10.39")
-        # Try without auth first
-        response = requests.get(
-            'http://10.0.10.39/axis-cgi/mjpg/video.cgi?resolution=640x480',
-            stream=True,
-            timeout=10,
-            headers={'User-Agent': 'ScrapYard/1.0'}
-        )
-        
-        # If 401, try with different credentials
-        if response.status_code == 401:
-            logger.info("Camera requires auth, trying admin:admin")
-            response = requests.get(
-                'http://10.0.10.39/axis-cgi/mjpg/video.cgi?resolution=640x480',
-                auth=HTTPBasicAuth('admin', 'admin'),
-                stream=True,
-                timeout=10,
-                headers={'User-Agent': 'ScrapYard/1.0'}
-            )
-        
-        logger.info(f"Server(10.0.10.178)->Camera(10.0.10.39) response: {response.status_code}")
-        
-        if response.status_code != 200:
-            raise Exception(f"Camera returned {response.status_code}: {response.text[:200]}")
-        logger.info(f"Camera content-type: {response.headers.get('Content-Type')}")
-        response.raise_for_status()
-        
-        def generate():
-            try:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        yield chunk
-            except Exception as gen_error:
-                logger.error(f"Camera proxy stream error: {gen_error}")
-        
-        return Response(
-            generate(),
-            mimetype=response.headers.get('Content-Type', 'multipart/x-mixed-replace'),
-            headers={
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-            }
-        )
-    except requests.exceptions.ConnectTimeout as e:
-        logger.error(f"Camera proxy timeout: Server(10.0.10.178)->Camera(10.0.10.39) - {e}")
-        return f'<html><body><h3>Camera Timeout</h3><p>Connection timeout: {str(e)}</p></body></html>', 500
-    except requests.exceptions.ConnectionError as e:
-        logger.error(f"Camera proxy connection error: Server(10.0.10.178)->Camera(10.0.10.39) - {e}")
-        return f'<html><body><h3>Camera Connection Error</h3><p>Connection failed: {str(e)}</p></body></html>', 500
-    except Exception as e:
-        logger.error(f"Camera proxy unexpected error: {e}")
-        return f'<html><body><h3>Camera Error</h3><p>Unexpected error: {str(e)}</p></body></html>', 500
+    """Simple proxy test"""
+    logger.info("Camera proxy route accessed")
+    return '<html><body><h1>Proxy Route Working</h1><p>Server: 10.0.10.178</p></body></html>'
 
 @main_bp.route('/api/camera/capture', methods=['POST'])
 @login_required
