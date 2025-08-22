@@ -334,18 +334,17 @@ function testDevice(deviceId) {
     .then(response => response.json())
     .then(data => {
         if (data.camera_type === 'AXIS') {
-            // Show camera live feed using iframe
+            // Show camera live feed directly from camera IP
             const alertClass = data.status === 'online' ? 'alert-success' : 'alert-warning';
-            const streamUrl = `/admin/devices/camera_stream/${deviceId}`;
             const directUrl = `http://${data.ip_address}/axis-cgi/mjpg/video.cgi?resolution=640x480&fps=15`;
             
             document.getElementById('cameraStatus').innerHTML = `
                 <div class="alert ${alertClass}">${data.message}</div>
-                <p><strong>Direct URL:</strong> <a href="${directUrl}" target="_blank">${directUrl}</a></p>
+                <p><strong>Stream URL:</strong> ${directUrl}</p>
             `;
             
             const iframe = document.getElementById('cameraFeed');
-            iframe.src = streamUrl;
+            iframe.src = directUrl;
             iframe.style.display = 'block';
             new bootstrap.Modal(document.getElementById('cameraTestModal')).show();
         } else {
