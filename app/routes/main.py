@@ -311,33 +311,18 @@ def camera_proxy():
     
     try:
         logger.info("Starting camera proxy stream to 10.0.10.39")
-        # Try different camera URLs
-        urls = [
+        response = requests.get(
             'http://10.0.10.39/axis-cgi/mjpg/video.cgi?resolution=640x480',
-            'http://10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480',
-            'http://10.0.10.39/mjpg/video.mjpg',
-            'http://10.0.10.39/video.cgi'
-        ]
+            auth=HTTPBasicAuth('root', 'dialog'),
+            stream=True,
+            timeout=10,
+            headers={'User-Agent': 'ScrapYard/1.0'}
+        )
+        logger.info(f"Camera response: {response.status_code}")
         
-        for url in urls:
-            try:
-                logger.info(f"Trying camera URL: {url}")
-                response = requests.get(
-                    url,
-                    auth=HTTPBasicAuth('root', 'dialog'),
-                    timeout=10,
-                    headers={'User-Agent': 'ScrapYard/1.0'}
-                )
-                if response.status_code == 200:
-                    logger.info(f"Camera stream working with URL: {url}")
-                    break
-                else:
-                    logger.info(f"URL {url} returned: {response.status_code}")
-            except Exception as e:
-                logger.info(f"URL {url} failed: {e}")
-        else:
-            raise Exception("All camera URLs failed")
-        logger.info(f"Camera proxy response: {response.status_code}, content-type: {response.headers.get('Content-Type')}")
+        if response.status_code != 200:
+            raise Exception(f"Camera returned {response.status_code}: {response.text[:200]}")
+        logger.info(f"Camera content-type: {response.headers.get('Content-Type')}")
         response.raise_for_status()
         
         def generate():
