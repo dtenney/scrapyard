@@ -302,8 +302,11 @@ def camera_feed(device_id):
 
 @admin_bp.route('/devices/camera_view/<int:device_id>')
 def camera_view(device_id):
-    """Camera view page with JavaScript polling"""
+    """Camera view page using AXIS snapshot approach"""
     device = Device.query.get_or_404(device_id)
+    
+    username = device.camera_username or 'admin'
+    password = device.camera_password or 'admin'
     
     html = f'''
     <!DOCTYPE html>
@@ -315,33 +318,48 @@ def camera_view(device_id):
             .info {{ color: white; margin-bottom: 10px; }}
             #cameraImage {{ max-width: 100%; height: auto; border: 2px solid #333; }}
             .status {{ color: #ccc; margin-top: 10px; }}
+            .controls {{ margin: 10px 0; }}
+            button {{ padding: 10px 20px; margin: 5px; }}
         </style>
     </head>
     <body>
         <div class="info">Camera: {device.name} ({device.ip_address})</div>
+        <div class="controls">
+            <button onclick="startLive()">Start Live</button>
+            <button onclick="stopLive()">Stop Live</button>
+            <button onclick="takeSnapshot()">Take Snapshot</button>
+        </div>
         <img id="cameraImage" alt="Camera Feed">
-        <div class="status" id="status">Loading...</div>
+        <div class="status" id="status">Ready</div>
         
         <script>
-            function updateImage() {{
-                fetch('/admin/devices/camera_feed/{device_id}')
-                .then(response => response.json())
-                .then(data => {{
-                    if (data.image) {{
-                        document.getElementById('cameraImage').src = data.image;
-                        document.getElementById('status').textContent = 'Live - ' + new Date().toLocaleTimeString();
-                    }} else {{
-                        document.getElementById('status').textContent = 'Error: ' + (data.error || 'Unknown error');
-                    }}
-                }})
-                .catch(error => {{
-                    document.getElementById('status').textContent = 'Connection error: ' + error.message;
-                }});
+            let liveInterval = null;
+            
+            function takeSnapshot() {{
+                const timestamp = new Date().getTime();
+                const imageUrl = `http://{username}:{password}@{device.ip_address}/axis-cgi/jpg/image.cgi?resolution=640x480&timestamp=${{timestamp}}`;
+                
+                document.getElementById('cameraImage').src = imageUrl;
+                document.getElementById('status').textContent = 'Snapshot taken - ' + new Date().toLocaleTimeString();
             }}
             
-            // Update every 2 seconds
-            updateImage();
-            setInterval(updateImage, 2000);
+            function startLive() {{
+                if (liveInterval) return;
+                
+                liveInterval = setInterval(takeSnapshot, 1000);
+                document.getElementById('status').textContent = 'Live feed started';
+            }}
+            
+            function stopLive() {{
+                if (liveInterval) {{
+                    clearInterval(liveInterval);
+                    liveInterval = null;
+                    document.getElementById('status').textContent = 'Live feed stopped';
+                }}
+            }}
+            
+            // Take initial snapshot
+            takeSnapshot();
         </script>
     </body>
     </html>
