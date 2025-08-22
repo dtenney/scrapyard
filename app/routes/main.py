@@ -182,6 +182,28 @@ def camera_stream():
         abort(403)
     return render_template('camera_stream.html')
 
+@main_bp.route('/api/camera/proxy')
+@login_required
+def camera_proxy():
+    """Proxy camera stream to bypass CORS"""
+    import requests
+    from flask import Response
+    
+    def generate():
+        try:
+            response = requests.get(
+                'http://10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480',
+                stream=True,
+                timeout=30
+            )
+            for chunk in response.iter_content(chunk_size=1024):
+                if chunk:
+                    yield chunk
+        except Exception as e:
+            yield b'--boundary\r\nContent-Type: text/plain\r\n\r\nStream error\r\n'
+    
+    return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=boundary')
+
 @main_bp.route('/api/camera/capture', methods=['POST'])
 @login_required
 def capture_camera_photo():
