@@ -182,6 +182,33 @@ def camera_stream():
         abort(403)
     return render_template('camera_stream.html')
 
+@main_bp.route('/api/camera/cors-test')
+@login_required
+def cors_test():
+    """Test CORS by making server-side request to camera"""
+    import requests
+    from requests.auth import HTTPBasicAuth
+    
+    try:
+        response = requests.get(
+            'http://10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480',
+            auth=HTTPBasicAuth('root', 'dialog'),
+            timeout=3,
+            stream=False
+        )
+        return jsonify({
+            'server_can_access': True,
+            'status_code': response.status_code,
+            'content_type': response.headers.get('Content-Type', 'unknown'),
+            'cors_issue': response.status_code == 200
+        })
+    except Exception as e:
+        return jsonify({
+            'server_can_access': False,
+            'error': str(e),
+            'cors_issue': False
+        })
+
 @main_bp.route('/api/camera/simple')
 @login_required
 def simple_camera_test():
