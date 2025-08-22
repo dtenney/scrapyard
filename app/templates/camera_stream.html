@@ -69,9 +69,10 @@ function tryMJPEG() {
         currentMethod = 'mjpeg';
     };
     img.onerror = function() {
-        showError('MJPEG stream failed - camera may not be accessible');
+        showError('MJPEG failed - trying proxy method...');
+        setTimeout(tryProxy, 1000);
     };
-    img.src = 'http://10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480&' + Date.now();
+    img.src = 'http://admin:admin@10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480&' + Date.now();
 }
 
 function tryProxy() {

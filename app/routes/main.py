@@ -188,19 +188,24 @@ def camera_proxy():
     """Proxy camera stream to bypass CORS"""
     import requests
     from flask import Response
+    from requests.auth import HTTPBasicAuth
     
     def generate():
         try:
             response = requests.get(
                 'http://10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480',
+                auth=HTTPBasicAuth('admin', 'admin'),
                 stream=True,
-                timeout=30
+                timeout=30,
+                verify=False
             )
+            response.raise_for_status()
             for chunk in response.iter_content(chunk_size=1024):
                 if chunk:
                     yield chunk
         except Exception as e:
-            yield b'--boundary\r\nContent-Type: text/plain\r\n\r\nStream error\r\n'
+            error_msg = f'Stream error: {str(e)}'
+            yield f'--boundary\r\nContent-Type: text/plain\r\n\r\n{error_msg}\r\n'.encode()
     
     return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=boundary')
 
