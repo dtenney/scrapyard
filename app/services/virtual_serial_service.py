@@ -59,11 +59,20 @@ class VirtualSerialService:
                     break
             
             if os.path.exists(device_path):
-                # Set permissions
+                # Set permissions and verify device
                 try:
                     os.chmod(device_path, 0o666)
-                    logger.info(f"Virtual serial device created successfully: {device_path}")
-                    return True
+                    # Check if it's actually a device
+                    import stat
+                    mode = os.stat(device_path).st_mode
+                    if stat.S_ISCHR(mode) or stat.S_ISLNK(mode):
+                        logger.info(f"Virtual serial device created successfully: {device_path} (mode: {oct(mode)})")
+                        # Log process info
+                        logger.info(f"Socat process PID: {process.pid}, status: {process.poll()}")
+                        return True
+                    else:
+                        logger.warning(f"Device {device_path} exists but is not a character device")
+                        return False
                 except OSError as e:
                     logger.warning(f"Could not set permissions on {device_path}: {e}")
                     return True  # Device exists, permission error is not critical
@@ -158,15 +167,24 @@ class VirtualSerialService:
         """Check if virtual serial device is active"""
         try:
             if not os.path.exists(device_path):
+                logger.info(f"Device {device_path} does not exist")
                 return False
                 
             # Check if socat process is running for this device
             result = subprocess.run(
                 ['pgrep', '-f', f'socat.*{device_path}'],
-                capture_output=True
+                capture_output=True,
+                text=True
             )
             
-            return result.returncode == 0
+            if result.returncode == 0:
+                pids = result.stdout.strip().split('\n')
+                logger.info(f"Found socat processes for {device_path}: {pids}")
+                return True
+            else:
+                logger.info(f"No socat processes found for {device_path}")
+                return False
             
-        except Exception:
+        except Exception as e:
+            logger.error(f"Error checking device status: {e}")
             return False

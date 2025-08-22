@@ -237,7 +237,16 @@ def create_virtual_serial(device_id):
         # Now create the actual device
         success = VirtualSerialService.create_virtual_serial(device.serial_port, device.ip_address)
         if success:
-            return jsonify({'success': True, 'message': f'Virtual serial device created: {device.serial_port}'})
+            # Verify device still exists
+            import os
+            exists = os.path.exists(device.serial_port)
+            active = VirtualSerialService.is_device_active(device.serial_port)
+            return jsonify({
+                'success': True, 
+                'message': f'Virtual serial device created: {device.serial_port}',
+                'device_exists': exists,
+                'process_active': active
+            })
         else:
             return jsonify({'success': False, 'message': 'Failed to create persistent virtual serial device'})
     else:
