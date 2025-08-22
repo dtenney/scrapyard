@@ -376,7 +376,7 @@ def camera_proxy():
                 headers={'User-Agent': 'ScrapYard/1.0'}
             )
         
-        logger.info(f"Camera response: {response.status_code}")
+        logger.info(f"Server(10.0.10.178)->Camera(10.0.10.39) response: {response.status_code}")
         
         if response.status_code != 200:
             raise Exception(f"Camera returned {response.status_code}: {response.text[:200]}")
@@ -401,10 +401,10 @@ def camera_proxy():
             }
         )
     except requests.exceptions.ConnectTimeout as e:
-        logger.error(f"Camera proxy timeout: {e}")
+        logger.error(f"Camera proxy timeout: Server(10.0.10.178)->Camera(10.0.10.39) - {e}")
         return f'<html><body><h3>Camera Timeout</h3><p>Connection timeout: {str(e)}</p></body></html>', 500
     except requests.exceptions.ConnectionError as e:
-        logger.error(f"Camera proxy connection error: {e}")
+        logger.error(f"Camera proxy connection error: Server(10.0.10.178)->Camera(10.0.10.39) - {e}")
         return f'<html><body><h3>Camera Connection Error</h3><p>Connection failed: {str(e)}</p></body></html>', 500
     except Exception as e:
         logger.error(f"Camera proxy unexpected error: {e}")
