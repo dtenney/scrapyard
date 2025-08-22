@@ -327,16 +327,32 @@ def test_device(device_id):
         if not device.serial_port or device.serial_port.strip() == '':
             result = {'status': 'error', 'message': 'Scale serial port is required'}
         else:
-            from app.services.scale_service import USRScaleService
-            service = USRScaleService(
-                serial_port=device.serial_port,
-                baud_rate=device.baud_rate or 9600,
-                data_bits=device.data_bits or 8,
-                parity=device.parity or 'N',
-                stop_bits=device.stop_bits or 1,
-                flow_control=device.flow_control or 'none'
-            )
-            result = service.test_connection()
+            # Check if virtual serial device exists, create if needed
+            import os
+            if not os.path.exists(device.serial_port):
+                from app.services.virtual_serial_service import VirtualSerialService
+                logger.info(f"Virtual device {device.serial_port} not found, creating...")
+                success = VirtualSerialService.create_virtual_serial(device.serial_port, device.ip_address)
+                if not success:
+                    result = {'status': 'error', 'message': f'Failed to create virtual serial device: {device.serial_port}'}
+                else:
+                    # Wait a moment for device to be ready
+                    import time
+                    time.sleep(1)
+            
+            if os.path.exists(device.serial_port):
+                from app.services.scale_service import USRScaleService
+                service = USRScaleService(
+                    serial_port=device.serial_port,
+                    baud_rate=device.baud_rate or 9600,
+                    data_bits=device.data_bits or 8,
+                    parity=device.parity or 'N',
+                    stop_bits=device.stop_bits or 1,
+                    flow_control=device.flow_control or 'none'
+                )
+                result = service.test_connection()
+            else:
+                result = {'status': 'error', 'message': f'Virtual serial device not available: {device.serial_port}'}
     elif device.device_type == 'printer':
         from app.services.printer_service import StarPrinterService
         service = StarPrinterService(device.ip_address)
