@@ -212,31 +212,38 @@ def cors_test():
 @main_bp.route('/api/camera/simple')
 @login_required
 def simple_camera_test():
-    """Test basic network connectivity"""
-    import subprocess
-    import socket
+    """Test camera HTTP endpoints"""
+    import requests
+    from requests.auth import HTTPBasicAuth
     
     results = {}
     
-    # Test ping
+    # Test root page
     try:
-        result = subprocess.run(['ping', '-c', '1', '10.0.10.39'], 
-                              capture_output=True, text=True, timeout=5)
-        results['ping'] = 'SUCCESS' if result.returncode == 0 else 'FAILED'
+        response = requests.get('http://10.0.10.39/', timeout=3)
+        results['root_page'] = f'{response.status_code} - {response.reason}'
     except Exception as e:
-        results['ping'] = f'ERROR: {e}'
+        results['root_page'] = f'ERROR: {e}'
     
-    # Test socket
+    # Test MJPEG endpoint without auth
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(2)
-        result = sock.connect_ex(('10.0.10.39', 80))
-        sock.close()
-        results['port_80'] = 'OPEN' if result == 0 else 'CLOSED/FILTERED'
+        response = requests.get('http://10.0.10.39/axis-cgi/mjpg/video.cgi', timeout=3)
+        results['mjpeg_no_auth'] = f'{response.status_code} - {response.reason}'
     except Exception as e:
-        results['port_80'] = f'ERROR: {e}'
+        results['mjpeg_no_auth'] = f'ERROR: {e}'
     
-    results['diagnosis'] = 'Camera unreachable from server 10.0.10.178'
+    # Test MJPEG endpoint with admin:admin
+    try:
+        response = requests.get(
+            'http://10.0.10.39/axis-cgi/mjpg/video.cgi',
+            auth=HTTPBasicAuth('admin', 'admin'),
+            timeout=3
+        )
+        results['mjpeg_admin'] = f'{response.status_code} - {response.reason}'
+        if response.status_code == 200:
+            results['content_type'] = response.headers.get('Content-Type', 'unknown')
+    except Exception as e:
+        results['mjpeg_admin'] = f'ERROR: {e}'
     
     return jsonify(results)
 
