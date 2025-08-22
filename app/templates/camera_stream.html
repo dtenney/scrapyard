@@ -32,6 +32,9 @@
                     <button class="btn btn-success" onclick="refreshStream()">
                         <i class="fas fa-sync-alt"></i> Refresh
                     </button>
+                    <button class="btn btn-info" onclick="testConnection()">
+                        <i class="fas fa-network-wired"></i> Test Connection
+                    </button>
                 </div>
             </div>
         </div>
@@ -99,6 +102,22 @@ function refreshStream() {
     } else {
         tryMJPEG();
     }
+}
+
+function testConnection() {
+    showStatus('Testing camera connection...');
+    fetch('/api/camera/test')
+    .then(response => response.json())
+    .then(data => {
+        if (data.accessible) {
+            showStatus('Camera accessible - Status: ' + data.status_code);
+        } else {
+            showError('Camera not accessible: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(err => {
+        showError('Test failed: ' + err.message);
+    });
 }
 
 // Auto-start with MJPEG

@@ -182,6 +182,32 @@ def camera_stream():
         abort(403)
     return render_template('camera_stream.html')
 
+@main_bp.route('/api/camera/test')
+@login_required
+def test_camera_connection():
+    """Test camera connection"""
+    import requests
+    from requests.auth import HTTPBasicAuth
+    
+    try:
+        response = requests.get(
+            'http://10.0.10.39/axis-cgi/param.cgi?action=list&group=Properties.System',
+            auth=HTTPBasicAuth('admin', 'admin'),
+            timeout=5
+        )
+        return jsonify({
+            'success': True,
+            'status_code': response.status_code,
+            'accessible': response.status_code == 200,
+            'response_length': len(response.text)
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'accessible': False
+        })
+
 @main_bp.route('/api/camera/proxy')
 @login_required
 def camera_proxy():
