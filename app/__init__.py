@@ -41,4 +41,12 @@ def create_app():
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(cashier_bp, url_prefix='/cashier')
     
+    # Initialize virtual serial devices on startup
+    with app.app_context():
+        try:
+            from app.services.startup_service import initialize_virtual_serial_devices
+            initialize_virtual_serial_devices()
+        except Exception as e:
+            app.logger.error(f"Failed to initialize virtual serial devices: {e}")
+    
     return app
