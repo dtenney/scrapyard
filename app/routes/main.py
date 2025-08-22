@@ -182,6 +182,24 @@ def camera_stream():
         abort(403)
     return render_template('camera_stream.html')
 
+@main_bp.route('/api/camera/simple')
+@login_required
+def simple_camera_test():
+    """Simple camera test without auth"""
+    import requests
+    try:
+        response = requests.get('http://10.0.10.39/', timeout=3)
+        return jsonify({
+            'camera_reachable': True,
+            'status': response.status_code,
+            'headers': dict(response.headers)
+        })
+    except Exception as e:
+        return jsonify({
+            'camera_reachable': False,
+            'error': str(e)
+        })
+
 @main_bp.route('/api/camera/debug')
 @login_required
 def debug_camera():

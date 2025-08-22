@@ -38,6 +38,9 @@
                     <button class="btn btn-warning" onclick="debugCamera()">
                         <i class="fas fa-bug"></i> Debug
                     </button>
+                    <button class="btn btn-secondary" onclick="simpleTest()">
+                        <i class="fas fa-wifi"></i> Simple Test
+                    </button>
                 </div>
             </div>
         </div>
@@ -145,6 +148,23 @@ function debugCamera() {
     .catch(err => {
         console.error('Debug error:', err);
         showError('Debug failed: ' + err.message);
+    });
+}
+
+function simpleTest() {
+    console.log('Simple test clicked');
+    showStatus('Testing basic camera connectivity...');
+    fetch('/api/camera/simple')
+    .then(response => response.json())
+    .then(data => {
+        if (data.camera_reachable) {
+            showStatus('Camera reachable - Status: ' + data.status);
+        } else {
+            showError('Camera not reachable: ' + data.error);
+        }
+    })
+    .catch(err => {
+        showError('Simple test failed: ' + err.message);
     });
 }
 
