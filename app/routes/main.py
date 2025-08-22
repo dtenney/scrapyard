@@ -185,7 +185,7 @@ def camera_stream():
 @main_bp.route('/api/camera/test')
 @login_required
 def test_camera_connection():
-    """Test camera connection"""
+    """Test camera connection with multiple credentials"""
     import requests
     from requests.auth import HTTPBasicAuth
     import socket
@@ -201,47 +201,43 @@ def test_camera_connection():
         network_reachable = False
         logger.error(f"Network test failed: {net_error}")
     
-    # Test HTTP request
-    try:
-        logger.info("Testing camera connection to 10.0.10.39")
-        response = requests.get(
-            'http://10.0.10.39/axis-cgi/param.cgi?action=list&group=Properties.System',
-            auth=HTTPBasicAuth('admin', 'admin'),
-            timeout=5
-        )
-        logger.info(f"Camera response: {response.status_code}, length: {len(response.text)}")
-        return jsonify({
-            'success': True,
-            'status_code': response.status_code,
-            'accessible': response.status_code == 200,
-            'response_length': len(response.text),
-            'network_reachable': network_reachable,
-            'response_headers': dict(response.headers)
-        })
-    except requests.exceptions.ConnectTimeout as e:
-        logger.error(f"Camera connection timeout: {e}")
-        return jsonify({
-            'success': False,
-            'error': f'Connection timeout: {str(e)}',
-            'accessible': False,
-            'network_reachable': network_reachable
-        })
-    except requests.exceptions.ConnectionError as e:
-        logger.error(f"Camera connection error: {e}")
-        return jsonify({
-            'success': False,
-            'error': f'Connection error: {str(e)}',
-            'accessible': False,
-            'network_reachable': network_reachable
-        })
-    except Exception as e:
-        logger.error(f"Camera test unexpected error: {e}")
-        return jsonify({
-            'success': False,
-            'error': f'Unexpected error: {str(e)}',
-            'accessible': False,
-            'network_reachable': network_reachable
-        })
+    # Try common credentials
+    credentials = [
+        ('root', 'dialog'),
+        ('admin', 'admin'),
+        ('root', 'pass'),
+        ('admin', ''),
+        ('', '')
+    ]
+    
+    for username, password in credentials:
+        try:
+            logger.info(f"Testing camera with credentials: {username}:{password}")
+            response = requests.get(
+                'http://10.0.10.39/axis-cgi/param.cgi?action=list&group=Properties.System',
+                auth=HTTPBasicAuth(username, password) if username or password else None,
+                timeout=5
+            )
+            if response.status_code == 200:
+                logger.info(f"Camera accessible with {username}:{password}")
+                return jsonify({
+                    'success': True,
+                    'status_code': response.status_code,
+                    'accessible': True,
+                    'working_credentials': f'{username}:{password}',
+                    'network_reachable': network_reachable
+                })
+            else:
+                logger.info(f"Credentials {username}:{password} failed: {response.status_code}")
+        except Exception as e:
+            logger.info(f"Credentials {username}:{password} error: {e}")
+    
+    return jsonify({
+        'success': False,
+        'error': 'All credential combinations failed',
+        'accessible': False,
+        'network_reachable': network_reachable
+    })
 
 @main_bp.route('/api/camera/proxy')
 @login_required
@@ -255,7 +251,7 @@ def camera_proxy():
         logger.info("Starting camera proxy stream to 10.0.10.39")
         response = requests.get(
             'http://10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480',
-            auth=HTTPBasicAuth('admin', 'admin'),
+            auth=HTTPBasicAuth('root', 'dialog'),
             stream=True,
             timeout=10,
             headers={'User-Agent': 'ScrapYard/1.0'}
