@@ -47,9 +47,10 @@ sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 sudo ufw allow 631/tcp  # CUPS
 
-# Create application user
-echo "Creating application user..."
-sudo useradd -m -s /bin/bash scrapyard || true
+# Create application group and user
+echo "Creating application group and user..."
+sudo groupadd scrapyard || true
+sudo useradd -m -s /bin/bash -g scrapyard scrapyard || true
 sudo usermod -aG www-data scrapyard
 
 # Create application directory
