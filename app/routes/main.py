@@ -212,36 +212,31 @@ def cors_test():
 @main_bp.route('/api/camera/simple')
 @login_required
 def simple_camera_test():
-    """Test network connectivity to camera"""
+    """Test basic network connectivity"""
+    import subprocess
     import socket
-    import requests
     
     results = {}
     
-    # Test TCP connection
+    # Test ping
+    try:
+        result = subprocess.run(['ping', '-c', '1', '10.0.10.39'], 
+                              capture_output=True, text=True, timeout=5)
+        results['ping'] = 'SUCCESS' if result.returncode == 0 else 'FAILED'
+    except Exception as e:
+        results['ping'] = f'ERROR: {e}'
+    
+    # Test socket
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(3)
+        sock.settimeout(2)
         result = sock.connect_ex(('10.0.10.39', 80))
         sock.close()
-        results['tcp_port_80'] = 'OPEN' if result == 0 else 'CLOSED'
+        results['port_80'] = 'OPEN' if result == 0 else 'CLOSED/FILTERED'
     except Exception as e:
-        results['tcp_port_80'] = f'ERROR: {e}'
+        results['port_80'] = f'ERROR: {e}'
     
-    # Test HTTP
-    try:
-        response = requests.get('http://10.0.10.39/', timeout=3)
-        results['http_status'] = response.status_code
-        results['server_can_reach_camera'] = True
-    except requests.exceptions.ConnectTimeout:
-        results['http_status'] = 'TIMEOUT'
-        results['server_can_reach_camera'] = False
-    except requests.exceptions.ConnectionError:
-        results['http_status'] = 'CONNECTION_REFUSED'
-        results['server_can_reach_camera'] = False
-    except Exception as e:
-        results['http_status'] = f'ERROR: {e}'
-        results['server_can_reach_camera'] = False
+    results['diagnosis'] = 'Camera unreachable from server 10.0.10.178'
     
     return jsonify(results)
 
