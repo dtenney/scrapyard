@@ -190,24 +190,35 @@ def camera_proxy():
     from flask import Response
     from requests.auth import HTTPBasicAuth
     
-    def generate():
-        try:
-            response = requests.get(
-                'http://10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480',
-                auth=HTTPBasicAuth('admin', 'admin'),
-                stream=True,
-                timeout=30,
-                verify=False
-            )
-            response.raise_for_status()
-            for chunk in response.iter_content(chunk_size=1024):
-                if chunk:
-                    yield chunk
-        except Exception as e:
-            error_msg = f'Stream error: {str(e)}'
-            yield f'--boundary\r\nContent-Type: text/plain\r\n\r\n{error_msg}\r\n'.encode()
-    
-    return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=boundary')
+    try:
+        response = requests.get(
+            'http://10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480',
+            auth=HTTPBasicAuth('admin', 'admin'),
+            stream=True,
+            timeout=10,
+            headers={'User-Agent': 'ScrapYard/1.0'}
+        )
+        response.raise_for_status()
+        
+        def generate():
+            try:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        yield chunk
+            except Exception:
+                pass
+        
+        return Response(
+            generate(),
+            mimetype=response.headers.get('Content-Type', 'multipart/x-mixed-replace'),
+            headers={
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        )
+    except Exception as e:
+        return f'<html><body><h3>Camera Error</h3><p>{str(e)}</p></body></html>', 500
 
 @main_bp.route('/api/camera/capture', methods=['POST'])
 @login_required
