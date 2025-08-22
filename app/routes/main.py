@@ -182,6 +182,41 @@ def camera_stream():
         abort(403)
     return render_template('camera_stream.html')
 
+@main_bp.route('/api/camera/debug')
+@login_required
+def debug_camera():
+    """Debug camera connection step by step"""
+    import requests
+    import socket
+    
+    results = []
+    
+    # 1. Test network connectivity
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(3)
+        result = sock.connect_ex(('10.0.10.39', 80))
+        sock.close()
+        results.append(f"Network test: {'SUCCESS' if result == 0 else 'FAILED'}")
+    except Exception as e:
+        results.append(f"Network test: ERROR - {e}")
+    
+    # 2. Test basic HTTP
+    try:
+        response = requests.get('http://10.0.10.39/', timeout=5)
+        results.append(f"HTTP root: {response.status_code}")
+    except Exception as e:
+        results.append(f"HTTP root: ERROR - {e}")
+    
+    # 3. Test camera endpoint
+    try:
+        response = requests.get('http://10.0.10.39/axis-cgi/mjpg/video.cgi', timeout=5)
+        results.append(f"Camera endpoint: {response.status_code}")
+    except Exception as e:
+        results.append(f"Camera endpoint: ERROR - {e}")
+    
+    return jsonify({'debug_results': results})
+
 @main_bp.route('/api/camera/test')
 @login_required
 def test_camera_connection():

@@ -35,6 +35,9 @@
                     <button class="btn btn-info" onclick="testConnection()">
                         <i class="fas fa-network-wired"></i> Test Connection
                     </button>
+                    <button class="btn btn-warning" onclick="debugCamera()">
+                        <i class="fas fa-bug"></i> Debug
+                    </button>
                 </div>
             </div>
         </div>
@@ -118,6 +121,18 @@ function testConnection() {
     })
     .catch(err => {
         showError('Test failed: ' + err.message);
+    });
+}
+
+function debugCamera() {
+    showStatus('Running debug tests...');
+    fetch('/api/camera/debug')
+    .then(response => response.json())
+    .then(data => {
+        showStatus('Debug results: ' + data.debug_results.join(', '));
+    })
+    .catch(err => {
+        showError('Debug failed: ' + err.message);
     });
 }
 
