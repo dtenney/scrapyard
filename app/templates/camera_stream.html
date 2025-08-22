@@ -78,16 +78,10 @@ function tryMJPEG() {
         currentMethod = 'mjpeg';
     };
     img.onerror = function() {
-        // Test the URL to get detailed error
-        fetch('http://10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480', {mode: 'no-cors'})
-        .then(() => {
-            showError('MJPEG: Image format error or CORS blocked');
-        })
-        .catch(err => {
-            showError('MJPEG failed: ' + err.message);
-        });
+        showError('MJPEG failed: Network error or CORS blocked - use Proxy method');
     };
-    img.src = 'http://10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480&' + Date.now();
+    // Test with credentials in URL
+    img.src = 'http://admin:admin@10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480&' + Date.now();
 }
 
 function tryProxy() {
