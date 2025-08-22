@@ -190,6 +190,24 @@
         </div>
     </div>
 </div>
+
+<!-- Scale Test Modal -->
+<div class="modal fade" id="scaleTestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Scale Live Weight Test</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopScaleStream()"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="scaleStatus" class="mb-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="stopScaleStream()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -328,6 +346,13 @@ function createVirtualSerial(deviceId) {
     });
 }
 
+function stopScaleStream() {
+    if (window.scaleStreamInterval) {
+        clearInterval(window.scaleStreamInterval);
+        window.scaleStreamInterval = null;
+    }
+}
+
 function testDevice(deviceId) {
     const btn = event.target;
     const originalText = btn.textContent;
@@ -352,19 +377,34 @@ function testDevice(deviceId) {
             img.src = proxyUrl;
             img.style.display = 'block';
             new bootstrap.Modal(document.getElementById('cameraTestModal')).show();
+        } else if (data.connection_type === 'Serial') {
+            // Show scale live weight stream
+            document.getElementById('scaleStatus').innerHTML = `
+                <div class="alert alert-${data.status === 'online' ? 'success' : 'warning'}">${data.message}</div>
+                <p><strong>Port:</strong> ${data.port} | <strong>Baud:</strong> ${data.baud_rate} | <strong>Config:</strong> ${data.config}</p>
+                <div class="text-center">
+                    <h3 id="liveWeight">Weight: ${data.weight || '0.00'} lbs</h3>
+                    <button class="btn btn-danger" onclick="stopScaleStream()">Stop Stream</button>
+                </div>
+            `;
+            
+            // Start weight streaming
+            window.scaleStreamInterval = setInterval(() => {
+                fetch(`/admin/devices/test/${deviceId}`, {method: 'POST'})
+                .then(response => response.json())
+                .then(data => {
+                    if (data.weight !== undefined) {
+                        document.getElementById('liveWeight').textContent = `Weight: ${data.weight} lbs`;
+                    }
+                })
+                .catch(() => {
+                    // Ignore errors during streaming
+                });
+            }, 5000);
+            
+            new bootstrap.Modal(document.getElementById('scaleTestModal')).show();
         } else {
-            let message = data.message;
-            if (data.connection_type === 'Serial') {
-                message += `\n\nConnection Details:`;
-                message += `\n• Protocol: Serial`;
-                message += `\n• Port: ${data.port}`;
-                message += `\n• Baud Rate: ${data.baud_rate}`;
-                message += `\n• Config: ${data.config}`;
-                if (data.weight !== undefined) {
-                    message += `\n• Live Weight: ${data.weight} lbs`;
-                }
-            }
-            alert(message);
+            alert(data.message);
         }
     })
     .catch(error => {
