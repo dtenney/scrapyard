@@ -227,7 +227,7 @@ def debug_camera():
             response = requests.get(
                 'http://10.0.10.39/axis-cgi/mjpg/video.cgi?resolution=640x480',
                 auth=auth,
-                timeout=5
+                timeout=2
             )
             results.append(f"{username}:{password} -> {response.status_code}")
             if response.status_code == 200:
