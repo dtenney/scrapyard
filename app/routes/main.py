@@ -259,7 +259,11 @@ def debug_camera():
             results.append(f"{username}:{password} -> {response.status_code}")
             if response.status_code == 200:
                 results.append(f"*** WORKING CREDENTIALS: {username}:{password} ***")
+        except requests.exceptions.Timeout:
+            logger.error(f"Timeout testing {username}:{password}")
+            results.append(f"{username}:{password} -> TIMEOUT")
         except Exception as e:
+            logger.error(f"Error testing {username}:{password}: {e}")
             results.append(f"{username}:{password} -> ERROR: {e}")
     
     return jsonify({'debug_results': results})
@@ -331,8 +335,10 @@ def test_camera_connection():
                 })
             else:
                 logger.info(f"Credentials {username}:{password} failed: {response.status_code}")
+        except requests.exceptions.Timeout:
+            logger.error(f"Timeout testing {username}:{password}")
         except Exception as e:
-            logger.info(f"Credentials {username}:{password} error: {e}")
+            logger.error(f"Error testing {username}:{password}: {e}")
     
     return jsonify({
         'success': False,
