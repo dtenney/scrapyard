@@ -188,24 +188,59 @@ def test_camera_connection():
     """Test camera connection"""
     import requests
     from requests.auth import HTTPBasicAuth
+    import socket
     
+    # Test basic network connectivity first
     try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(3)
+        result = sock.connect_ex(('10.0.10.39', 80))
+        sock.close()
+        network_reachable = result == 0
+    except Exception as net_error:
+        network_reachable = False
+        logger.error(f"Network test failed: {net_error}")
+    
+    # Test HTTP request
+    try:
+        logger.info("Testing camera connection to 10.0.10.39")
         response = requests.get(
             'http://10.0.10.39/axis-cgi/param.cgi?action=list&group=Properties.System',
             auth=HTTPBasicAuth('admin', 'admin'),
             timeout=5
         )
+        logger.info(f"Camera response: {response.status_code}, length: {len(response.text)}")
         return jsonify({
             'success': True,
             'status_code': response.status_code,
             'accessible': response.status_code == 200,
-            'response_length': len(response.text)
+            'response_length': len(response.text),
+            'network_reachable': network_reachable,
+            'response_headers': dict(response.headers)
         })
-    except Exception as e:
+    except requests.exceptions.ConnectTimeout as e:
+        logger.error(f"Camera connection timeout: {e}")
         return jsonify({
             'success': False,
-            'error': str(e),
-            'accessible': False
+            'error': f'Connection timeout: {str(e)}',
+            'accessible': False,
+            'network_reachable': network_reachable
+        })
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"Camera connection error: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Connection error: {str(e)}',
+            'accessible': False,
+            'network_reachable': network_reachable
+        })
+    except Exception as e:
+        logger.error(f"Camera test unexpected error: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Unexpected error: {str(e)}',
+            'accessible': False,
+            'network_reachable': network_reachable
         })
 
 @main_bp.route('/api/camera/proxy')
@@ -217,6 +252,7 @@ def camera_proxy():
     from requests.auth import HTTPBasicAuth
     
     try:
+        logger.info("Starting camera proxy stream to 10.0.10.39")
         response = requests.get(
             'http://10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480',
             auth=HTTPBasicAuth('admin', 'admin'),
@@ -224,6 +260,7 @@ def camera_proxy():
             timeout=10,
             headers={'User-Agent': 'ScrapYard/1.0'}
         )
+        logger.info(f"Camera proxy response: {response.status_code}, content-type: {response.headers.get('Content-Type')}")
         response.raise_for_status()
         
         def generate():
@@ -231,8 +268,8 @@ def camera_proxy():
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         yield chunk
-            except Exception:
-                pass
+            except Exception as gen_error:
+                logger.error(f"Camera proxy stream error: {gen_error}")
         
         return Response(
             generate(),
@@ -243,8 +280,15 @@ def camera_proxy():
                 'Expires': '0'
             }
         )
+    except requests.exceptions.ConnectTimeout as e:
+        logger.error(f"Camera proxy timeout: {e}")
+        return f'<html><body><h3>Camera Timeout</h3><p>Connection timeout: {str(e)}</p></body></html>', 500
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"Camera proxy connection error: {e}")
+        return f'<html><body><h3>Camera Connection Error</h3><p>Connection failed: {str(e)}</p></body></html>', 500
     except Exception as e:
-        return f'<html><body><h3>Camera Error</h3><p>{str(e)}</p></body></html>', 500
+        logger.error(f"Camera proxy unexpected error: {e}")
+        return f'<html><body><h3>Camera Error</h3><p>Unexpected error: {str(e)}</p></body></html>', 500
 
 @main_bp.route('/api/camera/capture', methods=['POST'])
 @login_required
