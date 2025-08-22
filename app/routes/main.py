@@ -337,10 +337,6 @@ def camera_proxy():
                 logger.info(f"URL {url} failed: {e}")
         else:
             raise Exception("All camera URLs failed")
-            stream=True,
-            timeout=10,
-            headers={'User-Agent': 'ScrapYard/1.0'}
-        )
         logger.info(f"Camera proxy response: {response.status_code}, content-type: {response.headers.get('Content-Type')}")
         response.raise_for_status()
         
