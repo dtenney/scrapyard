@@ -273,32 +273,76 @@ def create_virtual_serial(device_id):
             error_msg += f". Install socat with: {test_result['install_cmd']}"
         return jsonify({'success': False, 'message': error_msg, 'details': test_result})
 
-@admin_bp.route('/devices/camera_view/<int:device_id>')
-def camera_view(device_id):
-    """Simple HTML page with camera stream"""
+@admin_bp.route('/devices/camera_feed/<int:device_id>')
+def camera_feed(device_id):
+    """Stream camera frames as base64 images"""
     device = Device.query.get_or_404(device_id)
     
     if device.device_type != 'camera':
-        return 'Not a camera device', 400
+        return jsonify({'error': 'Not a camera device'}), 400
+    
+    import requests
+    import base64
     
     username = device.camera_username or 'admin'
     password = device.camera_password or 'admin'
-    stream_url = f"http://{username}:{password}@{device.ip_address}/axis-cgi/mjpg/video.cgi?resolution=640x480&fps=15"
+    
+    try:
+        stream_url = f"http://{device.ip_address}/axis-cgi/jpg/image.cgi?resolution=640x480"
+        response = requests.get(stream_url, auth=(username, password), timeout=5)
+        
+        if response.status_code == 200:
+            image_b64 = base64.b64encode(response.content).decode('utf-8')
+            return jsonify({'image': f'data:image/jpeg;base64,{image_b64}'})
+        else:
+            return jsonify({'error': f'Camera error: {response.status_code}'}), response.status_code
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@admin_bp.route('/devices/camera_view/<int:device_id>')
+def camera_view(device_id):
+    """Camera view page with JavaScript polling"""
+    device = Device.query.get_or_404(device_id)
     
     html = f'''
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Camera Feed</title>
+        <title>Camera Feed - {device.name}</title>
         <style>
-            body {{ margin: 0; padding: 20px; background: #000; text-align: center; }}
-            img {{ max-width: 100%; height: auto; border: 2px solid #333; }}
+            body {{ margin: 0; padding: 20px; background: #000; text-align: center; font-family: Arial; }}
             .info {{ color: white; margin-bottom: 10px; }}
+            #cameraImage {{ max-width: 100%; height: auto; border: 2px solid #333; }}
+            .status {{ color: #ccc; margin-top: 10px; }}
         </style>
     </head>
     <body>
         <div class="info">Camera: {device.name} ({device.ip_address})</div>
-        <img src="{stream_url}" alt="Camera Feed">
+        <img id="cameraImage" alt="Camera Feed">
+        <div class="status" id="status">Loading...</div>
+        
+        <script>
+            function updateImage() {{
+                fetch('/admin/devices/camera_feed/{device_id}')
+                .then(response => response.json())
+                .then(data => {{
+                    if (data.image) {{
+                        document.getElementById('cameraImage').src = data.image;
+                        document.getElementById('status').textContent = 'Live - ' + new Date().toLocaleTimeString();
+                    }} else {{
+                        document.getElementById('status').textContent = 'Error: ' + (data.error || 'Unknown error');
+                    }}
+                }})
+                .catch(error => {{
+                    document.getElementById('status').textContent = 'Connection error: ' + error.message;
+                }});
+            }}
+            
+            // Update every 2 seconds
+            updateImage();
+            setInterval(updateImage, 2000);
+        </script>
     </body>
     </html>
     '''
