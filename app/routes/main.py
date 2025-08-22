@@ -208,12 +208,19 @@ def debug_camera():
     except Exception as e:
         results.append(f"HTTP root: ERROR - {e}")
     
-    # 3. Test camera endpoint
-    try:
-        response = requests.get('http://10.0.10.39/axis-cgi/mjpg/video.cgi', timeout=5)
-        results.append(f"Camera endpoint: {response.status_code}")
-    except Exception as e:
-        results.append(f"Camera endpoint: ERROR - {e}")
+    # 3. Test camera endpoints
+    urls = [
+        'http://10.0.10.39/axis-cgi/mjpg/video.cgi',
+        'http://10.0.10.39/mjpg/video.mjpg',
+        'http://10.0.10.39/video.cgi'
+    ]
+    
+    for url in urls:
+        try:
+            response = requests.get(url, timeout=5)
+            results.append(f"{url}: {response.status_code}")
+        except Exception as e:
+            results.append(f"{url}: ERROR - {e}")
     
     return jsonify({'debug_results': results})
 
@@ -304,19 +311,32 @@ def camera_proxy():
     
     try:
         logger.info("Starting camera proxy stream to 10.0.10.39")
-        # Try without auth first
-        response = requests.get(
+        # Try different camera URLs
+        urls = [
+            'http://10.0.10.39/axis-cgi/mjpg/video.cgi?resolution=640x480',
             'http://10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480',
-            timeout=10,
-            headers={'User-Agent': 'ScrapYard/1.0'}
-        )
+            'http://10.0.10.39/mjpg/video.mjpg',
+            'http://10.0.10.39/video.cgi'
+        ]
         
-        # If 401, try with auth
-        if response.status_code == 401:
-            logger.info("Camera requires auth, trying root:dialog")
-            response = requests.get(
-                'http://10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480',
-                auth=HTTPBasicAuth('root', 'dialog'),
+        for url in urls:
+            try:
+                logger.info(f"Trying camera URL: {url}")
+                response = requests.get(
+                    url,
+                    auth=HTTPBasicAuth('root', 'dialog'),
+                    timeout=10,
+                    headers={'User-Agent': 'ScrapYard/1.0'}
+                )
+                if response.status_code == 200:
+                    logger.info(f"Camera stream working with URL: {url}")
+                    break
+                else:
+                    logger.info(f"URL {url} returned: {response.status_code}")
+            except Exception as e:
+                logger.info(f"URL {url} failed: {e}")
+        else:
+            raise Exception("All camera URLs failed")
             stream=True,
             timeout=10,
             headers={'User-Agent': 'ScrapYard/1.0'}
