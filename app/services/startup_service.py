@@ -8,6 +8,12 @@ logger = logging.getLogger(__name__)
 def initialize_virtual_serial_devices():
     """Initialize all virtual serial devices for scales on startup"""
     try:
+        # Check if database tables exist
+        from app import db
+        if not db.engine.dialect.has_table(db.engine.connect(), 'devices'):
+            logger.info("Database tables not yet created, skipping virtual serial initialization")
+            return
+            
         scales = Device.query.filter_by(device_type='scale').all()
         
         for scale in scales:
