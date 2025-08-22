@@ -262,21 +262,34 @@ def camera_stream(device_id):
     
     try:
         stream_url = f"http://{device.ip_address}/axis-cgi/mjpg/video.cgi?resolution=640x480&fps=15"
+        logger.info(f"Proxying camera stream: {stream_url} with user: {username}")
         
-        response = requests.get(stream_url, auth=(username, password), stream=True, timeout=10)
+        response = requests.get(stream_url, auth=(username, password), stream=True, timeout=5)
+        logger.info(f"Camera response: {response.status_code} {response.headers.get('content-type')}")
         
-        if response.status_code != 200:
+        if response.status_code == 401:
+            return 'Authentication failed - check camera credentials', 401
+        elif response.status_code != 200:
             return f'Camera error: HTTP {response.status_code}', response.status_code
         
         def generate():
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    yield chunk
+            try:
+                for chunk in response.iter_content(chunk_size=1024):
+                    if chunk:
+                        yield chunk
+            except Exception as e:
+                logger.error(f"Stream generation error: {e}")
+                yield f'Stream interrupted: {str(e)}'.encode()
         
         content_type = response.headers.get('content-type', 'multipart/x-mixed-replace')
         return Response(generate(), mimetype=content_type)
         
+    except requests.exceptions.ConnectTimeout:
+        return 'Camera connection timeout', 504
+    except requests.exceptions.ConnectionError:
+        return 'Cannot connect to camera', 502
     except Exception as e:
+        logger.error(f"Camera stream error: {str(e)}")
         return f'Stream error: {str(e)}', 500
 
 @admin_bp.route('/devices/test/<int:device_id>', methods=['POST'])
