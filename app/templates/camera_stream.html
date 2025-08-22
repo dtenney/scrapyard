@@ -84,8 +84,7 @@ function tryMJPEG() {
             showError('MJPEG: Image format error or CORS blocked');
         })
         .catch(err => {
-            showError('MJPEG failed: ' + err.message + ' - trying proxy...');
-            setTimeout(tryProxy, 1000);
+            showError('MJPEG failed: ' + err.message);
         });
     };
     img.src = 'http://10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480&' + Date.now();
