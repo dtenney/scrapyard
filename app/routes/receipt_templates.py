@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, send_from_directory
 from flask_login import login_required, current_user
 from app.models.receipt_template import ReceiptTemplate
 from app import db
@@ -89,8 +89,8 @@ def upload_logo(template_id):
         return jsonify({'success': False, 'error': 'Only JPG files allowed'})
     
     try:
-        # Create logo directory
-        logo_dir = '/var/www/scrapyard/app/static/receipt_logos'
+        # Create logo directory in uploads folder
+        logo_dir = '/var/www/scrapyard/uploads/receipt_logos'
         os.makedirs(logo_dir, exist_ok=True)
         
         # Generate secure filename
@@ -126,6 +126,11 @@ def preview(template_id):
     }
     
     return render_template('admin/receipt_preview.html', template=template, data=sample_data)
+
+@receipt_templates_bp.route('/logo/<filename>')
+def serve_logo(filename):
+    """Serve receipt logo files"""
+    return send_from_directory('/var/www/scrapyard/uploads/receipt_logos', filename)
 
 @receipt_templates_bp.route('/delete/<int:template_id>', methods=['POST'])
 def delete(template_id):
