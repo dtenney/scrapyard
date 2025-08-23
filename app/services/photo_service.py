@@ -16,21 +16,16 @@ class PhotoService:
     
     @classmethod
     def init_upload_directory(cls):
-        """Create upload directory structure if it doesn't exist"""
+        """Check if upload directories exist (created by setup.sh)"""
         try:
-            # Create customer photos directory with 775 permissions
-            os.makedirs(cls.UPLOAD_FOLDER, exist_ok=True)
-            os.chmod(cls.UPLOAD_FOLDER, 0o775)
-            
-            # Create logos directory with 775 permissions
-            logo_dir = '/var/www/scrapyard/uploads/logos'
-            os.makedirs(logo_dir, exist_ok=True)
-            os.chmod(logo_dir, 0o775)
-            
-            logger.info(f"Upload directories initialized with 775 permissions")
-            return True
+            if os.path.exists(cls.UPLOAD_FOLDER) and os.path.exists('/var/www/scrapyard/uploads/logos'):
+                logger.info(f"Upload directories found")
+                return True
+            else:
+                logger.error(f"Upload directories not found - run setup.sh")
+                return False
         except Exception as e:
-            logger.error(f"Failed to create upload directory: {e}")
+            logger.error(f"Failed to check upload directories: {e}")
             return False
     
     @classmethod
@@ -52,10 +47,9 @@ class PhotoService:
         
         try:
             os.makedirs(full_dir, exist_ok=True)
-            os.chmod(full_dir, 0o775)
         except Exception as e:
-            logger.error(f"Failed to create directory: {str(e)[:100]}")
-            return None, "Failed to create storage directory"
+            logger.error(f"Failed to create date directory: {str(e)[:100]}")
+            return None, "Failed to create date directory"
         
         # Generate unique filename
         timestamp = now.strftime("%Y%m%d_%H%M%S")
@@ -95,12 +89,9 @@ class PhotoService:
         # Use dedicated logos directory with proper permissions
         logo_dir = '/var/www/scrapyard/uploads/logos'
         
-        try:
-            os.makedirs(logo_dir, exist_ok=True)
-            os.chmod(logo_dir, 0o775)
-        except Exception as e:
-            logger.error(f"Failed to create logo directory: {e}")
-            return {'success': False, 'error': 'Failed to create directory'}
+        if not os.path.exists(logo_dir):
+            logger.error(f"Logo directory not found: {logo_dir}")
+            return {'success': False, 'error': 'Logo directory not found - run setup.sh'}
         
         # Generate unique filename
         filename = f"logo_{uuid.uuid4().hex}.jpg"
