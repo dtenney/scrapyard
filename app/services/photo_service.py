@@ -18,8 +18,16 @@ class PhotoService:
     def init_upload_directory(cls):
         """Create upload directory structure if it doesn't exist"""
         try:
-            os.makedirs(cls.UPLOAD_FOLDER, mode=0o755, exist_ok=True)
-            logger.info(f"Upload directory initialized: {cls.UPLOAD_FOLDER}")
+            # Create customer photos directory with 775 permissions
+            os.makedirs(cls.UPLOAD_FOLDER, exist_ok=True)
+            os.chmod(cls.UPLOAD_FOLDER, 0o775)
+            
+            # Create logos directory with 775 permissions
+            logo_dir = '/var/www/scrapyard/uploads/logos'
+            os.makedirs(logo_dir, exist_ok=True)
+            os.chmod(logo_dir, 0o775)
+            
+            logger.info(f"Upload directories initialized with 775 permissions")
             return True
         except Exception as e:
             logger.error(f"Failed to create upload directory: {e}")
@@ -44,7 +52,7 @@ class PhotoService:
         
         try:
             os.makedirs(full_dir, exist_ok=True)
-            os.chmod(full_dir, 0o755)
+            os.chmod(full_dir, 0o775)
         except Exception as e:
             logger.error(f"Failed to create directory: {str(e)[:100]}")
             return None, "Failed to create storage directory"
@@ -89,7 +97,7 @@ class PhotoService:
         
         try:
             os.makedirs(logo_dir, exist_ok=True)
-            os.chmod(logo_dir, 0o755)
+            os.chmod(logo_dir, 0o775)
         except Exception as e:
             logger.error(f"Failed to create logo directory: {e}")
             return {'success': False, 'error': 'Failed to create directory'}
