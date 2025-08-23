@@ -198,8 +198,12 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Driver's License Photo</label>
-                                <input type="file" class="form-control" name="license_photo" accept="image/*">
+                                <input type="file" class="form-control" name="license_photo" accept="image/*" onchange="previewLicensePhoto(this)">
                                 <div class="form-text">Upload photo of driver's license</div>
+                                <div id="licensePreview" class="mt-2" style="display: none;">
+                                    <img id="licensePreviewImg" src="" style="max-width: 200px; max-height: 150px; border: 1px solid #ccc;">
+                                    <div><small class="text-muted">Preview of uploaded license</small></div>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <button type="button" class="btn btn-success" onclick="scanLicense()">Scan Driver's License</button>
@@ -408,8 +412,12 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Driver's License Photo</label>
-                                <input type="file" class="form-control" name="license_photo" accept="image/*">
+                                <input type="file" class="form-control" name="license_photo" accept="image/*" onchange="previewEditLicensePhoto(this)">
                                 <div class="form-text">Upload new photo (optional)</div>
+                                <div id="editLicensePreview" class="mt-2" style="display: none;">
+                                    <img id="editLicensePreviewImg" src="" style="max-width: 200px; max-height: 150px; border: 1px solid #ccc;">
+                                    <div><small class="text-muted">Preview of uploaded license</small></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -921,6 +929,38 @@ function validateAllAddresses() {
             btn.innerHTML = originalText;
         }, 3000);
     });
+}
+
+function previewLicensePhoto(input) {
+    const preview = document.getElementById('licensePreview');
+    const img = document.getElementById('licensePreviewImg');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+function previewEditLicensePhoto(input) {
+    const preview = document.getElementById('editLicensePreview');
+    const img = document.getElementById('editLicensePreviewImg');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.style.display = 'none';
+    }
 }
 
 // Load customer list on page load
