@@ -124,8 +124,8 @@ def preview(template_id):
 
 @receipt_templates_bp.route('/logo/<filename>')
 def serve_logo(filename):
-    """Serve receipt logo files"""
-    return send_from_directory('/var/www/scrapyard/uploads/receipt_logos', filename)
+    """Serve receipt logo files from customer photos directory"""
+    return send_from_directory('/var/www/scrapyard/uploads/customer_photos', filename)
 
 @receipt_templates_bp.route('/delete/<int:template_id>', methods=['POST'])
 def delete(template_id):
