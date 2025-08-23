@@ -79,12 +79,12 @@ class PhotoService:
     
     @classmethod
     def save_receipt_logo(cls, file):
-        """Save receipt template logo in customer photos directory"""
+        """Save receipt template logo in app static directory"""
         if not file or not file.filename.lower().endswith(('.jpg', '.jpeg')):
             return {'success': False, 'error': 'Only JPG files allowed'}
         
-        # Use existing customer photos directory which has proper permissions
-        logo_dir = cls.UPLOAD_FOLDER  # /var/www/scrapyard/uploads/customer_photos
+        # Use app static directory which should be writable
+        logo_dir = '/var/www/scrapyard/app/static'
         
         # Generate unique filename with logo prefix
         filename = f"receipt_logo_{uuid.uuid4().hex}.jpg"
@@ -92,7 +92,6 @@ class PhotoService:
         
         try:
             file.save(filepath)
-            os.chmod(filepath, 0o644)
             logger.info(f"Saved receipt logo: {filename}")
             return {'success': True, 'filename': filename}
         except Exception as e:
