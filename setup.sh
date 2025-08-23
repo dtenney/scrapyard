@@ -577,6 +577,9 @@ sudo chmod -R 755 /var/www/scrapyard
 sudo chmod -R 644 /var/www/scrapyard/app/static
 sudo chmod +x /var/www/scrapyard/app.py
 
+# Restore 775 permissions for upload directories
+sudo chmod -R 775 /var/www/scrapyard/uploads
+
 # Celery services removed - no longer needed
 
 # Restart services
