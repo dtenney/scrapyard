@@ -34,19 +34,23 @@ def create_app():
     from app.routes.admin import admin_bp
     from app.routes.api import api_bp
     from app.routes.cashier import cashier_bp
+    from app.routes.photo import photo_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(cashier_bp, url_prefix='/cashier')
+    app.register_blueprint(photo_bp)
     
-    # Initialize virtual serial devices on startup
+    # Initialize services on startup
     with app.app_context():
         try:
             from app.services.startup_service import initialize_virtual_serial_devices
+            from app.services.photo_service import PhotoService
             initialize_virtual_serial_devices()
+            PhotoService.init_upload_directory()
         except Exception as e:
-            app.logger.error(f"Failed to initialize virtual serial devices: {e}")
+            app.logger.error(f"Failed to initialize services: {e}")
     
     return app
