@@ -43,7 +43,8 @@ class PhotoService:
         full_dir = os.path.join(cls.UPLOAD_FOLDER, date_path)
         
         try:
-            os.makedirs(full_dir, mode=0o755, exist_ok=True)
+            os.makedirs(full_dir, exist_ok=True)
+            os.chmod(full_dir, 0o755)
         except Exception as e:
             logger.error(f"Failed to create directory: {str(e)[:100]}")
             return None, "Failed to create storage directory"
@@ -87,7 +88,8 @@ class PhotoService:
         logo_dir = '/var/www/scrapyard/uploads/logos'
         
         try:
-            os.makedirs(logo_dir, mode=0o775, exist_ok=True)
+            os.makedirs(logo_dir, exist_ok=True)
+            os.chmod(logo_dir, 0o755)
         except Exception as e:
             logger.error(f"Failed to create logo directory: {e}")
             return {'success': False, 'error': 'Failed to create directory'}
