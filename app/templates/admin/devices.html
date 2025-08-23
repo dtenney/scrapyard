@@ -35,9 +35,6 @@
                             </td>
                             <td>
                                 <button class="btn btn-sm btn-info" onclick="testDevice({{ device.id }})">Test</button>
-                                {% if device.device_type == 'scale' %}
-                                <button class="btn btn-sm btn-secondary" onclick="createVirtualSerial({{ device.id }})">Create Serial</button>
-                                {% endif %}
                                 <button class="btn btn-sm btn-warning" onclick="editDevice({{ device.id }})">Edit</button>
                                 <button class="btn btn-sm btn-danger" onclick="deleteDevice({{ device.id }})">Delete</button>
                             </td>
