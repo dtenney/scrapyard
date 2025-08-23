@@ -563,6 +563,13 @@ except Exception as e:
     exit(1)
 "
 
+# Create upload directories with proper permissions
+echo "Creating upload directories..."
+sudo mkdir -p /var/www/scrapyard/uploads/customer_photos
+sudo mkdir -p /var/www/scrapyard/uploads/logos
+sudo chown -R scrapyard:www-data /var/www/scrapyard/uploads
+sudo chmod -R 775 /var/www/scrapyard/uploads
+
 # Set permissions
 echo "Setting final permissions..."
 sudo chown -R scrapyard:www-data /var/www/scrapyard
