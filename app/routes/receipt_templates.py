@@ -116,7 +116,7 @@ def preview(template_id):
         'customer_name': 'John Smith',
         'transaction_date': '2025-08-23 18:30:00',
         'transaction_id': 'TXN-001234',
-        'items': [
+        'line_items': [
             {'description': '#1 Copper', 'weight': 25.50, 'price_per_lb': 3.25, 'total': 82.88},
             {'description': 'Aluminum Cans', 'weight': 12.75, 'price_per_lb': 0.85, 'total': 10.84},
             {'description': 'Steel Scrap', 'weight': 150.00, 'price_per_lb': 0.12, 'total': 18.00}
