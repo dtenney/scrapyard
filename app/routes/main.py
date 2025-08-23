@@ -436,7 +436,7 @@ def camera_proxy():
             cred_str = f'{username}:{password}' if username else 'no_auth'
             results.append(f'{cred_str} -> ERROR: {str(e)}')
     
-    return f'<html><body><h3>MJPEG Endpoint Test</h3><p>{\'<br>\'.join(results)}</p></body></html>'
+    return f'<html><body><h3>MJPEG Endpoint Test</h3><p>{"<br>".join(results)}</p></body></html>'
 
 @main_bp.route('/api/camera/capture', methods=['POST'])
 @login_required
