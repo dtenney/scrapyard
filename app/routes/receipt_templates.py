@@ -88,19 +88,24 @@ def upload_logo(template_id):
     if not file.filename.lower().endswith(('.jpg', '.jpeg')):
         return jsonify({'success': False, 'error': 'Only JPG files allowed'})
     
-    # Create logo directory
-    logo_dir = '/var/www/scrapyard/static/receipt_logos'
-    os.makedirs(logo_dir, exist_ok=True)
-    
-    # Generate secure filename
-    filename = f"logo_{uuid.uuid4().hex}.jpg"
-    filepath = os.path.join(logo_dir, filename)
-    
-    file.save(filepath)
-    template.header_logo_path = filename
-    db.session.commit()
-    
-    return jsonify({'success': True, 'filename': filename})
+    try:
+        # Create logo directory
+        logo_dir = '/var/www/scrapyard/app/static/receipt_logos'
+        os.makedirs(logo_dir, exist_ok=True)
+        
+        # Generate secure filename
+        filename = f"logo_{uuid.uuid4().hex}.jpg"
+        filepath = os.path.join(logo_dir, filename)
+        
+        file.save(filepath)
+        template.header_logo_path = filename
+        db.session.commit()
+        
+        return jsonify({'success': True, 'filename': filename})
+    except PermissionError:
+        return jsonify({'success': False, 'error': 'Permission denied - check directory permissions'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 @receipt_templates_bp.route('/delete/<int:template_id>', methods=['POST'])
 def delete(template_id):
