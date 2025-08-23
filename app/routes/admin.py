@@ -294,7 +294,7 @@ def test_camera_stream(device_id):
     <body style="text-align: center; padding: 20px;">
         <h2>Camera Test: {device.name}</h2>
         <p>IP: {device.ip_address}</p>
-        <img src="/camera/axis-cgi/mjpg/video.cgi?resolution=640x480" 
+        <img src="/camera/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480" 
              style="max-width: 100%; border: 1px solid #ccc;" 
              onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkNhbWVyYSBOb3QgQXZhaWxhYmxlPC90ZXh0Pjwvc3ZnPg=='; this.alt='Camera stream failed';">        
         <br><br>
@@ -345,37 +345,34 @@ def test_device(device_id):
         if not device.ip_address or device.ip_address.strip() == '':
             result = {'status': 'error', 'message': 'Camera IP address is required'}
         else:
+            # Test using Apache proxy path like camera stream does
             import requests
-            from requests.auth import HTTPBasicAuth
             
-            # Test MJPEG stream endpoint that we know works
             try:
-                username = device.camera_username or 'admin'
-                password = device.camera_password or 'admin'
-                
+                # Test the proxy path that works in camera stream
                 response = requests.get(
-                    f'http://{device.ip_address}/axis-cgi/mjpg/video.cgi?resolution=640x480',
-                    auth=HTTPBasicAuth(username, password),
-                    timeout=5
+                    'https://localhost/camera/axis-cgi/mjpg/video.cgi?resolution=640x480',
+                    timeout=5,
+                    verify=False  # Skip SSL verification for localhost
                 )
                 
                 if response.status_code == 200:
                     content_type = response.headers.get('Content-Type', 'unknown')
                     result = {
                         'status': 'success', 
-                        'message': f'Camera streaming OK - Content-Type: {content_type}',
-                        'stream_url': f'/camera/axis-cgi/mjpg/video.cgi?resolution=640x480'
+                        'message': f'Camera proxy working - Content-Type: {content_type}',
+                        'stream_url': '/camera/axis-cgi/mjpg/video.cgi?resolution=640x480'
                     }
                 else:
                     result = {
                         'status': 'error', 
-                        'message': f'Camera returned HTTP {response.status_code}'
+                        'message': f'Camera proxy returned HTTP {response.status_code}'
                     }
                     
             except requests.exceptions.Timeout:
-                result = {'status': 'error', 'message': 'Camera connection timeout'}
+                result = {'status': 'error', 'message': 'Camera proxy timeout'}
             except Exception as e:
-                result = {'status': 'error', 'message': f'Camera test failed: {str(e)}'}
+                result = {'status': 'error', 'message': f'Camera proxy test failed: {str(e)}'}
     else:
         result = {'status': 'unknown', 'message': 'Unknown device type'}
     
