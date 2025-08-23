@@ -34,11 +34,7 @@
                                 <span class="badge bg-secondary">Unknown</span>
                             </td>
                             <td>
-                                {% if device.device_type == 'camera' %}
-                                <a href="/admin/devices/camera_test/{{ device.id }}" class="btn btn-sm btn-info" target="_blank">Test</a>
-                                {% else %}
                                 <button class="btn btn-sm btn-info" onclick="testDevice({{ device.id }})">Test</button>
-                                {% endif %}
                                 {% if device.device_type == 'scale' %}
                                 <button class="btn btn-sm btn-secondary" onclick="createVirtualSerial({{ device.id }})">Create Serial</button>
                                 {% endif %}
@@ -366,14 +362,21 @@ function testDevice(deviceId) {
     fetch(`/admin/devices/test/${deviceId}`, {method: 'POST'})
     .then(response => response.json())
     .then(data => {
-        if (data.camera_type === 'AXIS') {
-            // Open camera feed in new window
-            const cameraUrl = `/admin/devices/camera_view/${deviceId}`;
-            const directUrl = `http://${data.ip_address}/axis-cgi/mjpg/video.cgi?resolution=640x480&fps=15`;
+        if (data.stream_url) {
+            // Show camera test in modal
+            document.getElementById('cameraStatus').innerHTML = `
+                <div class="alert alert-${data.status === 'success' ? 'success' : 'warning'}">${data.message}</div>
+            `;
             
-            window.open(cameraUrl, 'cameraFeed', 'width=800,height=600,scrollbars=yes,resizable=yes');
+            const img = document.getElementById('cameraFeed');
+            img.src = data.stream_url + '&' + Date.now();
+            img.style.display = 'block';
+            img.onerror = function() {
+                document.getElementById('cameraStatus').innerHTML = '<div class="alert alert-danger">Camera stream failed to load</div>';
+                this.style.display = 'none';
+            };
             
-            alert(`Camera test completed.\n\nStatus: ${data.message}\n\nDirect URL: ${directUrl}`);
+            new bootstrap.Modal(document.getElementById('cameraTestModal')).show();
         } else if (data.connection_type === 'Serial') {
             // Show scale live weight stream
             document.getElementById('scaleStatus').innerHTML = `
@@ -401,7 +404,7 @@ function testDevice(deviceId) {
             
             new bootstrap.Modal(document.getElementById('scaleTestModal')).show();
         } else {
-            alert(data.message);
+            alert(data.message || 'Test completed');
         }
     })
     .catch(error => {
