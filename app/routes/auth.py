@@ -36,7 +36,11 @@ def login_post():
         flash('Username and password are required')
         return render_template('login.html', csrf_token=generate_csrf)
     
-    user = User.query.filter_by(username=username).first()
+    try:
+        user = User.query.filter_by(username=username).first()
+    except Exception as e:
+        flash('Login system temporarily unavailable')
+        return render_template('login.html', csrf_token=generate_csrf)
     
     if user and user.check_password(password):
         login_user(user)

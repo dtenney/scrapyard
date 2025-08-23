@@ -45,7 +45,7 @@ class PhotoService:
         try:
             os.makedirs(full_dir, mode=0o755, exist_ok=True)
         except Exception as e:
-            logger.error(f"Failed to create directory {full_dir}: {e}")
+            logger.error(f"Failed to create directory: {str(e)[:100]}")
             return None, "Failed to create storage directory"
         
         # Generate unique filename
@@ -61,16 +61,19 @@ class PhotoService:
             file.save(file_path)
             # Set proper permissions
             os.chmod(file_path, 0o644)
-            logger.info(f"Saved customer photo: {relative_path}")
+            logger.info(f"Saved customer photo: {relative_path.replace('..', '').replace('/', '_')}")
             return relative_path, None
         except Exception as e:
-            logger.error(f"Failed to save photo: {e}")
+            logger.error(f"Failed to save photo: {str(e)[:100]}")
             return None, "Failed to save photo"
     
     @classmethod
     def get_photo_path(cls, relative_path):
         """Get full filesystem path from relative path"""
         if not relative_path:
+            return None
+        # Prevent path traversal attacks
+        if '..' in relative_path or relative_path.startswith('/'):
             return None
         return os.path.join(cls.UPLOAD_FOLDER, relative_path)
     

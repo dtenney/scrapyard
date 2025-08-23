@@ -47,7 +47,8 @@ def upload_customer_photo(customer_id):
     relative_path, error = PhotoService.save_customer_photo(customer_id, file)
     
     if error:
-        return jsonify({'success': False, 'error': error}), 400
+        from markupsafe import escape
+        return jsonify({'success': False, 'error': escape(error)}), 400
     
     # Update customer record
     customer.drivers_license_photo_path = relative_path

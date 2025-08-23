@@ -536,7 +536,7 @@ def create_material():
         material = Material(
             code=data['code'],
             description=data['description'],
-            category=data['category'],
+            category=data.get('category', ''),
             is_ferrous=data.get('is_ferrous', 'false').lower() == 'true',
             price_per_pound=data.get('price_per_pound', 0.0)
         )

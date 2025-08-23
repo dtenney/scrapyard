@@ -12,7 +12,7 @@ admin_bp = Blueprint('admin', __name__)
 @admin_bp.before_request
 @login_required
 def require_admin():
-    if not current_user.is_admin:
+    if not current_user.is_authenticated or not current_user.is_admin:
         return redirect(url_for('main.index'))
 
 @admin_bp.route('/')
@@ -161,7 +161,7 @@ def create_device():
             else:
                 logger.warning(f"Failed to create virtual serial device: {serial_port}")
         except Exception as e:
-            logger.error(f"Error creating virtual serial device: {str(e)[:100]}")
+            logger.error(f"Error creating virtual serial device: {str(e).replace('\n', ' ').replace('\r', '')[:100]}")
     
     response_data = {'success': True, 'device_id': device.id}
     
@@ -287,12 +287,13 @@ def camera_test_page(device_id):
     if device.device_type != 'camera':
         return 'Not a camera device', 400
     
+    from markupsafe import escape
     return f'''
     <html>
-    <head><title>Camera Test: {device.name}</title></head>
+    <head><title>Camera Test: {escape(device.name)}</title></head>
     <body style="text-align: center; padding: 20px; font-family: Arial;">
-        <h2>Camera Test: {device.name}</h2>
-        <p>IP: {device.ip_address}</p>
+        <h2>Camera Test: {escape(device.name)}</h2>
+        <p>IP: {escape(device.ip_address)}</p>
         <div style="margin: 20px 0;">
             <img id="cameraStream" src="/camera/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480" 
                  style="max-width: 90%; border: 2px solid #ccc; background: #f5f5f5;" 
