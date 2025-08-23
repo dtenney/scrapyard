@@ -250,9 +250,6 @@ function saveDevice() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            if (data.message) {
-                alert(data.message);
-            }
             location.reload();
         } else {
             alert('Error saving device');
