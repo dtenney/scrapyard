@@ -347,13 +347,15 @@ def test_device(device_id):
         else:
             # Test using Apache proxy path like camera stream does
             import requests
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
             
             try:
                 # Test the proxy path that works in camera stream
                 response = requests.get(
                     'https://localhost/camera/axis-cgi/mjpg/video.cgi?resolution=640x480',
                     timeout=5,
-                    verify=False  # Skip SSL verification for localhost
+                    verify=False
                 )
                 
                 if response.status_code == 200:
