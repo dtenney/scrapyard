@@ -209,6 +209,37 @@ def capture_camera_photo():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@main_bp.route('/api/ocr/extract_license', methods=['POST'])
+@login_required
+def extract_license_data():
+    """Extract data from driver's license photo using OCR"""
+    from app.services.license_ocr_service import LicenseOCRService
+    import tempfile
+    import os
+    
+    if 'license_photo' not in request.files:
+        return jsonify({'success': False, 'error': 'No file uploaded'})
+    
+    file = request.files['license_photo']
+    if not file.filename:
+        return jsonify({'success': False, 'error': 'No file selected'})
+    
+    try:
+        # Save file temporarily for OCR processing
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
+            file.save(temp_file.name)
+            
+            # Extract data using OCR
+            result = LicenseOCRService.extract_license_data(temp_file.name)
+            
+            # Clean up temp file
+            os.unlink(temp_file.name)
+            
+            return jsonify(result)
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @main_bp.route('/customer_lookup')
 @login_required
 @require_permission('customer_lookup')

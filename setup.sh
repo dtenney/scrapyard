@@ -33,6 +33,7 @@ sudo apt-get install -y \
     cups-client \
     libcups2-dev \
     python3-opencv \
+    tesseract-ocr \
     git \
     socat \
     supervisor \

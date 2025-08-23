@@ -208,6 +208,7 @@
                             <div class="mb-3">
                                 <button type="button" class="btn btn-success" onclick="scanLicense()">Scan Driver's License</button>
                                 <button type="button" class="btn btn-info" onclick="capturePhoto()">Capture with Camera</button>
+                                <button type="button" class="btn btn-warning" onclick="extractLicenseData()">Extract Data from Photo</button>
                             </div>
                         </div>
                     </div>
@@ -721,6 +722,42 @@ function uploadCustomersCSV() {
 
 function scanLicense() {
     alert('License scanning functionality - integrate with ID scanner hardware');
+}
+
+function extractLicenseData() {
+    const fileInput = document.querySelector('[name="license_photo"]');
+    if (!fileInput.files.length) {
+        alert('Please select a license photo first');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('license_photo', fileInput.files[0]);
+    
+    fetch('/api/ocr/extract_license', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Fill form fields with extracted data
+            const extracted = data.data;
+            if (extracted.name) document.querySelector('[name="name"]').value = extracted.name;
+            if (extracted.license_number) document.querySelector('[name="drivers_license_number"]').value = extracted.license_number;
+            if (extracted.date_of_birth) document.querySelector('[name="birthday"]').value = extracted.date_of_birth;
+            if (extracted.gender) document.querySelector('[name="gender"]').value = extracted.gender;
+            if (extracted.eye_color) document.querySelector('[name="eye_color"]').value = extracted.eye_color;
+            if (extracted.address) document.querySelector('[name="street_address"]').value = extracted.address;
+            
+            alert('Data extracted successfully!');
+        } else {
+            alert('OCR extraction failed: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error extracting data: ' + error);
+    });
 }
 
 // Search with debounce for server-side filtering
