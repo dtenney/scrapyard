@@ -279,6 +279,36 @@ def create_virtual_serial(device_id):
 
 
 
+@admin_bp.route('/devices/camera_test/<int:device_id>', methods=['GET'])
+def camera_test_page(device_id):
+    """Camera test page for admin"""
+    device = Device.query.get_or_404(device_id)
+    
+    if device.device_type != 'camera':
+        return 'Not a camera device', 400
+    
+    return f'''
+    <html>
+    <head><title>Camera Test: {device.name}</title></head>
+    <body style="text-align: center; padding: 20px; font-family: Arial;">
+        <h2>Camera Test: {device.name}</h2>
+        <p>IP: {device.ip_address}</p>
+        <div style="margin: 20px 0;">
+            <img id="cameraStream" src="/camera/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480" 
+                 style="max-width: 90%; border: 2px solid #ccc; background: #f5f5f5;" 
+                 onload="document.getElementById('status').innerHTML='<span style=color:green>✓ Camera streaming successfully</span>';"
+                 onerror="document.getElementById('status').innerHTML='<span style=color:red>✗ Camera stream failed</span>'; this.style.display='none'; document.getElementById('fallback').style.display='block';">        
+        </div>
+        <div id="fallback" style="display:none; padding:40px; border:2px dashed #ccc; background:#f9f9f9; margin:20px;">
+            <p style="color:#666;">Camera stream not available</p>
+        </div>
+        <div id="status" style="margin: 10px; font-size: 16px;">Loading camera stream...</div>
+        <button onclick="location.reload()" style="padding:10px 20px; margin:5px;">Refresh</button>
+        <button onclick="window.close()" style="padding:10px 20px; margin:5px;">Close</button>
+    </body>
+    </html>
+    '''
+
 @admin_bp.route('/devices/test_stream/<int:device_id>', methods=['GET'])
 def test_camera_stream(device_id):
     """Return test stream for camera device"""
