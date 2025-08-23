@@ -127,7 +127,7 @@ function saveTemplate() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Template saved successfully!');
+            window.location.href = '/admin/receipt_templates/';
         } else {
             alert('Error saving template');
         }
