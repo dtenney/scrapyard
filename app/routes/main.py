@@ -384,10 +384,10 @@ def camera_proxy():
     
     try:
         # Try different credentials
-        credentials = [('root', 'dialog'), ('admin', 'admin'), ('viewer', 'viewer'), ('', '')]
+        credentials = [('root', 'dialog'), ('admin', 'admin'), ('viewer', 'viewer'), (None, None)]
         
         for username, password in credentials:
-            auth = HTTPBasicAuth(username, password) if username else None
+            auth = HTTPBasicAuth(username, password) if username and password else None
             response = requests.get(
                 'http://10.0.10.39/axis-cgi/mjpg/video.cgi?resolution=640x480',
                 auth=auth,
