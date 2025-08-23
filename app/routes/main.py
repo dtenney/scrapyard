@@ -383,14 +383,24 @@ def camera_proxy():
     logger.info("Camera proxy accessed via HTTPS")
     
     try:
-        response = requests.get(
-            'http://10.0.10.39/axis-cgi/mjpg/video.cgi?resolution=640x480',
-            auth=HTTPBasicAuth('admin', 'admin'),
-            stream=True,
-            timeout=5
-        )
+        # Try different credentials
+        credentials = [('root', 'dialog'), ('admin', 'admin'), ('viewer', 'viewer'), ('', '')]
         
-        logger.info(f"Camera response: {response.status_code}")
+        for username, password in credentials:
+            auth = HTTPBasicAuth(username, password) if username else None
+            response = requests.get(
+                'http://10.0.10.39/axis-cgi/mjpg/video.cgi?resolution=640x480',
+                auth=auth,
+                stream=True,
+                timeout=5
+            )
+            logger.info(f"Tried {username}:{password} -> {response.status_code}")
+            if response.status_code == 200:
+                break
+        else:
+            return f'<html><body><h3>Camera Auth Failed</h3><p>All credentials failed. Tried: root:dialog, admin:admin, viewer:viewer, no auth</p></body></html>', 401
+        
+        logger.info(f"Camera working with credentials, status: {response.status_code}")
         
         if response.status_code != 200:
             return f'<html><body><h3>Camera Error</h3><p>Status: {response.status_code}</p><p>{response.text[:200]}</p></body></html>', response.status_code
