@@ -385,7 +385,8 @@ def test_device(device_id):
                 # Test the proxy path that works in camera stream
                 response = requests.get(
                     f'http://127.0.0.1:80/camera/axis-cgi/mjpg/video.cgi?resolution=640x480',
-                    timeout=5
+                    timeout=5,
+                    allow_redirects=False
                 )
                 
                 if response.status_code == 200:
