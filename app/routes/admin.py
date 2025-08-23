@@ -393,12 +393,13 @@ def test_device(device_id):
                     result = {
                         'status': 'success', 
                         'message': f'Camera proxy working - Content-Type: {content_type}',
-                        'stream_url': '/camera/axis-cgi/mjpg/video.cgi?resolution=640x480'
+                        'stream_url': '/camera/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480'
                     }
                 else:
                     result = {
                         'status': 'error', 
-                        'message': f'Camera proxy returned HTTP {response.status_code}'
+                        'message': f'Camera proxy returned HTTP {response.status_code}',
+                        'stream_url': None
                     }
                     
             except requests.exceptions.Timeout:
