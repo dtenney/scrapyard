@@ -225,7 +225,7 @@ def camera_stream_proxy():
     try:
         response = requests.get(
             'http://10.0.10.39/axis-cgi/mjpg/video.cgi?resolution=640x480',
-            auth=HTTPBasicAuth('admin', 'admin'),
+            auth=HTTPBasicAuth('root', 'dialog'),
             stream=True,
             timeout=5
         )
@@ -407,22 +407,36 @@ def test_camera_connection():
 @main_bp.route('/api/camera/proxy')
 @login_required
 def camera_proxy():
-    """Test camera connection without streaming"""
+    """Test MJPEG endpoint specifically"""
     import requests
     from requests.auth import HTTPBasicAuth
     
-    logger.info("Camera proxy test accessed")
+    results = []
     
-    try:
-        response = requests.get(
-            'http://10.0.10.39/',
-            timeout=3
-        )
-        return f'<html><body><h3>Camera Test</h3><p>Camera root page: {response.status_code}</p><p>Server can reach camera</p></body></html>'
-        
-    except Exception as e:
-        logger.error(f"Camera test error: {e}")
-        return f'<html><body><h3>Camera Test Failed</h3><p>Error: {str(e)}</p><p>Server cannot reach camera</p></body></html>'
+    # Test MJPEG endpoint with different credentials
+    credentials = [('admin', 'admin'), ('root', 'dialog'), ('viewer', 'viewer'), (None, None)]
+    
+    for username, password in credentials:
+        try:
+            auth = HTTPBasicAuth(username, password) if username and password else None
+            response = requests.get(
+                'http://10.0.10.39/axis-cgi/mjpg/video.cgi?resolution=640x480',
+                auth=auth,
+                timeout=3
+            )
+            cred_str = f'{username}:{password}' if username else 'no_auth'
+            results.append(f'{cred_str} -> {response.status_code}')
+            
+            if response.status_code == 200:
+                content_type = response.headers.get('Content-Type', 'unknown')
+                results.append(f'SUCCESS: Content-Type: {content_type}')
+                break
+                
+        except Exception as e:
+            cred_str = f'{username}:{password}' if username else 'no_auth'
+            results.append(f'{cred_str} -> ERROR: {str(e)}')
+    
+    return f'<html><body><h3>MJPEG Endpoint Test</h3><p>{\'<br>\'.join(results)}</p></body></html>'
 
 @main_bp.route('/api/camera/capture', methods=['POST'])
 @login_required
