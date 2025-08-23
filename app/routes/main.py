@@ -424,7 +424,8 @@ def get_customer(customer_id):
             'zip_code': customer.zip_code,
             'phone': customer.phone,
             'email': customer.email,
-            'drivers_license_number': customer.drivers_license_number
+            'drivers_license_number': customer.drivers_license_number,
+            'drivers_license_photo_path': customer.drivers_license_photo_path
         }
     })
 

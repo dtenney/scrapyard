@@ -412,11 +412,15 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Driver's License Photo</label>
+                                <div id="existingLicense" class="mb-2" style="display: none;">
+                                    <img id="existingLicenseImg" src="" style="max-width: 200px; max-height: 150px; border: 1px solid #ccc;">
+                                    <div><small class="text-muted">Current license photo</small></div>
+                                </div>
                                 <input type="file" class="form-control" name="license_photo" accept="image/*" onchange="previewEditLicensePhoto(this)">
                                 <div class="form-text">Upload new photo (optional)</div>
                                 <div id="editLicensePreview" class="mt-2" style="display: none;">
                                     <img id="editLicensePreviewImg" src="" style="max-width: 200px; max-height: 150px; border: 1px solid #ccc;">
-                                    <div><small class="text-muted">Preview of uploaded license</small></div>
+                                    <div><small class="text-muted">Preview of new license</small></div>
                                 </div>
                             </div>
                         </div>
@@ -599,6 +603,16 @@ function editCustomer(customerId) {
         document.getElementById('editCity').value = customer.city || '';
         document.getElementById('editState').value = customer.state || '';
         document.getElementById('editZip').value = customer.zip_code || '';
+        
+        // Show existing license photo if available
+        const existingLicense = document.getElementById('existingLicense');
+        const existingLicenseImg = document.getElementById('existingLicenseImg');
+        if (customer.drivers_license_photo_path) {
+            existingLicenseImg.src = `/photo/customer/${customer.id}/license`;
+            existingLicense.style.display = 'block';
+        } else {
+            existingLicense.style.display = 'none';
+        }
         
         new bootstrap.Modal(document.getElementById('editCustomerModal')).show();
     });
