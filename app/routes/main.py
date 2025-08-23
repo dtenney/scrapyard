@@ -692,6 +692,11 @@ def update_customer(customer_id):
             file = request.files['license_photo']
             if file and file.filename:
                 from app.services.photo_service import PhotoService
+                
+                # Delete old photo if it exists
+                if customer.drivers_license_photo_path:
+                    PhotoService.delete_photo(customer.drivers_license_photo_path)
+                
                 relative_path, error = PhotoService.save_customer_photo(customer.id, file)
                 if error:
                     return jsonify({'success': False, 'error': error}), 400
