@@ -214,6 +214,38 @@ def ping_test():
     """Basic route test - no auth required"""
     return jsonify({'status': 'alive', 'server': '10.0.10.178', 'timestamp': str(__import__('datetime').datetime.now())})
 
+@main_bp.route('/api/camera/stream')
+@login_required
+def camera_stream_proxy():
+    """Actual streaming proxy"""
+    import requests
+    from flask import Response
+    from requests.auth import HTTPBasicAuth
+    
+    try:
+        response = requests.get(
+            'http://10.0.10.39/axis-cgi/mjpg/video.cgi?resolution=640x480',
+            auth=HTTPBasicAuth('admin', 'admin'),
+            stream=True,
+            timeout=5
+        )
+        
+        if response.status_code != 200:
+            return f'Camera returned {response.status_code}', response.status_code
+        
+        def generate():
+            for chunk in response.iter_content(chunk_size=1024):
+                if chunk:
+                    yield chunk
+        
+        return Response(
+            generate(),
+            mimetype='multipart/x-mixed-replace'
+        )
+        
+    except Exception as e:
+        return f'Stream error: {str(e)}', 500
+
 @main_bp.route('/api/camera/simple')
 @login_required
 def simple_camera_test():
@@ -375,49 +407,22 @@ def test_camera_connection():
 @main_bp.route('/api/camera/proxy')
 @login_required
 def camera_proxy():
-    """Proxy camera stream"""
+    """Test camera connection without streaming"""
     import requests
-    from flask import Response
     from requests.auth import HTTPBasicAuth
     
-    logger.info("Camera proxy accessed via HTTPS")
+    logger.info("Camera proxy test accessed")
     
     try:
-        # Try different credentials
-        credentials = [('root', 'dialog'), ('admin', 'admin'), ('viewer', 'viewer'), (None, None)]
-        
-        for username, password in credentials:
-            auth = HTTPBasicAuth(username, password) if username and password else None
-            response = requests.get(
-                'http://10.0.10.39/axis-cgi/mjpg/video.cgi?resolution=640x480',
-                auth=auth,
-                stream=True,
-                timeout=5
-            )
-            logger.info(f"Tried {username}:{password} -> {response.status_code}")
-            if response.status_code == 200:
-                break
-        else:
-            return f'<html><body><h3>Camera Auth Failed</h3><p>All credentials failed. Tried: root:dialog, admin:admin, viewer:viewer, no auth</p></body></html>', 401
-        
-        logger.info(f"Camera working with credentials, status: {response.status_code}")
-        
-        if response.status_code != 200:
-            return f'<html><body><h3>Camera Error</h3><p>Status: {response.status_code}</p><p>{response.text[:200]}</p></body></html>', response.status_code
-        
-        def generate():
-            for chunk in response.iter_content(chunk_size=1024):
-                if chunk:
-                    yield chunk
-        
-        return Response(
-            generate(),
-            mimetype=response.headers.get('Content-Type', 'multipart/x-mixed-replace')
+        response = requests.get(
+            'http://10.0.10.39/',
+            timeout=3
         )
+        return f'<html><body><h3>Camera Test</h3><p>Camera root page: {response.status_code}</p><p>Server can reach camera</p></body></html>'
         
     except Exception as e:
-        logger.error(f"Camera proxy error: {e}")
-        return f'<html><body><h3>Camera Error</h3><p>{str(e)}</p></body></html>', 500
+        logger.error(f"Camera test error: {e}")
+        return f'<html><body><h3>Camera Test Failed</h3><p>Error: {str(e)}</p><p>Server cannot reach camera</p></body></html>'
 
 @main_bp.route('/api/camera/capture', methods=['POST'])
 @login_required
