@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Edit Template: {{ template.name }}</h5>
+            </div>
+            <div class="card-body">
+                <form id="previewForm">
+                    <div class="mb-3">
+                        <label class="form-label">Template Name</label>
+                        <input type="text" class="form-control" name="name" value="{{ template.name }}" onchange="updatePreview()">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Company Name</label>
+                        <input type="text" class="form-control" name="company_name" value="{{ template.company_name }}" onchange="updatePreview()">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Company Address</label>
+                        <textarea class="form-control" name="company_address" rows="3" onchange="updatePreview()">{{ template.company_address }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Footer Text</label>
+                        <textarea class="form-control" name="footer_text" rows="2" onchange="updatePreview()">{{ template.footer_text }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_default" {% if template.is_default %}checked{% endif %}>
+                            <label class="form-check-label">Set as Default Template</label>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="saveTemplate()">Save Changes</button>
+                    <a href="{{ url_for('receipt_templates.index') }}" class="btn btn-secondary">Back</a>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Receipt Preview (4" Thermal Printer)</h5>
+            </div>
+            <div class="card-body">
+                <div id="receiptPreview" style="width: 288px; margin: 0 auto; border: 1px solid #ccc; padding: 10px; font-family: 'Courier New', monospace; font-size: 12px; background: white;">
+                    <!-- Logo -->
+                    {% if template.header_logo_path %}
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        <img src="{{ url_for('static', filename='receipt_logos/' + template.header_logo_path) }}" style="max-width: 200px; max-height: 100px;">
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Company Info -->
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <div id="preview-company-name" style="font-weight: bold; font-size: 14px;">{{ template.company_name or 'Company Name' }}</div>
+                        <div id="preview-company-address" style="white-space: pre-line;">{{ template.company_address or 'Company Address' }}</div>
+                    </div>
+                    
+                    <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+                    
+                    <!-- Transaction Info -->
+                    <div style="margin-bottom: 10px;">
+                        <div>Date: {{ data.transaction_date }}</div>
+                        <div>Transaction: {{ data.transaction_id }}</div>
+                        <div>Customer: {{ data.customer_name }}</div>
+                    </div>
+                    
+                    <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+                    
+                    <!-- Items -->
+                    {% for item in data.items %}
+                    <div style="margin-bottom: 8px;">
+                        <div>{{ item.description }}</div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>{{ "%.2f"|format(item.weight) }} lbs @ ${{ "%.2f"|format(item.price_per_lb) }}</span>
+                            <span>${{ "%.2f"|format(item.total) }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+                    
+                    <!-- Total -->
+                    <div style="text-align: right; font-weight: bold; font-size: 14px;">
+                        TOTAL: ${{ "%.2f"|format(data.total) }}
+                    </div>
+                    
+                    <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+                    
+                    <!-- Footer -->
+                    <div id="preview-footer" style="text-align: center; margin-top: 15px; white-space: pre-line;">
+                        {{ template.footer_text or 'Thank you for your business!' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updatePreview() {
+    const form = document.getElementById('previewForm');
+    const companyName = form.querySelector('[name="company_name"]').value || 'Company Name';
+    const companyAddress = form.querySelector('[name="company_address"]').value || 'Company Address';
+    const footerText = form.querySelector('[name="footer_text"]').value || 'Thank you for your business!';
+    
+    document.getElementById('preview-company-name').textContent = companyName;
+    document.getElementById('preview-company-address').textContent = companyAddress;
+    document.getElementById('preview-footer').textContent = footerText;
+}
+
+function saveTemplate() {
+    const form = document.getElementById('previewForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    data.is_default = form.querySelector('[name="is_default"]').checked;
+    
+    fetch(`/admin/receipt_templates/update/{{ template.id }}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Template saved successfully!');
+        } else {
+            alert('Error saving template');
+        }
+    });
+}
+</script>
+{% endblock %}

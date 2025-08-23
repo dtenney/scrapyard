@@ -42,6 +42,7 @@
                                 {% endif %}
                             </td>
                             <td>
+                                <a href="{{ url_for('receipt_templates.preview', template_id=template.id) }}" class="btn btn-sm btn-primary">Preview</a>
                                 <button class="btn btn-sm btn-warning" onclick="editTemplate({{ template.id }})">Edit</button>
                                 <button class="btn btn-sm btn-info" onclick="uploadLogo({{ template.id }})">Logo</button>
                                 {% if not template.is_default %}

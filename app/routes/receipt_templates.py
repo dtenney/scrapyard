@@ -107,6 +107,26 @@ def upload_logo(template_id):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@receipt_templates_bp.route('/preview/<int:template_id>')
+def preview(template_id):
+    template = ReceiptTemplate.query.get_or_404(template_id)
+    
+    # Sample transaction data for preview
+    sample_data = {
+        'customer_name': 'John Smith',
+        'transaction_date': '2025-08-23 18:30:00',
+        'transaction_id': 'TXN-001234',
+        'items': [
+            {'description': '#1 Copper', 'weight': 25.50, 'price_per_lb': 3.25, 'total': 82.88},
+            {'description': 'Aluminum Cans', 'weight': 12.75, 'price_per_lb': 0.85, 'total': 10.84},
+            {'description': 'Steel Scrap', 'weight': 150.00, 'price_per_lb': 0.12, 'total': 18.00}
+        ],
+        'subtotal': 111.72,
+        'total': 111.72
+    }
+    
+    return render_template('admin/receipt_preview.html', template=template, data=sample_data)
+
 @receipt_templates_bp.route('/delete/<int:template_id>', methods=['POST'])
 def delete(template_id):
     template = ReceiptTemplate.query.get_or_404(template_id)
