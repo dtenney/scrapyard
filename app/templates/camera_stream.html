@@ -80,8 +80,8 @@ function tryMJPEG() {
     img.onerror = function() {
         showError('MJPEG failed: Network error or CORS blocked - use Proxy method');
     };
-    // Test with credentials in URL
-    img.src = 'http://admin:admin@10.0.10.39/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480&' + Date.now();
+    // Use Apache proxy instead of direct camera access
+    img.src = '/camera/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480&' + Date.now();
 }
 
 function tryProxy() {
@@ -97,7 +97,7 @@ function tryProxy() {
     iframe.onerror = function() {
         showError('Proxy stream failed');
     };
-    iframe.src = '/api/camera/stream';
+    iframe.src = '/camera/axis-cgi/mjpg/video.cgi?resolution=640x480';
 }
 
 function refreshStream() {
