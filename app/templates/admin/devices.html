@@ -179,7 +179,6 @@
             </div>
             <div class="modal-body text-center">
                 <div id="cameraStatus" class="mb-3"></div>
-                <img id="cameraFeed" style="max-width: 100%; display: none;" alt="Camera Feed">
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -357,18 +356,19 @@ function testDevice(deviceId) {
     .then(response => response.json())
     .then(data => {
         if (data.stream_url) {
-            // Show camera test in modal
+            // Show camera test in modal with detailed info like scale test
             document.getElementById('cameraStatus').innerHTML = `
                 <div class="alert alert-${data.status === 'success' ? 'success' : 'warning'}">${data.message}</div>
+                <p><strong>Stream URL:</strong> ${data.stream_url}</p>
+                <div class="text-center">
+                    <img id="cameraFeed" src="${data.stream_url}&${Date.now()}" 
+                         style="max-width: 100%; border: 2px solid #ccc; background: #f5f5f5;" 
+                         onload="this.style.border='2px solid #28a745';"
+                         onerror="document.getElementById('cameraStatus').innerHTML='<div class=\'alert alert-danger\'>Camera stream failed to load</div>'; this.style.display='none';">
+                    <br><br>
+                    <button class="btn btn-success" onclick="document.getElementById('cameraFeed').src='${data.stream_url}&'+Date.now()">Refresh Stream</button>
+                </div>
             `;
-            
-            const img = document.getElementById('cameraFeed');
-            img.src = data.stream_url + '&' + Date.now();
-            img.style.display = 'block';
-            img.onerror = function() {
-                document.getElementById('cameraStatus').innerHTML = '<div class="alert alert-danger">Camera stream failed to load</div>';
-                this.style.display = 'none';
-            };
             
             new bootstrap.Modal(document.getElementById('cameraTestModal')).show();
         } else if (data.connection_type === 'Serial') {
