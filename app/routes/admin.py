@@ -390,11 +390,18 @@ def test_device(device_id):
                 
                 if response.status_code == 200:
                     content_type = response.headers.get('Content-Type', 'unknown')
-                    result = {
-                        'status': 'success', 
-                        'message': f'Camera proxy working - Content-Type: {content_type}',
-                        'stream_url': '/camera/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480'
-                    }
+                    if 'multipart' in content_type or 'image' in content_type:
+                        result = {
+                            'status': 'success', 
+                            'message': f'Camera proxy working - Content-Type: {content_type}',
+                            'stream_url': '/camera/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480'
+                        }
+                    else:
+                        result = {
+                            'status': 'error', 
+                            'message': f'Camera proxy returned HTML instead of video stream',
+                            'stream_url': None
+                        }
                 else:
                     result = {
                         'status': 'error', 
