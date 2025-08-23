@@ -48,7 +48,7 @@
                     <!-- Logo -->
                     {% if template.header_logo_path %}
                     <div style="text-align: center; margin-bottom: 10px;">
-                        <img src="{{ url_for('static', filename=template.header_logo_path) }}" style="max-width: 200px; max-height: 100px;">
+                        <img src="{{ url_for('receipt_templates.serve_logo', filename=template.header_logo_path) }}" style="max-width: 200px; max-height: 100px;">
                     </div>
                     {% endif %}
                     

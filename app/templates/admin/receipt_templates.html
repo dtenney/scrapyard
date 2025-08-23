@@ -31,7 +31,7 @@
                             <td>{{ template.company_name }}</td>
                             <td>
                                 {% if template.header_logo_path %}
-                                    <img src="{{ url_for('static', filename=template.header_logo_path) }}" style="height: 30px;">
+                                    <img src="{{ url_for('receipt_templates.serve_logo', filename=template.header_logo_path) }}" style="height: 30px;">
                                 {% else %}
                                     <span class="text-muted">No logo</span>
                                 {% endif %}
