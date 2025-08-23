@@ -75,6 +75,8 @@ def update(template_id):
 
 @receipt_templates_bp.route('/upload_logo/<int:template_id>', methods=['POST'])
 def upload_logo(template_id):
+    from app.services.photo_service import PhotoService
+    
     template = ReceiptTemplate.query.get_or_404(template_id)
     
     if 'logo' not in request.files:
@@ -89,21 +91,14 @@ def upload_logo(template_id):
         return jsonify({'success': False, 'error': 'Only JPG files allowed'})
     
     try:
-        # Create logo directory in uploads folder
-        logo_dir = '/var/www/scrapyard/uploads/receipt_logos'
-        os.makedirs(logo_dir, exist_ok=True)
-        
-        # Generate secure filename
-        filename = f"logo_{uuid.uuid4().hex}.jpg"
-        filepath = os.path.join(logo_dir, filename)
-        
-        file.save(filepath)
-        template.header_logo_path = filename
-        db.session.commit()
-        
-        return jsonify({'success': True, 'filename': filename})
-    except PermissionError:
-        return jsonify({'success': False, 'error': 'Permission denied - check directory permissions'})
+        # Use PhotoService to handle upload with proper permissions
+        result = PhotoService.save_receipt_logo(file)
+        if result['success']:
+            template.header_logo_path = result['filename']
+            db.session.commit()
+            return jsonify({'success': True, 'filename': result['filename']})
+        else:
+            return jsonify({'success': False, 'error': result['error']})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 

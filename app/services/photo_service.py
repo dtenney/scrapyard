@@ -78,6 +78,34 @@ class PhotoService:
         return os.path.join(cls.UPLOAD_FOLDER, relative_path)
     
     @classmethod
+    def save_receipt_logo(cls, file):
+        """Save receipt template logo"""
+        if not file or not file.filename.lower().endswith(('.jpg', '.jpeg')):
+            return {'success': False, 'error': 'Only JPG files allowed'}
+        
+        # Use existing upload directory structure
+        logo_dir = '/var/www/scrapyard/uploads/receipt_logos'
+        
+        try:
+            os.makedirs(logo_dir, mode=0o755, exist_ok=True)
+        except Exception as e:
+            logger.error(f"Failed to create logo directory: {e}")
+            return {'success': False, 'error': 'Failed to create directory'}
+        
+        # Generate unique filename
+        filename = f"logo_{uuid.uuid4().hex}.jpg"
+        filepath = os.path.join(logo_dir, filename)
+        
+        try:
+            file.save(filepath)
+            os.chmod(filepath, 0o644)
+            logger.info(f"Saved receipt logo: {filename}")
+            return {'success': True, 'filename': filename}
+        except Exception as e:
+            logger.error(f"Failed to save logo: {e}")
+            return {'success': False, 'error': 'Failed to save logo'}
+    
+    @classmethod
     def delete_photo(cls, relative_path):
         """Delete photo file from filesystem"""
         if not relative_path:
