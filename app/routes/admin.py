@@ -279,6 +279,30 @@ def create_virtual_serial(device_id):
 
 
 
+@admin_bp.route('/devices/test_stream/<int:device_id>', methods=['GET'])
+def test_camera_stream(device_id):
+    """Return test stream for camera device"""
+    device = Device.query.get_or_404(device_id)
+    
+    if device.device_type != 'camera':
+        return 'Not a camera device', 400
+    
+    # Return simple test stream page
+    return f'''
+    <html>
+    <head><title>Camera Test Stream</title></head>
+    <body style="text-align: center; padding: 20px;">
+        <h2>Camera Test: {device.name}</h2>
+        <p>IP: {device.ip_address}</p>
+        <img src="/camera/axis-cgi/mjpg/video.cgi?resolution=640x480" 
+             style="max-width: 100%; border: 1px solid #ccc;" 
+             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkNhbWVyYSBOb3QgQXZhaWxhYmxlPC90ZXh0Pjwvc3ZnPg=='; this.alt='Camera stream failed';">        
+        <br><br>
+        <button onclick="window.close()">Close</button>
+    </body>
+    </html>
+    '''
+
 @admin_bp.route('/devices/test/<int:device_id>', methods=['POST'])
 def test_device(device_id):
     device = Device.query.get_or_404(device_id)
@@ -321,15 +345,37 @@ def test_device(device_id):
         if not device.ip_address or device.ip_address.strip() == '':
             result = {'status': 'error', 'message': 'Camera IP address is required'}
         else:
-            from app.services.camera_service import AxisCameraService
-            username = device.camera_username or 'admin'
-            password = device.camera_password or 'admin'
-            logger.info(f"Testing camera {device.ip_address} with username: {username}")
+            import requests
+            from requests.auth import HTTPBasicAuth
+            
+            # Test MJPEG stream endpoint that we know works
             try:
-                service = AxisCameraService(device.ip_address, username, password)
-                result = service.test_connection()
-            except ValueError as e:
-                result = {'status': 'error', 'message': str(e)}
+                username = device.camera_username or 'admin'
+                password = device.camera_password or 'admin'
+                
+                response = requests.get(
+                    f'http://{device.ip_address}/axis-cgi/mjpg/video.cgi?resolution=640x480',
+                    auth=HTTPBasicAuth(username, password),
+                    timeout=5
+                )
+                
+                if response.status_code == 200:
+                    content_type = response.headers.get('Content-Type', 'unknown')
+                    result = {
+                        'status': 'success', 
+                        'message': f'Camera streaming OK - Content-Type: {content_type}',
+                        'stream_url': f'/camera/axis-cgi/mjpg/video.cgi?resolution=640x480'
+                    }
+                else:
+                    result = {
+                        'status': 'error', 
+                        'message': f'Camera returned HTTP {response.status_code}'
+                    }
+                    
+            except requests.exceptions.Timeout:
+                result = {'status': 'error', 'message': 'Camera connection timeout'}
+            except Exception as e:
+                result = {'status': 'error', 'message': f'Camera test failed: {str(e)}'}
     else:
         result = {'status': 'unknown', 'message': 'Unknown device type'}
     
