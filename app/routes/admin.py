@@ -4,10 +4,34 @@ from app.models.user import User, UserGroup
 from app.models.device import Device
 from app import db
 import logging
+import socket
 
 logger = logging.getLogger(__name__)
 
 admin_bp = Blueprint('admin', __name__)
+
+def check_device_connection(ip_address, device_type):
+    """Check TCP/IP connection to device"""
+    if not ip_address:
+        return False
+    
+    # Default ports for different device types
+    port_map = {
+        'scale': 8899,  # USR-TCP232-410S default port
+        'printer': 9100,  # Star printer default port
+        'camera': 80     # HTTP port for AXIS cameras
+    }
+    
+    port = port_map.get(device_type, 80)
+    
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(2)  # 2 second timeout
+        result = sock.connect_ex((ip_address, port))
+        sock.close()
+        return result == 0
+    except:
+        return False
 
 @admin_bp.before_request
 @login_required
@@ -103,6 +127,11 @@ def update_user(user_id):
 @admin_bp.route('/devices')
 def devices():
     devices = Device.query.all()
+    
+    # Check connection status for each device
+    for device in devices:
+        device.is_connected = check_device_connection(device.ip_address, device.device_type)
+    
     return render_template('admin/devices.html', devices=devices)
 
 @admin_bp.route('/devices/create', methods=['POST'])

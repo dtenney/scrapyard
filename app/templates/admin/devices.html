@@ -31,7 +31,11 @@
                             <td>{{ device.device_type.title() }}</td>
                             <td>{{ device.ip_address }}</td>
                             <td>
-                                <span class="badge bg-secondary">Unknown</span>
+                                {% if device.is_connected %}
+                                    <span class="badge bg-success">Connected</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Disconnected</span>
+                                {% endif %}
                             </td>
                             <td>
                                 <button class="btn btn-sm btn-info" onclick="testDevice({{ device.id }})">Test</button>

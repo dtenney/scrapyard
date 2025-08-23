@@ -174,13 +174,7 @@ def search_customers():
     
     return jsonify({'customers': results})
 
-@main_bp.route('/camera_stream')
-@login_required
-def camera_stream():
-    """Camera stream viewing page"""
-    if not (current_user.has_permission('transaction') or current_user.is_admin):
-        abort(403)
-    return render_template('camera_stream.html')
+
 
 @main_bp.route('/api/camera/cors-test')
 @login_required
