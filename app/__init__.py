@@ -35,6 +35,7 @@ def create_app():
     from app.routes.api import api_bp
     from app.routes.cashier import cashier_bp
     from app.routes.photo import photo_bp
+    from app.routes.receipt_templates import receipt_templates_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp)
@@ -42,6 +43,7 @@ def create_app():
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(cashier_bp, url_prefix='/cashier')
     app.register_blueprint(photo_bp)
+    app.register_blueprint(receipt_templates_bp, url_prefix='/admin/receipt_templates')
     
     # Initialize services on startup
     with app.app_context():
