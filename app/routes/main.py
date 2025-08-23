@@ -102,36 +102,16 @@ def create_customer():
             drivers_license_number=license_number
         )
         
-        # Handle license photo upload
+        # Handle license photo upload using PhotoService
         if 'license_photo' in request.files:
             file = request.files['license_photo']
             if file and file.filename:
-                # Create customer photos directory
-                photo_dir = '/var/www/scrapyard/static/customer_photos'
-                os.makedirs(photo_dir, exist_ok=True)
-                
-                # Generate secure filename
-                import uuid
-                from werkzeug.utils import secure_filename
-                safe_filename = secure_filename(file.filename) or "upload.jpg"
-                ext = safe_filename.rsplit('.', 1)[1].lower() if '.' in safe_filename else 'jpg'
-                if ext not in ['jpg', 'jpeg', 'png', 'gif']:
-                    ext = 'jpg'
-                filename = f"license_{uuid.uuid4().hex}.{ext}"
-                filepath = os.path.join(photo_dir, filename)
-                
-                # Validate path to prevent traversal
-                from werkzeug.utils import safe_join
-                try:
-                    safe_filepath = safe_join(photo_dir, filename)
-                    if safe_filepath is None:
-                        return jsonify({'success': False, 'error': 'Invalid file path'}), 400
-                    filepath = safe_filepath
-                except ValueError:
-                    return jsonify({'success': False, 'error': 'Invalid file path'}), 400
-                
-                file.save(filepath)
-                customer.drivers_license_photo = filename
+                from app.services.photo_service import PhotoService
+                relative_path, error = PhotoService.save_customer_photo(customer.id, file)
+                if error:
+                    return jsonify({'success': False, 'error': error}), 400
+                customer.drivers_license_photo_path = relative_path
+                customer.drivers_license_photo_filename = file.filename
         
         db.session.add(customer)
         db.session.commit()
@@ -707,19 +687,16 @@ def update_customer(customer_id):
         customer.email = request.form.get('email', '')
         customer.drivers_license_number = request.form.get('drivers_license_number', '')
         
-        # Handle license photo upload
+        # Handle license photo upload using PhotoService
         if 'license_photo' in request.files:
             file = request.files['license_photo']
             if file and file.filename:
-                photo_dir = '/var/www/scrapyard/static/customer_photos'
-                os.makedirs(photo_dir, exist_ok=True)
-                
-                import uuid
-                filename = f"license_{uuid.uuid4().hex}.jpg"
-                filepath = os.path.join(photo_dir, filename)
-                
-                file.save(filepath)
-                customer.drivers_license_photo = filename
+                from app.services.photo_service import PhotoService
+                relative_path, error = PhotoService.save_customer_photo(customer.id, file)
+                if error:
+                    return jsonify({'success': False, 'error': error}), 400
+                customer.drivers_license_photo_path = relative_path
+                customer.drivers_license_photo_filename = file.filename
         
         db.session.commit()
         
