@@ -213,7 +213,11 @@ def capture_camera_photo():
 @login_required
 def extract_license_data():
     """Extract data from driver's license photo using OCR"""
-    from app.services.license_ocr_service import LicenseOCRService
+    try:
+        from app.services.license_ocr_service import LicenseOCRService
+    except ImportError as e:
+        return jsonify({'success': False, 'error': 'OCR dependencies not installed'})
+    
     import tempfile
     import os
     

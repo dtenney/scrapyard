@@ -1,5 +1,10 @@
-import cv2
-import pytesseract
+try:
+    import cv2
+    import pytesseract
+except ImportError:
+    cv2 = None
+    pytesseract = None
+
 import re
 from datetime import datetime
 import logging
@@ -12,6 +17,9 @@ class LicenseOCRService:
     @classmethod
     def extract_license_data(cls, image_path):
         """Extract data from driver's license image"""
+        if cv2 is None or pytesseract is None:
+            return {'success': False, 'error': 'OCR dependencies not installed (opencv-python, pytesseract)'}
+        
         try:
             # Read and preprocess image
             image = cv2.imread(image_path)
