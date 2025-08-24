@@ -187,6 +187,10 @@ import os
 import sys
 sys.path.insert(0, '/var/www/scrapyard')
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv('/var/www/scrapyard/.env')
+
 try:
     from app import create_app, db
     from app.models.user import User, UserGroup, UserGroupMember
@@ -261,8 +265,8 @@ except Exception as e:
     sys.exit(1)
 DBEOF
 
-# Run database initialization
-sudo -u scrapyard ./venv/bin/python /tmp/init_db.py
+# Run database initialization with environment variables
+sudo -u scrapyard SCRAPYARD_DB_PASSWORD=$DB_PASSWORD ./venv/bin/python /tmp/init_db.py
 
 # Clean up temporary file
 rm -f /tmp/init_db.py
