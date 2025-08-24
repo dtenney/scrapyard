@@ -118,8 +118,11 @@ sudo -u postgres psql -c "ALTER USER scrapyard PASSWORD '$DB_PASSWORD';"
 
 # Configure PostgreSQL for local connections
 echo "Configuring PostgreSQL authentication..."
-PG_VERSION=$(sudo -u postgres psql -t -c "SELECT version();" | grep -oP '\d+\.\d+' | head -1)
-PG_CONFIG_DIR="/etc/postgresql/$PG_VERSION/main"
+PG_CONFIG_DIR=$(sudo -u postgres psql -t -c "SHOW config_file;" | xargs dirname)
+if [ ! -d "$PG_CONFIG_DIR" ]; then
+    # Fallback: find the actual config directory
+    PG_CONFIG_DIR=$(find /etc/postgresql -name "pg_hba.conf" -exec dirname {} \; | head -1)
+fi
 
 # Backup original pg_hba.conf
 sudo cp $PG_CONFIG_DIR/pg_hba.conf $PG_CONFIG_DIR/pg_hba.conf.backup
