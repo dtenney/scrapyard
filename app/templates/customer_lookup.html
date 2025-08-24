@@ -210,6 +210,11 @@
                                 <button type="button" class="btn btn-info" onclick="capturePhoto()">Capture with Camera</button>
                                 <button type="button" class="btn btn-warning" onclick="extractLicenseData()">Extract Data from Photo</button>
                             </div>
+                            <div id="scannerStatus" class="mb-3" style="display: none;">
+                                <div class="alert alert-info">
+                                    <div id="scannerMessage">Initializing scanner...</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </form>
@@ -720,8 +725,60 @@ function uploadCustomersCSV() {
     });
 }
 
-function scanLicense() {
-    alert('License scanning functionality - integrate with ID scanner hardware');
+async function scanLicense() {
+    const statusDiv = document.getElementById('scannerStatus');
+    const messageDiv = document.getElementById('scannerMessage');
+    
+    try {
+        statusDiv.style.display = 'block';
+        messageDiv.textContent = 'Connecting to license scanner...';
+        
+        // Connect to scanner
+        const connectResult = await window.licenseScanner.connect();
+        if (!connectResult.success) {
+            throw new Error(connectResult.error);
+        }
+        
+        messageDiv.textContent = 'Scanner connected. Please insert driver\'s license...';
+        
+        // Scan license
+        const scanResult = await window.licenseScanner.scanLicense();
+        
+        if (scanResult.success) {
+            // Fill form with scanned data
+            const data = scanResult.data;
+            if (data.name) document.querySelector('[name="name"]').value = data.name;
+            if (data.drivers_license_number) document.querySelector('[name="drivers_license_number"]').value = data.drivers_license_number;
+            if (data.date_of_birth) document.querySelector('[name="birthday"]').value = data.date_of_birth;
+            if (data.address) document.querySelector('[name="street_address"]').value = data.address;
+            
+            messageDiv.textContent = 'License scanned successfully!';
+            statusDiv.className = 'mb-3';
+            statusDiv.querySelector('.alert').className = 'alert alert-success';
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        } else {
+            throw new Error('Scan failed');
+        }
+        
+    } catch (error) {
+        messageDiv.textContent = `Scanner error: ${error.message}`;
+        statusDiv.className = 'mb-3';
+        statusDiv.querySelector('.alert').className = 'alert alert-danger';
+        
+        setTimeout(() => {
+            statusDiv.style.display = 'none';
+        }, 5000);
+    } finally {
+        // Disconnect scanner
+        try {
+            await window.licenseScanner.disconnect();
+        } catch (e) {
+            console.error('Error disconnecting scanner:', e);
+        }
+    }
 }
 
 function extractLicenseData() {
