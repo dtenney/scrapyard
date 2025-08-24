@@ -63,7 +63,7 @@ class PhotoService:
         try:
             file.save(file_path)
             # Set proper permissions
-            os.chmod(file_path, 0o644)
+            os.chmod(file_path, 0o600)
             logger.info(f"Saved customer photo: {relative_path.replace('..', '').replace('/', '_')}")
             return relative_path, None
         except Exception as e:
@@ -76,9 +76,12 @@ class PhotoService:
         if not relative_path:
             return None
         # Prevent path traversal attacks
-        if '..' in relative_path or relative_path.startswith('/'):
+        if '..' in relative_path or relative_path.startswith('/') or '\\' in relative_path:
+            logger.warning(f"Path traversal attempt blocked: {relative_path[:50]}")
             return None
-        return os.path.join(cls.UPLOAD_FOLDER, relative_path)
+        # Use secure_filename to sanitize
+        safe_path = secure_filename(relative_path)
+        return os.path.join(cls.UPLOAD_FOLDER, safe_path)
     
     @classmethod
     def save_receipt_logo(cls, file):
@@ -95,11 +98,13 @@ class PhotoService:
         
         # Generate unique filename
         filename = f"logo_{uuid.uuid4().hex}.jpg"
-        filepath = os.path.join(logo_dir, filename)
+        # Sanitize filename to prevent path traversal
+        safe_filename = secure_filename(filename)
+        filepath = os.path.join(logo_dir, safe_filename)
         
         try:
             file.save(filepath)
-            os.chmod(filepath, 0o664)
+            os.chmod(filepath, 0o644)
             logger.info(f"Saved receipt logo: {filename}")
             return {'success': True, 'filename': filename}
         except Exception as e:

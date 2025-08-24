@@ -19,7 +19,7 @@ class VirtualSerialService:
             # Ensure directory exists
             device_dir = os.path.dirname(device_path)
             if device_dir and not os.path.exists(device_dir):
-                os.makedirs(device_dir, mode=0o755, exist_ok=True)
+                os.makedirs(device_dir, mode=0o700, exist_ok=True)
             
             # Check if socat is available
             try:
@@ -61,7 +61,7 @@ class VirtualSerialService:
             if os.path.exists(device_path):
                 # Set permissions and verify device
                 try:
-                    os.chmod(device_path, 0o666)
+                    os.chmod(device_path, 0o600)
                     # Check if it's actually a device
                     import stat
                     mode = os.stat(device_path).st_mode
@@ -86,7 +86,7 @@ class VirtualSerialService:
                 return False
                 
         except Exception as e:
-            logger.error(f"Error creating virtual serial device: {str(e)[:100]}")
+            logger.error(f"Error creating virtual serial device: {str(e)[:100].replace('\n', '').replace('\r', '')}")
             return False
     
     @staticmethod
@@ -114,7 +114,7 @@ class VirtualSerialService:
             return True
             
         except Exception as e:
-            logger.error(f"Error destroying virtual serial device: {str(e)[:100]}")
+            logger.error(f"Error destroying virtual serial device: {str(e)[:100].replace('\n', '').replace('\r', '')}")
             return False
     
     @staticmethod

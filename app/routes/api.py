@@ -80,7 +80,7 @@ def validate_address():
             'format': 'json'
         }
         
-        geoapify_logger.info(f"Address validation request for: {city}, {state}")
+        geoapify_logger.info(f"Address validation request for: {city.replace('\n', '').replace('\r', '')}, {state.replace('\n', '').replace('\r', '')}")
         response = requests.get(url, params=params, timeout=10)
         geoapify_logger.info(f"Response: {response.status_code}")
         
@@ -418,7 +418,7 @@ def validate_all_addresses():
                     'format': 'json'
                 }
                 
-                geoapify_logger.info(f"Bulk validation {i}/{total}: {customer.name}")
+                geoapify_logger.info(f"Bulk validation {i}/{total}: {customer.name.replace('\n', '').replace('\r', '')}")
                 response = requests.get(url, params=params, timeout=5)
                 
                 if response.status_code == 200:
@@ -438,7 +438,7 @@ def validate_all_addresses():
                     
             except Exception as e:
                 errors += 1
-                geoapify_logger.error(f"Exception for {customer.name}: {str(e)}")
+                geoapify_logger.error(f"Exception for customer: {str(e).replace('\n', '').replace('\r', '')}")
         
         db.session.commit()
         geoapify_logger.info(f"Bulk validation complete: {validated} validated, {errors} errors")

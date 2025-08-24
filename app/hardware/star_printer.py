@@ -24,7 +24,7 @@ class StarMicronicsPrinter:
             logger.info(f"Connected to Star printer at {self.ip}:{self.port}")
             return True
         except (socket.error, socket.timeout, ConnectionRefusedError) as e:
-            logger.error("Failed to connect to printer: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
+            logger.error("Failed to connect to printer: connection error")
             if self.socket:
                 self.socket.close()
                 self.socket = None
@@ -108,7 +108,7 @@ class StarMicronicsPrinter:
             return True
             
         except Exception as e:
-            logger.error("Error printing receipt: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
+            logger.error("Error printing receipt: operation failed")
             return False
     
     def print_label(self, label_data: dict) -> bool:
@@ -146,7 +146,7 @@ class StarMicronicsPrinter:
             return True
             
         except Exception as e:
-            logger.error("Error printing label: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
+            logger.error("Error printing label: operation failed")
             return False
     
     def open_cash_drawer(self) -> bool:
@@ -162,7 +162,7 @@ class StarMicronicsPrinter:
             logger.info("Cash drawer opened")
             return True
         except Exception as e:
-            logger.error("Error opening cash drawer: %s", str(e)[:100].replace('\n', ' ').replace('\r', ' '))
+            logger.error("Error opening cash drawer: operation failed")
             return False
     
     def get_status(self) -> dict:
@@ -181,5 +181,5 @@ class StarMicronicsPrinter:
                 'paper': 'ok'
             }
         except Exception as e:
-            logger.error(f"Error getting printer status: {e}")
+            logger.error(f"Error getting printer status: {str(e)[:100].replace('\n', ' ').replace('\r', ' ')}")
             return {'connected': False, 'status': 'error'}

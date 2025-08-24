@@ -51,9 +51,14 @@ def upload_customer_photo(customer_id):
         return jsonify({'success': False, 'error': escape(error)}), 400
     
     # Update customer record
-    customer.drivers_license_photo_path = relative_path
-    customer.drivers_license_photo_filename = file.filename
-    db.session.commit()
+    try:
+        customer.drivers_license_photo_path = relative_path
+        customer.drivers_license_photo_filename = file.filename
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        logger.error("Database error updating customer photo")
+        return jsonify({'success': False, 'error': 'Database error'}), 500
     
     return jsonify({
         'success': True, 

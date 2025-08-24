@@ -68,15 +68,16 @@ echo "Generating Flask secret key and database password..."
 SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
 DB_PASSWORD=${SCRAPYARD_DB_PASSWORD:-$(openssl rand -base64 32)}
 
-# Create .env file
+# Create .env file with secure configuration
 cat > /tmp/scrapyard.env << EOF
 SECRET_KEY=$SECRET_KEY
 FLASK_ENV=production
 DATABASE_URL=postgresql://scrapyard:$DB_PASSWORD@localhost/scrapyard_db
 SCRAPYARD_DB_PASSWORD=$DB_PASSWORD
-GEOAPIFY_API_KEY=
-SMARTY_AUTH_ID=
-SMARTY_AUTH_TOKEN=
+# API Keys - Replace with actual values
+GEOAPIFY_API_KEY=your_geoapify_api_key_here
+SMARTY_AUTH_ID=your_smarty_auth_id_here
+SMARTY_AUTH_TOKEN=your_smarty_auth_token_here
 EOF
 
 sudo mv /tmp/scrapyard.env /var/www/scrapyard/.env
@@ -601,5 +602,6 @@ echo "Application URL: https://localhost/scrapyard"
 echo "Default admin user will be created on first access"
 echo "Check logs: sudo tail -f /var/log/apache2/error.log"
 echo ""
-echo "NOTE: To enable address validation, edit /var/www/scrapyard/app/routes/api.py"
-echo "      and replace 'SET_GEOAPIFY_API_KEY' with your actual Geoapify API key"
+echo "IMPORTANT: Configure API keys in /var/www/scrapyard/.env file:"
+echo "  - GEOAPIFY_API_KEY for address validation"
+echo "  - SMARTY_AUTH_ID and SMARTY_AUTH_TOKEN for address services"
