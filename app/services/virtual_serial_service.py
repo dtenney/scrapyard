@@ -13,6 +13,11 @@ class VirtualSerialService:
     def create_virtual_serial(device_path: str, ip_address: str, port: int = 23) -> bool:
         """Create a virtual serial device using socat"""
         try:
+            # Validate inputs
+            if not device_path or '..' in device_path or device_path.startswith('/'):
+                logger.error("Invalid device path")
+                return False
+            
             # Kill any existing socat process for this device
             VirtualSerialService.destroy_virtual_serial(device_path)
             
@@ -29,7 +34,7 @@ class VirtualSerialService:
                 logger.error("socat is not installed. Install with: sudo apt-get install socat")
                 return False
             
-            # Create socat command
+            # Create socat command with validated parameters
             socat_cmd = [
                 'socat', 
                 f'pty,link={device_path},raw,echo=0,waitslave',
@@ -93,9 +98,16 @@ class VirtualSerialService:
     def destroy_virtual_serial(device_path: str) -> bool:
         """Destroy a virtual serial device by killing socat process"""
         try:
+            # Validate device path
+            if not device_path or '..' in device_path:
+                logger.error("Invalid device path")
+                return False
+                
             # Find and kill socat processes using this device
+            # Use exact match to prevent command injection
+            escaped_path = device_path.replace('/', '\/')
             result = subprocess.run(
-                ['pgrep', '-f', f'socat.*{device_path}'],
+                ['pgrep', '-f', f'socat.*{escaped_path}'],
                 capture_output=True,
                 text=True
             )
@@ -166,25 +178,30 @@ class VirtualSerialService:
     def is_device_active(device_path: str) -> bool:
         """Check if virtual serial device is active"""
         try:
+            # Validate device path
+            if not device_path or '..' in device_path:
+                return False
+                
             if not os.path.exists(device_path):
-                logger.info(f"Device {device_path} does not exist")
+                logger.info("Device does not exist")
                 return False
                 
             # Check if socat process is running for this device
+            escaped_path = device_path.replace('/', '\/')
             result = subprocess.run(
-                ['pgrep', '-f', f'socat.*{device_path}'],
+                ['pgrep', '-f', f'socat.*{escaped_path}'],
                 capture_output=True,
                 text=True
             )
             
             if result.returncode == 0:
                 pids = result.stdout.strip().split('\n')
-                logger.info(f"Found socat processes for {device_path}: {pids}")
+                logger.info("Found socat processes")
                 return True
             else:
-                logger.info(f"No socat processes found for {device_path}")
+                logger.info("No socat processes found")
                 return False
             
         except Exception as e:
-            logger.error(f"Error checking device status: {e}")
+            logger.error("Error checking device status")
             return False

@@ -35,9 +35,10 @@ class StarMicronicsPrinter:
         if self.socket:
             try:
                 self.socket.shutdown(socket.SHUT_RDWR)
-            except OSError:
+            except (OSError, socket.error):
                 pass
-            self.socket.close()
+            finally:
+                self.socket.close()
         self.connected = False
     
     def print_receipt(self, transaction_data: dict) -> bool:
@@ -104,7 +105,7 @@ class StarMicronicsPrinter:
             for cmd in commands:
                 self.socket.send(cmd)
             
-            logger.info(f"Receipt printed for transaction {transaction_data.get('id')}")
+            logger.info("Receipt printed successfully")
             return True
             
         except Exception as e:

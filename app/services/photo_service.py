@@ -104,7 +104,7 @@ class PhotoService:
         
         try:
             file.save(filepath)
-            os.chmod(filepath, 0o644)
+            os.chmod(filepath, 0o600)
             logger.info(f"Saved receipt logo: {filename}")
             return {'success': True, 'filename': filename}
         except Exception as e:

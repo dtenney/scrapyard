@@ -102,6 +102,9 @@ def create_customer():
             drivers_license_number=license_number
         )
         
+        db.session.add(customer)
+        db.session.flush()  # Get customer ID
+        
         # Handle license photo upload using PhotoService
         if 'license_photo' in request.files:
             file = request.files['license_photo']
@@ -109,11 +112,11 @@ def create_customer():
                 from app.services.photo_service import PhotoService
                 relative_path, error = PhotoService.save_customer_photo(customer.id, file)
                 if error:
+                    db.session.rollback()
                     return jsonify({'success': False, 'error': error}), 400
                 customer.drivers_license_photo_path = relative_path
                 customer.drivers_license_photo_filename = file.filename
         
-        db.session.add(customer)
         db.session.commit()
         
         return jsonify({'success': True, 'customer_id': customer.id})
@@ -139,7 +142,7 @@ def search_customers():
             Customer.name.ilike(f'%{query}%'),
             Customer.drivers_license_number.ilike(f'%{query}%')
         ),
-        Customer.is_active == True
+Customer.is_active.is_(True)
     ).limit(10).all()
     
     results = []
@@ -193,11 +196,13 @@ def capture_camera_photo():
         if image_data:
             # Save captured image
             import os, uuid
+            from werkzeug.utils import secure_filename
             photo_dir = '/var/www/scrapyard/static/captures'
             os.makedirs(photo_dir, exist_ok=True)
             
             filename = f"capture_{uuid.uuid4().hex}.jpg"
-            filepath = os.path.join(photo_dir, filename)
+            safe_filename = secure_filename(filename)
+            filepath = os.path.join(photo_dir, safe_filename)
             
             with open(filepath, 'wb') as f:
                 f.write(image_data)

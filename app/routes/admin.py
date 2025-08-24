@@ -66,14 +66,20 @@ def create_user():
         
         # Add user to selected groups
         for group_id in selected_groups:
-            membership = UserGroupMember(user_id=user.id, group_id=int(group_id))
-            db.session.add(membership)
+            try:
+                group_id_int = int(group_id)
+                membership = UserGroupMember(user_id=user.id, group_id=group_id_int)
+                db.session.add(membership)
+            except ValueError:
+                logger.error("Invalid group ID provided")
+                continue
         
         db.session.commit()
         
         flash('User created successfully')
     except Exception as e:
         db.session.rollback()
+        logger.error("Error creating user")
         flash('Error creating user')
     
     return redirect(url_for('admin.users'))
@@ -113,8 +119,13 @@ def update_user(user_id):
         
         # Add new group memberships
         for group_id in data.get('groups', []):
-            membership = UserGroupMember(user_id=user.id, group_id=int(group_id))
-            db.session.add(membership)
+            try:
+                group_id_int = int(group_id)
+                membership = UserGroupMember(user_id=user.id, group_id=group_id_int)
+                db.session.add(membership)
+            except ValueError:
+                logger.error("Invalid group ID provided")
+                continue
         
         db.session.commit()
         
@@ -122,7 +133,8 @@ def update_user(user_id):
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.error("Error updating user")
+        return jsonify({'success': False, 'error': 'Update failed'}), 500
 
 @admin_bp.route('/devices')
 def devices():
@@ -222,7 +234,7 @@ def get_device(device_id):
             'camera_model': device.camera_model,
             'stream_url': device.stream_url,
             'camera_username': device.camera_username,
-            'camera_password': device.camera_password
+            'camera_password': '***' if device.camera_password else None
         }
     })
 
