@@ -190,7 +190,7 @@ def create_device():
             else:
                 logger.warning(f"Failed to create virtual serial device: {serial_port}")
         except Exception as e:
-            logger.error(f"Error creating virtual serial device: {str(e).replace('\n', ' ').replace('\r', '')[:100]}")
+            logger.error("Error creating virtual serial device")
     
     response_data = {'success': True, 'device_id': device.id}
     

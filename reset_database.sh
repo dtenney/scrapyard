@@ -30,9 +30,11 @@ if ! sudo -u postgres createdb scrapyard_db -O scrapyard; then
     exit 1
 fi
 
-if ! sudo -u postgres psql -c "ALTER USER scrapyard PASSWORD 'scrapyard123';"; then
+DB_PASSWORD=${SCRAPYARD_DB_PASSWORD:-$(openssl rand -base64 32)}
+if ! sudo -u postgres psql -c "ALTER USER scrapyard PASSWORD '$DB_PASSWORD';"; then
     echo "Error: Failed to set password"
     exit 1
 fi
+echo "Database password set from environment variable"
 
 echo "Database reset complete"

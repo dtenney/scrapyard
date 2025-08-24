@@ -63,15 +63,20 @@ echo "Copying application files..."
 sudo cp -r . /var/www/scrapyard/
 sudo chown -R scrapyard:www-data /var/www/scrapyard
 
-# Generate Flask secret key
-echo "Generating Flask secret key..."
+# Generate Flask secret key and database password
+echo "Generating Flask secret key and database password..."
 SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+DB_PASSWORD=${SCRAPYARD_DB_PASSWORD:-$(openssl rand -base64 32)}
 
 # Create .env file
 cat > /tmp/scrapyard.env << EOF
 SECRET_KEY=$SECRET_KEY
 FLASK_ENV=production
-DATABASE_URL=postgresql://scrapyard:scrapyard@localhost/scrapyard
+DATABASE_URL=postgresql://scrapyard:$DB_PASSWORD@localhost/scrapyard_db
+SCRAPYARD_DB_PASSWORD=$DB_PASSWORD
+GEOAPIFY_API_KEY=
+SMARTY_AUTH_ID=
+SMARTY_AUTH_TOKEN=
 EOF
 
 sudo mv /tmp/scrapyard.env /var/www/scrapyard/.env

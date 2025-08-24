@@ -66,9 +66,9 @@ def validate_address():
         if not all([street, city, state]):
             return jsonify({'success': False, 'data': {'error': 'Street, city, and state are required'}})
         
-        api_key = 'SET_GEOAPIFY_KEY'
+        api_key = os.environ.get('GEOAPIFY_API_KEY')
         if not api_key:
-             return jsonify({'success': False, 'data': {'error': 'API key error'}})
+             return jsonify({'success': False, 'data': {'error': 'API key not configured'}})
         
         # Use Geoapify geocoding API
         address_text = f"{street}, {city}, {state} {zipcode}, USA"
@@ -80,7 +80,7 @@ def validate_address():
             'format': 'json'
         }
         
-        geoapify_logger.info(f"Request: {url} - Params: {params}")
+        geoapify_logger.info(f"Address validation request for: {city}, {state}")
         response = requests.get(url, params=params, timeout=10)
         geoapify_logger.info(f"Response: {response.status_code}")
         
@@ -273,17 +273,17 @@ def upload_customers_csv():
     
     try:
         if 'csv_file' not in request.files:
-            logger.warning(f"CSV upload failed - no file uploaded by user {current_user.username}")
+            logger.warning("CSV upload failed - no file uploaded")
             return jsonify({'success': False, 'error': 'No file uploaded'}), 400
         
         file = request.files['csv_file']
         filename = file.filename
         
         if not filename.endswith('.csv'):
-            logger.warning(f"CSV upload failed - invalid file format '{filename}' by user {current_user.username}")
+            logger.warning(f"CSV upload failed - invalid file format")
             return jsonify({'success': False, 'error': 'File must be CSV format'}), 400
         
-        logger.info(f"Starting CSV customer upload: '{filename}' by user {current_user.username}")
+        logger.info("Starting CSV customer upload")
         
         # Read CSV content
         stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
@@ -350,10 +350,10 @@ def upload_customers_csv():
         
         db.session.commit()
         
-        logger.info(f"CSV upload completed: '{filename}' - {imported} imported, {skipped} skipped, {len(errors)} errors by user {current_user.username}")
+        logger.info(f"CSV upload completed - {imported} imported, {skipped} skipped, {len(errors)} errors")
         
         if errors:
-            logger.warning(f"CSV upload errors for '{filename}': {'; '.join(errors[:5])}{'...' if len(errors) > 5 else ''}")
+            logger.warning(f"CSV upload had {len(errors)} validation errors")
         
         return jsonify({
             'success': True,
@@ -363,7 +363,7 @@ def upload_customers_csv():
         
     except Exception as e:
         db.session.rollback()
-        logger.error(f"CSV upload failed for user {current_user.username}: {str(e)}")
+        logger.error("CSV upload failed due to system error")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @api_bp.route('/customers/count_addresses')
@@ -398,7 +398,7 @@ def validate_all_addresses():
         total = len(customers)
         start_time = time.time()
         
-        api_key = 'SET_GEOAPIFY_KEY'
+        api_key = os.environ.get('GEOAPIFY_API_KEY')
         if not api_key:
             return jsonify({'success': False, 'error': 'API key not configured'})
         
