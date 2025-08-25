@@ -176,6 +176,41 @@ def ping_test():
 
 
 
+@main_bp.route('/api/camera/stream')
+@login_required
+def camera_stream():
+    """Proxy MJPEG stream from camera"""
+    from app.models.device import Device
+    from app.services.camera_service import AxisCameraService
+    from flask import Response
+    import requests
+    
+    # Find first available camera
+    camera = Device.query.filter_by(device_type='camera', is_active=True).first()
+    
+    if not camera:
+        return Response('No camera available', status=404)
+    
+    try:
+        service = AxisCameraService(camera.ip_address)
+        stream_url = service.get_stream_url()
+        
+        def generate():
+            try:
+                response = requests.get(stream_url, stream=True, timeout=30)
+                for chunk in response.iter_content(chunk_size=1024):
+                    if chunk:
+                        yield chunk
+            except Exception as e:
+                logger.error(f"Stream error: {e}")
+                yield b''
+        
+        return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+        
+    except Exception as e:
+        logger.error(f"Camera stream error: {e}")
+        return Response('Camera unavailable', status=503)
+
 @main_bp.route('/api/camera/capture', methods=['POST'])
 @login_required
 def capture_camera_photo():

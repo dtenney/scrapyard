@@ -25,8 +25,11 @@
                 <h5>Camera View</h5>
             </div>
             <div class="card-body">
-                <div class="camera-preview"></div>
-                <button class="btn btn-success btn-lg w-100 mt-3">Capture Photo</button>
+                <div class="camera-preview">
+                    <img id="camera-stream" src="/api/camera/stream" alt="Camera Stream" style="width: 100%; height: 200px; object-fit: cover; background: #f0f0f0;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div style="display: none; text-align: center; padding: 50px; color: #666;">Camera Offline</div>
+                </div>
+                <button class="btn btn-success btn-lg w-100 mt-3" onclick="capturePhoto()">Capture Photo</button>
             </div>
         </div>
     </div>
@@ -42,4 +45,26 @@
         </div>
     </div>
 </div>
+
+<script>
+function capturePhoto() {
+    fetch('/api/camera/capture', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Photo captured successfully!');
+        } else {
+            alert('Failed to capture photo: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error capturing photo: ' + error);
+    });
+}
+</script>
 {% endblock %}
