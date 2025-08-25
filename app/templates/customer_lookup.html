@@ -495,7 +495,6 @@ function saveCustomer() {
         progressBar.style.width = '0%';
         
         if (data.success) {
-            alert('Customer added successfully');
             bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
             form.reset();
             document.getElementById('licensePreview').style.display = 'none';
