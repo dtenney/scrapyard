@@ -13,7 +13,7 @@
     </div>
     <div class="col-md-6">
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMaterialModal">Add Material</button>
-        <button class="btn btn-warning" onclick="updatePrices()"><i class="fas fa-sync"></i> Update SGT Scrap Prices</button>
+        <button class="btn btn-warning" onclick="updatePrices()"><i class="fas fa-sync"></i> Update Competitor Prices</button>
     </div>
 </div>
 
@@ -33,7 +33,7 @@
                                 <th onclick="sortTable(2)" style="cursor: pointer;">Category ↕</th>
                                 <th onclick="sortTable(3)" style="cursor: pointer;">Type ↕</th>
                                 <th onclick="sortTable(4)" style="cursor: pointer;">Our Price/lb ↕</th>
-                                <th onclick="sortTable(5)" style="cursor: pointer;">SGT Scrap Price/lb ↕</th>
+                                <th onclick="sortTable(5)" style="cursor: pointer;">Competitors Scrap Price/lb ↕</th>
                                 <th onclick="sortTable(6)" style="cursor: pointer;">Status ↕</th>
                                 <th>Actions</th>
                             </tr>
@@ -291,7 +291,7 @@ function updateMaterial() {
 }
 
 function updatePrices() {
-    if (confirm('Update material prices from SGT Scrap?')) {
+    if (confirm('Update material prices from competitors?')) {
         const btn = event.target;
         const originalText = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating Prices...';
@@ -305,7 +305,7 @@ function updatePrices() {
             btn.parentNode.appendChild(statusDiv);
         }
         
-        statusDiv.innerHTML = 'Fetching prices from SGT Scrap website...';
+        statusDiv.innerHTML = 'Fetching prices from competitor websites...';
         
         fetch('/materials/update_prices', {method: 'POST'})
         .then(response => response.json())
@@ -313,14 +313,14 @@ function updatePrices() {
             if (data.success) {
                 btn.innerHTML = '<i class="fas fa-check"></i> Update Complete';
                 statusDiv.className = 'alert alert-success mt-2';
-                statusDiv.innerHTML = `Successfully updated SGT Scrap prices for ${data.updated} materials`;
+                statusDiv.innerHTML = `Successfully updated competitor prices for ${data.updated} materials`;
                 setTimeout(() => {
                     location.reload();
                 }, 2000);
             } else {
                 btn.innerHTML = originalText;
                 statusDiv.className = 'alert alert-danger mt-2';
-                statusDiv.innerHTML = 'Error updating SGT Scrap prices: ' + data.error;
+                statusDiv.innerHTML = 'Error updating competitor prices: ' + data.error;
                 setTimeout(() => statusDiv.remove(), 5000);
             }
         })
