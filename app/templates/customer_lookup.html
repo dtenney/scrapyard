@@ -430,6 +430,7 @@
                                 </div>
                                 <input type="file" class="form-control" name="license_photo" accept="image/*" onchange="previewEditLicensePhoto(this)">
                                 <div class="form-text">Upload new photo (optional)</div>
+                                <button type="button" class="btn btn-warning btn-sm mt-2" onclick="extractEditLicenseData()">Extract Data from Photo</button>
                                 <div id="editUploadStatus" class="mt-2" style="display: none;">
                                     <div class="progress">
                                         <div class="progress-bar" role="progressbar" style="width: 0%"></div>
@@ -928,6 +929,84 @@ function extractLicenseData() {
             setTimeout(() => successDiv.remove(), 3000);
         } else {
             // Show error status
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-danger mt-2';
+            errorDiv.innerHTML = '✗ OCR extraction failed: ' + data.error;
+            extractBtn.parentNode.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+    })
+    .catch(error => {
+        statusDiv.remove();
+        extractBtn.disabled = false;
+        
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger mt-2';
+        errorDiv.innerHTML = '✗ Error extracting data: ' + error.message;
+        extractBtn.parentNode.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 5000);
+    });
+}
+
+function extractEditLicenseData() {
+    const fileInput = document.querySelector('#editCustomerModal [name="license_photo"]');
+    if (!fileInput.files.length) {
+        alert('Please select a license photo first');
+        return;
+    }
+    
+    const statusDiv = document.createElement('div');
+    statusDiv.className = 'alert alert-info mt-2';
+    statusDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+            <div>Extracting data from license photo...</div>
+        </div>
+    `;
+    
+    const extractBtn = event.target;
+    extractBtn.parentNode.appendChild(statusDiv);
+    extractBtn.disabled = true;
+    
+    const formData = new FormData();
+    formData.append('license_photo', fileInput.files[0]);
+    
+    fetch('/api/ocr/extract_license', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        statusDiv.remove();
+        extractBtn.disabled = false;
+        
+        if (data.success) {
+            const extracted = data.data;
+            if (extracted.name) {
+                document.querySelector('#editCustomerModal [name="name"]').value = extracted.name;
+            }
+            if (extracted.license_number) {
+                document.querySelector('#editCustomerModal [name="drivers_license_number"]').value = extracted.license_number;
+            }
+            if (extracted.date_of_birth) {
+                document.querySelector('#editCustomerModal [name="birthday"]').value = extracted.date_of_birth;
+            }
+            if (extracted.gender) {
+                document.querySelector('#editCustomerModal [name="gender"]').value = extracted.gender;
+            }
+            if (extracted.eye_color) {
+                document.querySelector('#editCustomerModal [name="eye_color"]').value = extracted.eye_color;
+            }
+            if (extracted.address) {
+                document.querySelector('#editCustomerModal [name="street_address"]').value = extracted.address;
+            }
+            
+            const successDiv = document.createElement('div');
+            successDiv.className = 'alert alert-success mt-2';
+            successDiv.innerHTML = '✓ Data extracted successfully!';
+            extractBtn.parentNode.appendChild(successDiv);
+            setTimeout(() => successDiv.remove(), 3000);
+        } else {
             const errorDiv = document.createElement('div');
             errorDiv.className = 'alert alert-danger mt-2';
             errorDiv.innerHTML = '✗ OCR extraction failed: ' + data.error;
