@@ -59,9 +59,10 @@ www-data ALL=(ALL) NOPASSWD: /bin/cp /tmp/scrapyard-apache.conf /etc/apache2/sit
 www-data ALL=(ALL) NOPASSWD: /bin/systemctl reload apache2
 www-data ALL=(ALL) NOPASSWD: /bin/systemctl restart apache2
 EOF
-sudo mv /tmp/scrapyard-sudo /etc/sudoers.d/scrapyard
+sudo cp /tmp/scrapyard-sudo /etc/sudoers.d/scrapyard
 sudo chown root:root /etc/sudoers.d/scrapyard
 sudo chmod 440 /etc/sudoers.d/scrapyard
+rm -f /tmp/scrapyard-sudo
 
 # Create application directory
 echo "Setting up application directory..."
