@@ -81,8 +81,7 @@ def create_customer():
     try:
         name = request.form.get('name')
         if not name:
-            flash('Name is required')
-            return redirect(url_for('main.customer_lookup'))
+            return jsonify({'success': False, 'error': 'Name is required'}), 400
         street_address = request.form.get('street_address', '')
         city = request.form.get('city', '')
         state = request.form.get('state', '')
