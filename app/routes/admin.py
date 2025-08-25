@@ -425,7 +425,7 @@ def test_device(device_id):
             # Use same working configuration as camera stream
             result = {
                 'status': 'success', 
-                'message': 'Camera accessible via Flask stream proxy',
+                'message': 'Camera accessible',
                 'stream_url': '/api/camera/stream'
             }
     else:
