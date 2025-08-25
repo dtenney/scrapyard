@@ -79,8 +79,6 @@ DATABASE_URL=postgresql://scrapyard:$DB_PASSWORD@localhost/scrapyard_db
 SCRAPYARD_DB_PASSWORD=$DB_PASSWORD
 # API Keys - Replace with actual values
 GEOAPIFY_API_KEY=your_geoapify_api_key_here
-SMARTY_AUTH_ID=your_smarty_auth_id_here
-SMARTY_AUTH_TOKEN=your_smarty_auth_token_here
 EOF
 
 sudo mv /tmp/scrapyard.env /var/www/scrapyard/.env
@@ -305,4 +303,3 @@ echo "Check logs: sudo tail -f /var/log/apache2/error.log"
 echo ""
 echo "IMPORTANT: Configure API keys in /var/www/scrapyard/.env file:"
 echo "  - GEOAPIFY_API_KEY for address validation"
-echo "  - SMARTY_AUTH_ID and SMARTY_AUTH_TOKEN for address services"
