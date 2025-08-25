@@ -336,7 +336,7 @@ def camera_test_page(device_id):
         <h2>Camera Test: {escape(device.name)}</h2>
         <p>IP: {escape(device.ip_address)}</p>
         <div style="margin: 20px 0;">
-            <img id="cameraStream" src="/camera/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480" 
+            <img id="cameraStream" src="/api/camera/stream" 
                  style="max-width: 90%; border: 2px solid #ccc; background: #f5f5f5;" 
                  onload="document.getElementById('status').innerHTML='<span style=color:green>✓ Camera streaming successfully</span>';"
                  onerror="document.getElementById('status').innerHTML='<span style=color:red>✗ Camera stream failed</span>'; this.style.display='none'; document.getElementById('fallback').style.display='block';">        
@@ -366,7 +366,7 @@ def test_camera_stream(device_id):
     <body style="text-align: center; padding: 20px;">
         <h2>Camera Test: {device.name}</h2>
         <p>IP: {device.ip_address}</p>
-        <img src="/camera/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480" 
+        <img src="/api/camera/stream" 
              style="max-width: 100%; border: 1px solid #ccc;" 
              onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkNhbWVyYSBOb3QgQXZhaWxhYmxlPC90ZXh0Pjwvc3ZnPg=='; this.alt='Camera stream failed';">        
         <br><br>
@@ -425,8 +425,8 @@ def test_device(device_id):
             # Use same working configuration as camera stream
             result = {
                 'status': 'success', 
-                'message': 'Camera proxy configured - using same path as working camera stream',
-                'stream_url': '/camera/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480'
+                'message': 'Camera accessible via Flask stream proxy',
+                'stream_url': '/api/camera/stream'
             }
     else:
         result = {'status': 'unknown', 'message': 'Unknown device type'}
