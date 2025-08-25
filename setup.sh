@@ -28,7 +28,6 @@ sudo apt-get install -y \
     python3-dev \
     libpq-dev \
     libapache2-mod-wsgi-py3 \
-
     python3-opencv \
     tesseract-ocr \
     git \
