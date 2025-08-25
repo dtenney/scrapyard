@@ -203,6 +203,7 @@ try:
     from app.models.material import Material
     from app.models.customer import Customer
     from app.models.permissions import Permission, GroupPermission
+    from app.models.price_source import PriceSource
     from app.services.setup_service import initialize_default_groups
     
     app = create_app()
@@ -245,6 +246,19 @@ try:
             
             db.session.commit()
             print(f'Materials loaded successfully: {count} items')
+        
+        print('Creating default price source...')
+        existing_source = PriceSource.query.filter_by(name='SGT Scrap').first()
+        if not existing_source:
+            sgt_source = PriceSource(
+                name='SGT Scrap',
+                url='https://sgt-scrap.com/todays-prices/',
+                is_active=True
+            )
+            db.session.add(sgt_source)
+            db.session.commit()
+            print('Default SGT Scrap price source created')
+        
         print('Database initialized successfully')
         
 except Exception as e:
