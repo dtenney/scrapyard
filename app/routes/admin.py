@@ -447,8 +447,8 @@ def test_device(device_id):
             # Use same working configuration as camera stream
             result = {
                 'status': 'success', 
-                'message': 'Camera proxy configured - using same path as working camera stream',
-                'stream_url': '/camera/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480'
+                'message': 'Camera accessible',
+                'stream_url': '/api/camera/stream'
             }
     else:
         result = {'status': 'unknown', 'message': 'Unknown device type'}
