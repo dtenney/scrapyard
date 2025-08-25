@@ -439,17 +439,23 @@ def test_device(device_id):
         if not device.ip_address or device.ip_address.strip() == '':
             result = {'status': 'error', 'message': 'Camera IP address is required'}
         else:
-            # Test using Apache proxy path like camera stream does
-            import requests
-            import urllib3
-            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            # Find camera index for auto-generated proxy URL
+            cameras = Device.query.filter_by(device_type='camera', is_active=True).order_by(Device.id).all()
+            camera_index = None
+            for i, cam in enumerate(cameras):
+                if cam.id == device.id:
+                    camera_index = i + 1
+                    break
             
-            # Use same working configuration as camera stream
-            result = {
-                'status': 'success', 
-                'message': 'Camera accessible',
-                'stream_url': '/api/camera/stream'
-            }
+            if camera_index:
+                stream_url = f'/camera{camera_index}/axis-cgi/mjpg/video.cgi?camera=1&resolution=640x480'
+                result = {
+                    'status': 'success', 
+                    'message': 'Camera accessible via Apache proxy',
+                    'stream_url': stream_url
+                }
+            else:
+                result = {'status': 'error', 'message': 'Camera not found in active list'}
     else:
         result = {'status': 'unknown', 'message': 'Unknown device type'}
     
