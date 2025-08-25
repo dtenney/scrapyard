@@ -115,7 +115,7 @@ class VirtualSerialService:
                 
             # Find and kill socat processes using this device
             # Use exact match to prevent command injection
-            escaped_path = device_path.replace('/', '\/')
+            escaped_path = device_path.replace('/', r'\/')
             result = subprocess.run(
                 ['pgrep', '-f', f'socat.*{escaped_path}'],
                 capture_output=True,
@@ -201,7 +201,7 @@ class VirtualSerialService:
                 return False
                 
             # Check if socat process is running for this device
-            escaped_path = device_path.replace('/', '\/')
+            escaped_path = device_path.replace('/', r'\/')
             result = subprocess.run(
                 ['pgrep', '-f', f'socat.*{escaped_path}'],
                 capture_output=True,
