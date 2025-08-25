@@ -35,6 +35,7 @@ class LicenseOCRService:
             # Parse extracted text
             data = cls._parse_license_text(text)
             
+            logger.info(f"OCR extracted data: {data}")
             return {'success': True, 'data': data, 'raw_text': text}
             
         except Exception as e:
@@ -74,25 +75,34 @@ class LicenseOCRService:
         name_patterns = [
             r'NAME[:\s]+([A-Z\s,]+)',
             r'LN[:\s]+([A-Z\s,]+)',
-            r'LAST[:\s]+([A-Z\s,]+)'
+            r'LAST[:\s]+([A-Z\s,]+)',
+            r'([A-Z]+,\s*[A-Z]+\s*[A-Z]*)',  # Last, First Middle format
+            r'([A-Z]{2,}\s+[A-Z]{2,})'  # First Last format
         ]
         for pattern in name_patterns:
             match = re.search(pattern, text_upper)
             if match:
-                data['name'] = match.group(1).strip()
-                break
+                name = match.group(1).strip()
+                if len(name) > 3 and not any(word in name for word in ['LICENSE', 'DRIVER', 'STATE']):
+                    data['name'] = name
+                    break
         
         # Extract license number
         license_patterns = [
-            r'DL[:\s]*([A-Z0-9]{8,15})',
-            r'LIC[:\s]*([A-Z0-9]{8,15})',
-            r'ID[:\s]*([A-Z0-9]{8,15})'
+            r'DL[:\s#]*([A-Z0-9]{6,20})',
+            r'LIC[:\s#]*([A-Z0-9]{6,20})',
+            r'ID[:\s#]*([A-Z0-9]{6,20})',
+            r'LICENSE[:\s#]*([A-Z0-9]{6,20})',
+            r'([A-Z]{1,2}[0-9]{6,15})',  # Common format: A123456789
+            r'([0-9]{8,15})'  # Pure numeric licenses
         ]
         for pattern in license_patterns:
             match = re.search(pattern, text_upper)
             if match:
-                data['license_number'] = match.group(1).strip()
-                break
+                license_num = match.group(1).strip()
+                if len(license_num) >= 6:
+                    data['license_number'] = license_num
+                    break
         
         # Extract date of birth
         dob_patterns = [
@@ -131,14 +141,18 @@ class LicenseOCRService:
         
         # Extract address (look for street patterns)
         address_patterns = [
-            r'(\d+\s+[A-Z\s]+(?:ST|STREET|AVE|AVENUE|RD|ROAD|DR|DRIVE|LN|LANE|CT|COURT))',
-            r'ADDR[:\s]+([A-Z0-9\s,]+)'
+            r'(\d+\s+[A-Z\s]+(?:ST|STREET|AVE|AVENUE|RD|ROAD|DR|DRIVE|LN|LANE|CT|COURT|BLVD|BOULEVARD|PL|PLACE|WAY))',
+            r'ADDR[:\s]+([A-Z0-9\s,]+)',
+            r'ADDRESS[:\s]+([A-Z0-9\s,]+)',
+            r'(\d+\s+[A-Z\s]{5,30})'  # Number followed by street name
         ]
         for pattern in address_patterns:
             match = re.search(pattern, text_upper)
             if match:
-                data['address'] = match.group(1).strip()
-                break
+                address = match.group(1).strip()
+                if len(address) > 5 and any(char.isdigit() for char in address):
+                    data['address'] = address
+                    break
         
         return data
     
