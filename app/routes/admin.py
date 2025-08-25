@@ -914,10 +914,10 @@ def load_materials_csv():
 @admin_bp.route('/materials/prepopulate_competitor_prices', methods=['POST'])
 def prepopulate_competitor_prices():
     """Prepopulate material prices from competitor websites"""
-    from app.services.sgt_price_scraper import SGTPriceScraper
+    from app.services.price_scraper import PriceScraper
     
     try:
-        scraper = SGTPriceScraper()
+        scraper = PriceScraper()
         updated_count = scraper.prepopulate_material_prices()
         return jsonify({'success': True, 'updated': updated_count})
     except Exception as e:

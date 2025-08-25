@@ -424,10 +424,10 @@ def update_prices():
     if not (current_user.has_permission('transaction') or current_user.is_admin):
         return jsonify({'success': False, 'error': 'Permission denied'}), 403
         
-    from app.services.sgt_scraper import SGTScraper
+    from app.services.price_scraper import PriceScraper
     
     try:
-        scraper = SGTScraper()
+        scraper = PriceScraper()
         updated_count = scraper.update_material_prices()
         return jsonify({'success': True, 'updated': updated_count})
     except Exception as e:
