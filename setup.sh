@@ -28,9 +28,7 @@ sudo apt-get install -y \
     python3-dev \
     libpq-dev \
     libapache2-mod-wsgi-py3 \
-    cups \
-    cups-client \
-    libcups2-dev \
+
     python3-opencv \
     tesseract-ocr \
     git \
@@ -44,7 +42,7 @@ sudo ufw --force enable
 sudo ufw allow 22/tcp
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
-sudo ufw allow 631/tcp  # CUPS
+
 
 # Create application user
 echo "Creating application user..."
@@ -162,13 +160,7 @@ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -out /etc/ssl/scrapyard/scrapyard.crt \
     -subj "/C=US/ST=NJ/L=Newark/O=ScrapYard/CN=localhost"
 
-# Configure CUPS
-echo "Configuring CUPS..."
-sudo systemctl enable cups
-sudo systemctl start cups
-sudo usermod -aG lpadmin scrapyard
 
-# Redis removed - no longer needed
 
 # Supervisor removed - no longer needed
 
@@ -207,8 +199,8 @@ app = create_app()
 with app.app_context():
     db.create_all()
     initialize_default_groups()
-    if not PriceSource.query.filter_by(name='SGT Scrap').first():
-        db.session.add(PriceSource(name='SGT Scrap', url='https://sgt-scrap.com/todays-prices/', is_active=True))
+    if not PriceSource.query.filter_by(name='Competitor A').first():
+        db.session.add(PriceSource(name='Competitor A', url='https://sgt-scrap.com/todays-prices/', is_active=True))
         db.session.commit()
     print('Database initialized')
 "

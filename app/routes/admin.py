@@ -913,7 +913,7 @@ def load_materials_csv():
 
 @admin_bp.route('/materials/prepopulate_sgt_prices', methods=['POST'])
 def prepopulate_sgt_prices():
-    """Prepopulate material prices from SGT Scrap website"""
+    """Prepopulate material prices from competitor websites"""
     from app.services.sgt_price_scraper import SGTPriceScraper
     
     try:

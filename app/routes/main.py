@@ -421,7 +421,7 @@ def update_material(material_id):
 @main_bp.route('/materials/update_prices', methods=['POST'])
 @login_required
 def update_prices():
-    """Update prices from SGT Scrap website"""
+    """Update prices from competitor websites"""
     if not (current_user.has_permission('transaction') or current_user.is_admin):
         return jsonify({'success': False, 'error': 'Permission denied'}), 403
         
