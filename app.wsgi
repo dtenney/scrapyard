@@ -10,6 +10,10 @@ if os.path.exists(activate_this):
 # Add the application directory to Python path
 sys.path.insert(0, "/var/www/scrapyard/")
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv('/var/www/scrapyard/.env')
+
 # Set environment variables
 os.environ['FLASK_ENV'] = 'production'
 
