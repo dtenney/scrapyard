@@ -200,6 +200,12 @@
                                 <label class="form-label">Driver's License Photo</label>
                                 <input type="file" class="form-control" name="license_photo" accept="image/*" onchange="previewLicensePhoto(this)">
                                 <div class="form-text">Upload photo of driver's license</div>
+                                <div id="uploadStatus" class="mt-2" style="display: none;">
+                                    <div class="progress">
+                                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                    <small class="text-muted">Uploading...</small>
+                                </div>
                                 <div id="licensePreview" class="mt-2" style="display: none;">
                                     <img id="licensePreviewImg" src="" style="max-width: 200px; max-height: 150px; border: 1px solid #ccc;">
                                     <div><small class="text-muted">Preview of uploaded license</small></div>
@@ -424,6 +430,12 @@
                                 </div>
                                 <input type="file" class="form-control" name="license_photo" accept="image/*" onchange="previewEditLicensePhoto(this)">
                                 <div class="form-text">Upload new photo (optional)</div>
+                                <div id="editUploadStatus" class="mt-2" style="display: none;">
+                                    <div class="progress">
+                                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                    <small class="text-muted">Uploading...</small>
+                                </div>
                                 <div id="editLicensePreview" class="mt-2" style="display: none;">
                                     <img id="editLicensePreviewImg" src="" style="max-width: 200px; max-height: 150px; border: 1px solid #ccc;">
                                     <div><small class="text-muted">Preview of new license</small></div>
@@ -455,21 +467,47 @@ th[data-sort]:hover { background-color: #f8f9fa; }
 function saveCustomer() {
     const form = document.getElementById('customerForm');
     const formData = new FormData(form);
+    const uploadStatus = document.getElementById('uploadStatus');
+    const progressBar = uploadStatus.querySelector('.progress-bar');
+    const statusText = uploadStatus.querySelector('small');
+    
+    // Show upload status if there's a file
+    const fileInput = form.querySelector('input[name="license_photo"]');
+    if (fileInput.files.length > 0) {
+        uploadStatus.style.display = 'block';
+        statusText.textContent = 'Uploading customer data...';
+        progressBar.style.width = '50%';
+    }
     
     fetch('/api/customers/create', {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        if (fileInput.files.length > 0) {
+            progressBar.style.width = '100%';
+            statusText.textContent = 'Upload complete!';
+        }
+        return response.json();
+    })
     .then(data => {
+        uploadStatus.style.display = 'none';
+        progressBar.style.width = '0%';
+        
         if (data.success) {
             alert('Customer added successfully');
             bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
             form.reset();
+            document.getElementById('licensePreview').style.display = 'none';
             loadCustomerList(currentPage);
         } else {
             alert('Error adding customer: ' + data.error);
         }
+    })
+    .catch(error => {
+        uploadStatus.style.display = 'none';
+        progressBar.style.width = '0%';
+        alert('Error saving customer: ' + error.message);
     });
 }
 
@@ -628,19 +666,44 @@ function updateCustomer() {
     const form = document.getElementById('editCustomerForm');
     const formData = new FormData(form);
     const customerId = document.getElementById('editCustomerId').value;
+    const uploadStatus = document.getElementById('editUploadStatus');
+    const progressBar = uploadStatus.querySelector('.progress-bar');
+    const statusText = uploadStatus.querySelector('small');
+    
+    // Show upload status if there's a file
+    const fileInput = form.querySelector('input[name="license_photo"]');
+    if (fileInput.files.length > 0) {
+        uploadStatus.style.display = 'block';
+        statusText.textContent = 'Uploading updated data...';
+        progressBar.style.width = '50%';
+    }
     
     fetch(`/api/customers/update/${customerId}`, {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        if (fileInput.files.length > 0) {
+            progressBar.style.width = '100%';
+            statusText.textContent = 'Upload complete!';
+        }
+        return response.json();
+    })
     .then(data => {
+        uploadStatus.style.display = 'none';
+        progressBar.style.width = '0%';
+        
         if (data.success) {
             bootstrap.Modal.getInstance(document.getElementById('editCustomerModal')).hide();
             loadCustomerList(currentPage);
         } else {
             alert('Error updating customer: ' + data.error);
         }
+    })
+    .catch(error => {
+        uploadStatus.style.display = 'none';
+        progressBar.style.width = '0%';
+        alert('Error updating customer: ' + error.message);
     });
 }
 
