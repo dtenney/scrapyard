@@ -55,7 +55,7 @@ echo "Configuring sudo permissions..."
 cat > /tmp/scrapyard-sudo << 'EOF'
 # Allow www-data user to manage Apache configuration without password
 www-data ALL=(ALL) NOPASSWD: /bin/cat /etc/apache2/sites-available/scrapyard.conf
-www-data ALL=(ALL) NOPASSWD: /bin/cp * /etc/apache2/sites-available/scrapyard.conf
+www-data ALL=(ALL) NOPASSWD: /bin/cp /tmp/scrapyard-apache.conf /etc/apache2/sites-available/scrapyard.conf
 www-data ALL=(ALL) NOPASSWD: /bin/systemctl reload apache2
 www-data ALL=(ALL) NOPASSWD: /bin/systemctl restart apache2
 EOF
@@ -134,11 +134,11 @@ if [ ! -d "$PG_CONFIG_DIR" ]; then
 fi
 
 # Backup original pg_hba.conf
-sudo cp $PG_CONFIG_DIR/pg_hba.conf $PG_CONFIG_DIR/pg_hba.conf.backup
+sudo cp "$PG_CONFIG_DIR/pg_hba.conf" "$PG_CONFIG_DIR/pg_hba.conf.backup"
 
 # Update pg_hba.conf for local connections
-sudo sed -i 's/local   all             all                                     peer/local   all             all                                     md5/' $PG_CONFIG_DIR/pg_hba.conf
-sudo sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' $PG_CONFIG_DIR/pg_hba.conf
+sudo sed -i 's/local   all             all                                     peer/local   all             all                                     md5/' "$PG_CONFIG_DIR/pg_hba.conf"
+sudo sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' "$PG_CONFIG_DIR/pg_hba.conf"
 
 # Restart PostgreSQL to apply changes
 sudo systemctl restart postgresql
@@ -178,7 +178,7 @@ cd /var/www/scrapyard
 # Wait for PostgreSQL to be ready
 echo "Waiting for PostgreSQL to be ready..."
 for i in {1..30}; do
-    if sudo -u scrapyard PGPASSWORD=$DB_PASSWORD psql -h localhost -U scrapyard -d scrapyard_db -c "SELECT 1;" >/dev/null 2>&1; then
+    if sudo -u scrapyard PGPASSWORD="$DB_PASSWORD" psql -h localhost -U scrapyard -d scrapyard_db -c "SELECT 1;" >/dev/null 2>&1; then
         echo "PostgreSQL is ready"
         break
     fi
@@ -186,93 +186,22 @@ for i in {1..30}; do
     sleep 2
 done
 
-# Create database initialization script
-cat > /tmp/init_db.py << 'DBEOF'
-import os
-import sys
-sys.path.insert(0, '/var/www/scrapyard')
-
-# Load environment variables from .env file
-from dotenv import load_dotenv
-load_dotenv('/var/www/scrapyard/.env')
-
-try:
-    from app import create_app, db
-    from app.models.user import User, UserGroup, UserGroupMember
-    from app.models.device import Device
-    from app.models.material import Material
-    from app.models.customer import Customer
-    from app.models.permissions import Permission, GroupPermission
-    from app.models.price_source import PriceSource
-    from app.services.setup_service import initialize_default_groups
-    
-    app = create_app()
-    with app.app_context():
-        print('Creating database tables...')
-        db.create_all()
-        
-        print('Initializing default groups...')
-        initialize_default_groups()
-        
-        print('Loading materials from CSV...')
-        import csv
-        
-        # Load materials from CSV file
-        with open('/var/www/scrapyard/data/materials.csv', 'r') as csvfile:
-            reader = csv.DictReader(csvfile)
-            count = 0
-            
-            for row in reader:
-                code = row['Code'].strip()
-                description = row['Description'].strip()
-                our_price = float(row['Our Price']) if row['Our Price'] else 0.0
-                category = row['Category'].strip()
-                material_type = row['Type'].strip()
-                
-                is_ferrous = material_type == 'Ferrous'
-                
-                # Check if material already exists
-                existing = Material.query.filter_by(code=code).first()
-                if not existing:
-                    material = Material(
-                        code=code,
-                        description=description,
-                        category=category,
-                        is_ferrous=is_ferrous,
-                        price_per_pound=our_price
-                    )
-                    db.session.add(material)
-                    count += 1
-            
-            db.session.commit()
-            print(f'Materials loaded successfully: {count} items')
-        
-        print('Creating default price source...')
-        existing_source = PriceSource.query.filter_by(name='SGT Scrap').first()
-        if not existing_source:
-            sgt_source = PriceSource(
-                name='SGT Scrap',
-                url='https://sgt-scrap.com/todays-prices/',
-                is_active=True
-            )
-            db.session.add(sgt_source)
-            db.session.commit()
-            print('Default SGT Scrap price source created')
-        
-        print('Database initialized successfully')
-        
-except Exception as e:
-    print(f'Database initialization failed: {e}')
-    import traceback
-    traceback.print_exc()
-    sys.exit(1)
-DBEOF
-
-# Run database initialization with environment variables
-sudo -u scrapyard SCRAPYARD_DB_PASSWORD=$DB_PASSWORD ./venv/bin/python /tmp/init_db.py
-
-# Clean up temporary file
-rm -f /tmp/init_db.py
+# Initialize database
+echo "Initializing database..."
+cd /var/www/scrapyard
+sudo -u scrapyard SCRAPYARD_DB_PASSWORD="$DB_PASSWORD" ./venv/bin/python -c "
+from app import create_app, db
+from app.models.price_source import PriceSource
+from app.services.setup_service import initialize_default_groups
+app = create_app()
+with app.app_context():
+    db.create_all()
+    initialize_default_groups()
+    if not PriceSource.query.filter_by(name='SGT Scrap').first():
+        db.session.add(PriceSource(name='SGT Scrap', url='https://sgt-scrap.com/todays-prices/', is_active=True))
+        db.session.commit()
+    print('Database initialized')
+"
 
 # Create upload directories with proper permissions
 echo "Creating upload directories..."
