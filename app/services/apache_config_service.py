@@ -16,8 +16,8 @@ class ApacheConfigService:
     def update_camera_proxies(cls) -> bool:
         """Update Apache config with current camera device proxies"""
         try:
-            # Get all active camera devices
-            cameras = Device.query.filter_by(device_type='camera', is_active=True).all()
+            # Get all active camera devices ordered by ID for consistent numbering
+            cameras = Device.query.filter_by(device_type='camera', is_active=True).order_by(Device.id).all()
             
             # Generate proxy configurations
             proxy_configs = []
@@ -82,6 +82,10 @@ class ApacheConfigService:
             
             if result.returncode == 0:
                 logger.info(f"Updated Apache config with {len(cameras)} camera proxies")
+                # Log the generated proxy configs for debugging
+                for config in proxy_configs:
+                    if config.strip():
+                        logger.info(f"Added proxy config: {config.strip()}")
                 return True
             else:
                 logger.error(f"Failed to write Apache config: {result.stderr}")
