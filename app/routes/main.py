@@ -197,11 +197,9 @@ def camera_stream():
         
         def generate():
             try:
-                response = requests.get(stream_url, stream=True, timeout=30, auth=(service.username, service.password))
+                # Use the stream URL with embedded credentials
+                response = requests.get(stream_url, stream=True, timeout=30)
                 response.raise_for_status()
-                
-                # Get content type from camera response
-                content_type = response.headers.get('content-type', 'multipart/x-mixed-replace')
                 
                 for chunk in response.iter_content(chunk_size=1024):
                     if chunk:
@@ -211,9 +209,8 @@ def camera_stream():
                 logger.error(f"Stream error: {e}")
                 return
         
-        # Use camera's content type
         headers = {'Cache-Control': 'no-cache'}
-        return Response(generate(), content_type='multipart/x-mixed-replace; boundary=myboundary', headers=headers)
+        return Response(generate(), mimetype='multipart/x-mixed-replace', headers=headers)
         
     except Exception as e:
         logger.error(f"Camera stream error: {e}")
