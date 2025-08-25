@@ -192,23 +192,20 @@ def camera_stream():
         return Response('No camera available', status=404)
     
     try:
-        service = AxisCameraService(camera.ip_address)
+        service = AxisCameraService(camera.ip_address, camera.camera_username, camera.camera_password)
         stream_url = service.get_stream_url()
         
         def generate():
             try:
-                response = requests.get(stream_url, stream=True, timeout=30)
-                response.raise_for_status()
-                for chunk in response.iter_content(chunk_size=1024):
-                    if chunk:
-                        yield chunk
+                with requests.get(stream_url, stream=True, timeout=30) as response:
+                    response.raise_for_status()
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            yield chunk
             except Exception as e:
                 logger.error(f"Stream error: {e}")
-                return
         
-        # Use the same content type as the camera
-        content_type = 'multipart/x-mixed-replace; boundary=myboundary'
-        return Response(generate(), content_type=content_type)
+        return Response(generate(), mimetype='multipart/x-mixed-replace')
         
     except Exception as e:
         logger.error(f"Camera stream error: {e}")
