@@ -19,6 +19,9 @@ sudo rm -f /etc/apache2/sites-available/scrapyard.conf
 sudo rm -f /etc/apache2/sites-enabled/scrapyard.conf
 sudo a2dissite scrapyard || true
 
+echo "Removing sudo permissions..."
+sudo rm -f /etc/sudoers.d/scrapyard
+
 echo "Dropping database and user..."
 sudo -u postgres psql -c "DROP DATABASE IF EXISTS scrapyard_db;"
 sudo -u postgres psql -c "DROP USER IF EXISTS scrapyard;"
