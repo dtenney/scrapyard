@@ -95,7 +95,7 @@ https://localhost/scrapyard
 - Materials are pre-loaded from CSV during setup
 - Admin → Materials to view/edit material catalog
 - Use "Update Market Prices" for current pricing
-- Configure SGT price scraping for automated updates
+- Configure competitor price scraping for automated updates
 
 ### 6. Customer Management
 - Cashier interface includes customer lookup
