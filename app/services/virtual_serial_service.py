@@ -14,7 +14,12 @@ class VirtualSerialService:
         """Create a virtual serial device using socat"""
         try:
             # Validate inputs
-            if not device_path or '..' in device_path or device_path.startswith('/'):
+            if not device_path or '..' in device_path:
+                logger.error("Invalid device path")
+                return False
+            
+            # Allow /tmp/ paths for virtual devices
+            if not (device_path.startswith('/tmp/') or device_path.startswith('tty')):
                 logger.error("Invalid device path")
                 return False
             
@@ -102,6 +107,11 @@ class VirtualSerialService:
             if not device_path or '..' in device_path:
                 logger.error("Invalid device path")
                 return False
+            
+            # Allow /tmp/ paths for virtual devices
+            if not (device_path.startswith('/tmp/') or device_path.startswith('tty')):
+                logger.error("Invalid device path")
+                return False
                 
             # Find and kill socat processes using this device
             # Use exact match to prevent command injection
@@ -180,6 +190,10 @@ class VirtualSerialService:
         try:
             # Validate device path
             if not device_path or '..' in device_path:
+                return False
+            
+            # Allow /tmp/ paths for virtual devices
+            if not (device_path.startswith('/tmp/') or device_path.startswith('tty')):
                 return False
                 
             if not os.path.exists(device_path):
