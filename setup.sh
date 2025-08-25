@@ -60,6 +60,7 @@ scrapyard ALL=(ALL) NOPASSWD: /bin/systemctl reload apache2
 scrapyard ALL=(ALL) NOPASSWD: /bin/systemctl restart apache2
 EOF
 sudo mv /tmp/scrapyard-sudo /etc/sudoers.d/scrapyard
+sudo chown root:root /etc/sudoers.d/scrapyard
 sudo chmod 440 /etc/sudoers.d/scrapyard
 
 # Create application directory
