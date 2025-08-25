@@ -902,6 +902,7 @@ function extractLicenseData() {
         if (data.success) {
             // Fill form fields with extracted data
             const extracted = data.data;
+            console.log('OCR extracted data:', extracted);
             if (extracted.name) {
                 document.querySelector('#addCustomerModal [name="name"]').value = extracted.name;
             }
@@ -982,6 +983,7 @@ function extractEditLicenseData() {
         
         if (data.success) {
             const extracted = data.data;
+            console.log('Edit OCR extracted data:', extracted);
             if (extracted.name) {
                 document.querySelector('#editCustomerModal [name="name"]').value = extracted.name;
             }
