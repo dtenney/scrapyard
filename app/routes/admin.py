@@ -17,8 +17,8 @@ def check_device_connection(ip_address, device_type):
     
     # Default ports for different device types
     port_map = {
-        'scale': 8899,  # USR-TCP232-410S default port
-        'printer': 9100,  # Star printer default port
+        'scale': 23,     # Standard telnet port for scales
+        'printer': 9100, # Star printer default port
         'camera': 80     # HTTP port for AXIS cameras
     }
     
