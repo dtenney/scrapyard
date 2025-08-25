@@ -192,11 +192,8 @@ def create_device():
     db.session.add(device)
     db.session.commit()
     
-    # Update Apache camera proxies if this is a camera
-    if data['device_type'] == 'camera':
-        from app.services.apache_config_service import ApacheConfigService
-        ApacheConfigService.update_camera_proxies()
-        ApacheConfigService.reload_apache()
+    # Apache camera proxy updates disabled due to permission requirements
+    # Use manual update via /admin/apache/update_camera_proxies if needed
     
     # Create virtual serial device for scales
     if data['device_type'] == 'scale' and serial_port:
@@ -268,11 +265,8 @@ def update_device(device_id):
     
     db.session.commit()
     
-    # Update Apache camera proxies if this is a camera
-    if device.device_type == 'camera':
-        from app.services.apache_config_service import ApacheConfigService
-        ApacheConfigService.update_camera_proxies()
-        ApacheConfigService.reload_apache()
+    # Apache camera proxy updates disabled due to permission requirements
+    # Use manual update via /admin/apache/update_camera_proxies if needed
     
     return jsonify({'success': True})
 
@@ -290,11 +284,8 @@ def delete_device(device_id):
     db.session.delete(device)
     db.session.commit()
     
-    # Update Apache camera proxies if this was a camera
-    if is_camera:
-        from app.services.apache_config_service import ApacheConfigService
-        ApacheConfigService.update_camera_proxies()
-        ApacheConfigService.reload_apache()
+    # Apache camera proxy updates disabled due to permission requirements
+    # Use manual update via /admin/apache/update_camera_proxies if needed
     
     return jsonify({'success': True})
 
