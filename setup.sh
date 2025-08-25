@@ -50,6 +50,18 @@ sudo ufw allow 631/tcp  # CUPS
 echo "Creating application user..."
 sudo useradd -m -s /bin/bash -g www-data scrapyard || true
 
+# Configure sudo permissions for scrapyard user
+echo "Configuring sudo permissions..."
+cat > /tmp/scrapyard-sudo << 'EOF'
+# Allow scrapyard user to manage Apache configuration without password
+scrapyard ALL=(ALL) NOPASSWD: /bin/cat /etc/apache2/sites-available/scrapyard.conf
+scrapyard ALL=(ALL) NOPASSWD: /bin/cp * /etc/apache2/sites-available/scrapyard.conf
+scrapyard ALL=(ALL) NOPASSWD: /bin/systemctl reload apache2
+scrapyard ALL=(ALL) NOPASSWD: /bin/systemctl restart apache2
+EOF
+sudo mv /tmp/scrapyard-sudo /etc/sudoers.d/scrapyard
+sudo chmod 440 /etc/sudoers.d/scrapyard
+
 # Create application directory
 echo "Setting up application directory..."
 sudo mkdir -p /var/www/scrapyard
