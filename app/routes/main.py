@@ -198,14 +198,17 @@ def camera_stream():
         def generate():
             try:
                 response = requests.get(stream_url, stream=True, timeout=30)
+                response.raise_for_status()
                 for chunk in response.iter_content(chunk_size=1024):
                     if chunk:
                         yield chunk
             except Exception as e:
                 logger.error(f"Stream error: {e}")
-                yield b''
+                return
         
-        return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+        # Use the same content type as the camera
+        content_type = 'multipart/x-mixed-replace; boundary=myboundary'
+        return Response(generate(), content_type=content_type)
         
     except Exception as e:
         logger.error(f"Camera stream error: {e}")
