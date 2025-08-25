@@ -911,8 +911,8 @@ def load_materials_csv():
 
 
 
-@admin_bp.route('/materials/prepopulate_sgt_prices', methods=['POST'])
-def prepopulate_sgt_prices():
+@admin_bp.route('/materials/prepopulate_competitor_prices', methods=['POST'])
+def prepopulate_competitor_prices():
     """Prepopulate material prices from competitor websites"""
     from app.services.sgt_price_scraper import SGTPriceScraper
     

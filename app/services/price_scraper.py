@@ -15,8 +15,8 @@ class PriceScraper:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
 
-    def scrape_sgt_prices(self):
-        """Scrape prices from SGT Scrap"""
+    def scrape_competitor_prices(self):
+        """Scrape prices from competitor websites"""
         try:
             response = self.session.get('https://sgt-scrap.com/todays-prices/', timeout=30)
             try:
@@ -93,7 +93,7 @@ class PriceScraper:
 
     def update_material_prices(self):
         """Update material prices from scraped data"""
-        sgt_prices = self.scrape_sgt_prices()
+        competitor_prices = self.scrape_competitor_prices()
         comex_prices = self.scrape_comex_prices()
         
         updated_count = 0
@@ -102,17 +102,17 @@ class PriceScraper:
         all_materials = Material.query.all()
         
         for material in all_materials:
-            if 'COPPER_1' in sgt_prices and ('#1 COPPER' in material.description.upper() or 'BARE BRIGHT' in material.description.upper()):
-                material.price_per_pound = Decimal(str(sgt_prices['COPPER_1']))
+            if 'COPPER_1' in competitor_prices and ('#1 COPPER' in material.description.upper() or 'BARE BRIGHT' in material.description.upper()):
+                material.price_per_pound = Decimal(str(competitor_prices['COPPER_1']))
                 updated_count += 1
-            elif 'COPPER_2' in sgt_prices and '#2 COPPER' in material.description.upper():
-                material.price_per_pound = Decimal(str(sgt_prices['COPPER_2']))
+            elif 'COPPER_2' in competitor_prices and '#2 COPPER' in material.description.upper():
+                material.price_per_pound = Decimal(str(competitor_prices['COPPER_2']))
                 updated_count += 1
-            elif 'ALUMINUM_SHEET' in sgt_prices and 'SHEET' in material.description.upper() and material.category == 'ALUMINUM':
-                material.price_per_pound = Decimal(str(sgt_prices['ALUMINUM_SHEET']))
+            elif 'ALUMINUM_SHEET' in competitor_prices and 'SHEET' in material.description.upper() and material.category == 'ALUMINUM':
+                material.price_per_pound = Decimal(str(competitor_prices['ALUMINUM_SHEET']))
                 updated_count += 1
-            elif 'BRASS_YELLOW' in sgt_prices and 'YELLOW BRASS' in material.description.upper():
-                material.price_per_pound = Decimal(str(sgt_prices['BRASS_YELLOW']))
+            elif 'BRASS_YELLOW' in competitor_prices and 'YELLOW BRASS' in material.description.upper():
+                material.price_per_pound = Decimal(str(competitor_prices['BRASS_YELLOW']))
                 updated_count += 1
         
         # Use COMEX copper as base for copper materials if available
