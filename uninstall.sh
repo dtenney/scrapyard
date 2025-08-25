@@ -14,12 +14,6 @@ fi
 echo "Stopping services..."
 sudo systemctl stop apache2
 
-echo "Cleaning up supervisor processes..."
-sudo supervisorctl stop scrapyard:* || true
-sudo rm -f /etc/supervisor/conf.d/scrapyard.conf
-sudo supervisorctl reread || true
-sudo supervisorctl update || true
-
 echo "Removing Apache configuration..."
 sudo rm -f /etc/apache2/sites-available/scrapyard.conf
 sudo rm -f /etc/apache2/sites-enabled/scrapyard.conf
