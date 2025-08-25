@@ -9,8 +9,7 @@ echo "=== Scrap Yard Management System Setup ==="
 
 # Clean up existing processes
 echo "Cleaning up existing processes..."
-sudo supervisorctl stop all || true
-sudo rm -f /etc/supervisor/conf.d/scrapyard.conf
+# Supervisor removed - no longer needed
 
 # Update system
 echo "Updating system packages..."
@@ -36,7 +35,6 @@ sudo apt-get install -y \
     tesseract-ocr \
     git \
     socat \
-    supervisor \
     ufw \
     fail2ban
 
@@ -158,11 +156,7 @@ sudo usermod -aG lpadmin scrapyard
 
 # Redis removed - no longer needed
 
-# Configure Supervisor
-echo "Configuring Supervisor..."
-sudo cp config/supervisor-scrapyard.conf /etc/supervisor/conf.d/scrapyard.conf
-sudo systemctl enable supervisor
-sudo systemctl start supervisor
+# Supervisor removed - no longer needed
 
 # Initialize database
 echo "Initializing database..."
@@ -276,9 +270,6 @@ sudo chmod -R 775 /var/www/scrapyard/uploads
 echo "Restarting services..."
 sudo systemctl restart apache2
 sudo systemctl restart postgresql
-# Redis removed
-sudo supervisorctl reread
-sudo supervisorctl update
 
 echo "=== Setup Complete ==="
 echo "Application URL: https://localhost/scrapyard"
