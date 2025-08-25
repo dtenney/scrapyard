@@ -851,6 +851,20 @@ function extractLicenseData() {
         return;
     }
     
+    // Show extraction status
+    const statusDiv = document.createElement('div');
+    statusDiv.className = 'alert alert-info mt-2';
+    statusDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+            <div>Extracting data from license photo...</div>
+        </div>
+    `;
+    
+    const extractBtn = event.target;
+    extractBtn.parentNode.appendChild(statusDiv);
+    extractBtn.disabled = true;
+    
     const formData = new FormData();
     formData.append('license_photo', fileInput.files[0]);
     
@@ -860,6 +874,9 @@ function extractLicenseData() {
     })
     .then(response => response.json())
     .then(data => {
+        statusDiv.remove();
+        extractBtn.disabled = false;
+        
         if (data.success) {
             // Fill form fields with extracted data
             const extracted = data.data;
@@ -870,13 +887,30 @@ function extractLicenseData() {
             if (extracted.eye_color) document.querySelector('[name="eye_color"]').value = extracted.eye_color;
             if (extracted.address) document.querySelector('[name="street_address"]').value = extracted.address;
             
-            alert('Data extracted successfully!');
+            // Show success status
+            const successDiv = document.createElement('div');
+            successDiv.className = 'alert alert-success mt-2';
+            successDiv.innerHTML = '✓ Data extracted successfully!';
+            extractBtn.parentNode.appendChild(successDiv);
+            setTimeout(() => successDiv.remove(), 3000);
         } else {
-            alert('OCR extraction failed: ' + data.error);
+            // Show error status
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-danger mt-2';
+            errorDiv.innerHTML = '✗ OCR extraction failed: ' + data.error;
+            extractBtn.parentNode.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 5000);
         }
     })
     .catch(error => {
-        alert('Error extracting data: ' + error);
+        statusDiv.remove();
+        extractBtn.disabled = false;
+        
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger mt-2';
+        errorDiv.innerHTML = '✗ Error extracting data: ' + error.message;
+        extractBtn.parentNode.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 5000);
     });
 }
 
