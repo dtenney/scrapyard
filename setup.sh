@@ -189,7 +189,7 @@ done
 # Initialize database
 echo "Initializing database..."
 cd /var/www/scrapyard
-sudo -u scrapyard SCRAPYARD_DB_PASSWORD="$DB_PASSWORD" ./venv/bin/python -c "
+sudo -u scrapyard SCRAPYARD_DB_PASSWORD="$DB_PASSWORD" PGPASSWORD="$DB_PASSWORD" ./venv/bin/python -c "
 from app import create_app, db
 from app.models.price_source import PriceSource
 from app.services.setup_service import initialize_default_groups
