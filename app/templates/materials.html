@@ -291,7 +291,6 @@ function updateMaterial() {
 }
 
 function updatePrices() {
-    if (confirm('Update material prices from competitors?')) {
         const btn = event.target;
         const originalText = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating Prices...';
@@ -336,7 +335,6 @@ function updatePrices() {
                 btn.innerHTML = originalText;
             }, 2000);
         });
-    }
 }
 
 let sortDirection = {};
