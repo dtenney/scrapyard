@@ -504,6 +504,30 @@ def get_customer(customer_id):
         }
     })
 
+@main_bp.route('/api/customers/delete/<int:customer_id>', methods=['POST'])
+@login_required
+@require_permission('customer_lookup')
+def delete_customer(customer_id):
+    """Delete customer"""
+    from app.models.customer import Customer
+    
+    try:
+        customer = Customer.query.get_or_404(customer_id)
+        
+        # Delete associated photo if exists
+        if customer.drivers_license_photo_path:
+            from app.services.photo_service import PhotoService
+            PhotoService.delete_photo(customer.drivers_license_photo_path)
+        
+        db.session.delete(customer)
+        db.session.commit()
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @main_bp.route('/api/customers/update/<int:customer_id>', methods=['POST'])
 @login_required
 @require_permission('customer_lookup')

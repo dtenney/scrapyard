@@ -589,6 +589,7 @@ function updateCustomerTable(customers) {
                 <td>${cityState}</td>
                 <td>
                     <button class="btn btn-sm btn-warning" onclick="editCustomer(${customer.id})">Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteCustomer(${customer.id})">Delete</button>
                 </td>
             </tr>
         `;
@@ -704,6 +705,27 @@ function updateCustomer() {
         uploadStatus.style.display = 'none';
         progressBar.style.width = '0%';
         alert('Error updating customer: ' + error.message);
+    });
+}
+
+function deleteCustomer(customerId) {
+    if (!confirm('Are you sure you want to delete this customer? This action cannot be undone.')) {
+        return;
+    }
+    
+    fetch(`/api/customers/delete/${customerId}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadCustomerList(currentPage);
+        } else {
+            alert('Error deleting customer: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error deleting customer: ' + error.message);
     });
 }
 
