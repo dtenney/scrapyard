@@ -197,15 +197,23 @@ def camera_stream():
         
         def generate():
             try:
-                with requests.get(stream_url, stream=True, timeout=30) as response:
-                    response.raise_for_status()
-                    for chunk in response.iter_content(chunk_size=8192):
-                        if chunk:
-                            yield chunk
+                response = requests.get(stream_url, stream=True, timeout=30, auth=(service.username, service.password))
+                response.raise_for_status()
+                
+                # Get content type from camera response
+                content_type = response.headers.get('content-type', 'multipart/x-mixed-replace')
+                
+                for chunk in response.iter_content(chunk_size=1024):
+                    if chunk:
+                        yield chunk
+                        
             except Exception as e:
                 logger.error(f"Stream error: {e}")
+                return
         
-        return Response(generate(), mimetype='multipart/x-mixed-replace')
+        # Use camera's content type
+        headers = {'Cache-Control': 'no-cache'}
+        return Response(generate(), content_type='multipart/x-mixed-replace; boundary=myboundary', headers=headers)
         
     except Exception as e:
         logger.error(f"Camera stream error: {e}")
