@@ -528,6 +528,29 @@ def delete_customer(customer_id):
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@main_bp.route('/photo/customer/<int:customer_id>/license')
+@login_required
+@require_permission('customer_lookup')
+def get_customer_license_photo(customer_id):
+    """Serve customer license photo"""
+    from app.models.customer import Customer
+    from app.services.photo_service import PhotoService
+    from flask import send_file, abort
+    import os
+    
+    customer = Customer.query.get_or_404(customer_id)
+    
+    if not customer.drivers_license_photo_path:
+        abort(404)
+    
+    # Get full file path
+    full_path = os.path.join(PhotoService.UPLOAD_FOLDER, customer.drivers_license_photo_path)
+    
+    if not os.path.exists(full_path):
+        abort(404)
+    
+    return send_file(full_path, mimetype='image/jpeg')
+
 @main_bp.route('/api/customers/update/<int:customer_id>', methods=['POST'])
 @login_required
 @require_permission('customer_lookup')
