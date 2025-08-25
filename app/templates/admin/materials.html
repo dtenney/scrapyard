@@ -305,7 +305,7 @@ function updatePrices() {
             btn.parentNode.appendChild(statusDiv);
         }
         
-        statusDiv.innerHTML = 'Fetching prices from SGT Scrap website...';
+        statusDiv.innerHTML = 'Fetching prices from competitor websites...';
         
         fetch('/admin/materials/update_prices', {method: 'POST'})
         .then(response => response.json())
@@ -313,14 +313,14 @@ function updatePrices() {
             if (data.success) {
                 btn.innerHTML = '<i class="fas fa-check"></i> Update Complete';
                 statusDiv.className = 'alert alert-success mt-2';
-                statusDiv.innerHTML = `Successfully updated SGT Scrap prices for ${data.updated} materials`;
+                statusDiv.innerHTML = `Successfully updated competitor prices for ${data.updated} materials`;
                 setTimeout(() => {
                     location.reload();
                 }, 2000);
             } else {
                 btn.innerHTML = originalText;
                 statusDiv.className = 'alert alert-danger mt-2';
-                statusDiv.innerHTML = 'Error updating SGT Scrap prices: ' + data.error;
+                statusDiv.innerHTML = 'Error updating competitor prices: ' + data.error;
                 setTimeout(() => statusDiv.remove(), 5000);
             }
         })
