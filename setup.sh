@@ -212,8 +212,8 @@ try:
         # Load materials from CSV file
         with open('/var/www/scrapyard/data/materials.csv', 'r') as csvfile:
             reader = csv.DictReader(csvfile)
-        count = 0
-        
+            count = 0
+            
             for row in reader:
                 code = row['Code'].strip()
                 description = row['Description'].strip()
@@ -235,9 +235,9 @@ try:
                     )
                     db.session.add(material)
                     count += 1
-        
-        db.session.commit()
-        print(f'Materials loaded successfully: {count} items')
+            
+            db.session.commit()
+            print(f'Materials loaded successfully: {count} items')
         print('Database initialized successfully')
         
 except Exception as e:
