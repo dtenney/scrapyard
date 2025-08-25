@@ -71,20 +71,34 @@ class LicenseOCRService:
         lines = text.split('\n')
         text_upper = text.upper()
         
-        # Extract name (usually after "NAME" or first line with letters)
-        name_patterns = [
-            r'NAME[:\s]+([A-Z\s,]+)',
-            r'LN[:\s]+([A-Z\s,]+)',
-            r'LAST[:\s]+([A-Z\s,]+)',
-            r'([A-Z]+,\s*[A-Z]+\s*[A-Z]*)',  # Last, First Middle format
-            r'([A-Z]{2,}\s+[A-Z]{2,})'  # First Last format
-        ]
-        for pattern in name_patterns:
-            match = re.search(pattern, text_upper)
-            if match:
-                name = match.group(1).strip()
-                if len(name) > 3 and not any(word in name for word in ['LICENSE', 'DRIVER', 'STATE']):
-                    data['name'] = name
+        # Extract name (NJ format: Last name on one line, First Middle on next)
+        lines = text_upper.split('\n')
+        name_found = False
+        for i, line in enumerate(lines):
+            line = line.strip()
+            # Look for last name (single word, all caps, 3+ chars)
+            if re.match(r'^[A-Z]{3,}$', line) and not any(word in line for word in ['NEW', 'JERSEY', 'LICENSE', 'DRIVER']):
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1].strip()
+                    # Check if next line has first/middle name
+                    if re.match(r'^[A-Z\s]{3,}$', next_line):
+                        data['name'] = f"{next_line} {line}"
+                        name_found = True
+                        break
+        
+        # Fallback patterns if structured approach fails
+        if not name_found:
+            name_patterns = [
+                r'([A-Z]{3,})\s*\n\s*([A-Z\s]{3,})',  # Last\nFirst Middle
+                r'([A-Z]+,\s*[A-Z\s]+)',  # Last, First Middle
+            ]
+            for pattern in name_patterns:
+                match = re.search(pattern, text_upper)
+                if match:
+                    if ',' in match.group(0):
+                        data['name'] = match.group(1).replace(',', ' ').strip()
+                    else:
+                        data['name'] = f"{match.group(2)} {match.group(1)}"
                     break
         
         # Extract license number
@@ -116,42 +130,52 @@ class LicenseOCRService:
                 data['date_of_birth'] = cls._parse_date(match.group(1))
                 break
         
-        # Extract gender
-        if re.search(r'\bM\b|\bMALE\b', text_upper):
-            data['gender'] = 'M'
-        elif re.search(r'\bF\b|\bFEMALE\b', text_upper):
-            data['gender'] = 'F'
+        # Extract gender (single letter M or F)
+        gender_match = re.search(r'\b([MF])\b', text_upper)
+        if gender_match:
+            data['gender'] = gender_match.group(1)
         
-        # Extract eye color
-        eye_colors = {
-            'BLU': ['BLU', 'BLUE'],
-            'BRO': ['BRO', 'BROWN', 'BRN'],
-            'GRN': ['GRN', 'GREEN'],
-            'HAZ': ['HAZ', 'HAZEL'],
-            'GRY': ['GRY', 'GRAY', 'GREY'],
-            'BLK': ['BLK', 'BLACK']
-        }
-        for code, variations in eye_colors.items():
-            for variation in variations:
-                if variation in text_upper:
+        # Extract eye color (3-letter codes like BLU, BRO, etc.)
+        eyes_match = re.search(r'EYES?[:\s]*([A-Z]{3})', text_upper)
+        if eyes_match:
+            data['eye_color'] = eyes_match.group(1)
+        else:
+            # Fallback: look for common 3-letter eye color codes
+            eye_codes = ['BLU', 'BRO', 'GRN', 'HAZ', 'GRY', 'BLK']
+            for code in eye_codes:
+                if code in text_upper:
                     data['eye_color'] = code
                     break
-            if data['eye_color']:
-                break
         
-        # Extract address (look for street patterns)
-        address_patterns = [
-            r'(\d+\s+[A-Z\s]+(?:ST|STREET|AVE|AVENUE|RD|ROAD|DR|DRIVE|LN|LANE|CT|COURT|BLVD|BOULEVARD|PL|PLACE|WAY))',
-            r'ADDR[:\s]+([A-Z0-9\s,]+)',
-            r'ADDRESS[:\s]+([A-Z0-9\s,]+)',
-            r'(\d+\s+[A-Z\s]{5,30})'  # Number followed by street name
-        ]
-        for pattern in address_patterns:
-            match = re.search(pattern, text_upper)
-            if match:
-                address = match.group(1).strip()
-                if len(address) > 5 and any(char.isdigit() for char in address):
-                    data['address'] = address
+        # Extract address (NJ format: street on one line, city/state/zip on next)
+        address_found = False
+        for i, line in enumerate(lines):
+            line = line.strip()
+            # Look for street address (starts with number)
+            if re.match(r'^\d+\s+[A-Z\s]+', line) and len(line) > 10:
+                street = line
+                # Check next line for city/state/zip
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1].strip()
+                    if re.search(r'[A-Z]+,?\s*[A-Z]{2}\s*\d{5}', next_line):
+                        data['address'] = f"{street}, {next_line}"
+                        address_found = True
+                        break
+                else:
+                    data['address'] = street
+                    address_found = True
+                    break
+        
+        # Fallback address patterns
+        if not address_found:
+            address_patterns = [
+                r'(\d+\s+[A-Z\s]+(?:ST|STREET|AVE|AVENUE|RD|ROAD|DR|DRIVE|LN|LANE|CT|COURT|BLVD|BOULEVARD|PL|PLACE|WAY))',
+                r'(\d+\s+[A-Z\s]{5,30})'
+            ]
+            for pattern in address_patterns:
+                match = re.search(pattern, text_upper)
+                if match:
+                    data['address'] = match.group(1).strip()
                     break
         
         return data
