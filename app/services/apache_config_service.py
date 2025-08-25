@@ -28,13 +28,15 @@ class ApacheConfigService:
                     proxy_configs.append(f'    ProxyPassReverse /camera{i+1}/ http://{camera.ip_address}/')
                     proxy_configs.append('')
             
-            # Read current config
-            if not os.path.exists(cls.APACHE_CONFIG_PATH):
-                logger.error(f"Apache config not found: {cls.APACHE_CONFIG_PATH}")
+            # Read current config using sudo if needed
+            import subprocess
+            try:
+                result = subprocess.run(['sudo', 'cat', cls.APACHE_CONFIG_PATH], 
+                                      capture_output=True, text=True, check=True)
+                lines = result.stdout.splitlines(keepends=True)
+            except subprocess.CalledProcessError:
+                logger.error(f"Cannot read Apache config: {cls.APACHE_CONFIG_PATH}")
                 return False
-                
-            with open(cls.APACHE_CONFIG_PATH, 'r') as f:
-                lines = f.readlines()
             
             # Find and replace camera proxy section
             new_lines = []
@@ -67,12 +69,23 @@ class ApacheConfigService:
                         new_lines.insert(i+3, '    \n')
                         break
             
-            # Write updated config
-            with open(cls.APACHE_CONFIG_PATH, 'w') as f:
-                f.writelines(new_lines)
+            # Write updated config using sudo
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+                temp_file.writelines(new_lines)
+                temp_path = temp_file.name
             
-            logger.info(f"Updated Apache config with {len(cameras)} camera proxies")
-            return True
+            # Copy temp file to Apache config location with sudo
+            result = subprocess.run(['sudo', 'cp', temp_path, cls.APACHE_CONFIG_PATH], 
+                                  capture_output=True, text=True)
+            os.unlink(temp_path)  # Clean up temp file
+            
+            if result.returncode == 0:
+                logger.info(f"Updated Apache config with {len(cameras)} camera proxies")
+                return True
+            else:
+                logger.error(f"Failed to write Apache config: {result.stderr}")
+                return False
             
         except Exception as e:
             logger.error(f"Failed to update Apache camera proxies: {e}")

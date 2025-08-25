@@ -917,3 +917,22 @@ def prepopulate_sgt_prices():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@admin_bp.route('/apache/update_camera_proxies', methods=['POST'])
+def update_apache_camera_proxies():
+    """Manually update Apache camera proxy configurations"""
+    from app.services.apache_config_service import ApacheConfigService
+    
+    try:
+        success = ApacheConfigService.update_camera_proxies()
+        if success:
+            reload_success = ApacheConfigService.reload_apache()
+            return jsonify({
+                'success': True, 
+                'config_updated': success,
+                'apache_reloaded': reload_success
+            })
+        else:
+            return jsonify({'success': False, 'error': 'Failed to update Apache config'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
