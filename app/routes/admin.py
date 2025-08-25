@@ -192,6 +192,12 @@ def create_device():
     db.session.add(device)
     db.session.commit()
     
+    # Update Apache camera proxies if this is a camera
+    if data['device_type'] == 'camera':
+        from app.services.apache_config_service import ApacheConfigService
+        ApacheConfigService.update_camera_proxies()
+        ApacheConfigService.reload_apache()
+    
     # Create virtual serial device for scales
     if data['device_type'] == 'scale' and serial_port:
         from app.services.virtual_serial_service import VirtualSerialService
@@ -261,6 +267,13 @@ def update_device(device_id):
     device.camera_password = data.get('camera_password')
     
     db.session.commit()
+    
+    # Update Apache camera proxies if this is a camera
+    if device.device_type == 'camera':
+        from app.services.apache_config_service import ApacheConfigService
+        ApacheConfigService.update_camera_proxies()
+        ApacheConfigService.reload_apache()
+    
     return jsonify({'success': True})
 
 @admin_bp.route('/devices/delete/<int:device_id>', methods=['POST'])
@@ -272,8 +285,17 @@ def delete_device(device_id):
         from app.services.virtual_serial_service import VirtualSerialService
         VirtualSerialService.destroy_virtual_serial(device.serial_port)
     
+    is_camera = device.device_type == 'camera'
+    
     db.session.delete(device)
     db.session.commit()
+    
+    # Update Apache camera proxies if this was a camera
+    if is_camera:
+        from app.services.apache_config_service import ApacheConfigService
+        ApacheConfigService.update_camera_proxies()
+        ApacheConfigService.reload_apache()
+    
     return jsonify({'success': True})
 
 @admin_bp.route('/devices/create_virtual_serial/<int:device_id>', methods=['POST'])
