@@ -60,7 +60,7 @@ class PriceScraper:
             return prices
             
         except Exception as e:
-            logger.error(f"Error scraping SGT prices: {e}")
+            logger.error(f"Error scraping competitor prices: {e}")
             return {}
 
     def scrape_comex_prices(self):
