@@ -202,6 +202,21 @@ with app.app_context():
     if not PriceSource.query.filter_by(name='Competitor A').first():
         db.session.add(PriceSource(name='Competitor A', url='https://sgt-scrap.com/todays-prices/', is_active=True))
         db.session.commit()
+    import csv
+    if Material.query.count() == 0:
+        with open('/var/www/scrapyard/data/materials.csv', 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                material = Material(
+                    code=row['Code'].strip(),
+                    description=row['Description'].strip(),
+                    category=row['Category'].strip(),
+                    is_ferrous=row['Type'].strip() == 'Ferrous',
+                    price_per_pound=float(row['Our Price']) if row['Our Price'] else 0.0
+                )
+                db.session.add(material)
+            db.session.commit()
+            print('Materials loaded from CSV')
     print('Database initialized')
 "
 
