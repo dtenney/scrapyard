@@ -33,7 +33,7 @@ echo "Removing application files..."
 sudo rm -rf /var/www/scrapyard
 
 echo "Removing system user..."
-sudo userdel -r scrapyard || true
+sudo userdel scrapyard || true
 
 echo "Cleaning up systemd..."
 sudo systemctl daemon-reload
