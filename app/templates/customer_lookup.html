@@ -866,7 +866,7 @@ async function scanLicense() {
 }
 
 function extractLicenseData() {
-    const fileInput = document.querySelector('[name="license_photo"]');
+    const fileInput = document.querySelector('#addCustomerModal [name="license_photo"]');
     if (!fileInput.files.length) {
         alert('Please select a license photo first');
         return;
@@ -902,22 +902,22 @@ function extractLicenseData() {
             // Fill form fields with extracted data
             const extracted = data.data;
             if (extracted.name) {
-                document.querySelector('[name="name"]').value = extracted.name;
+                document.querySelector('#addCustomerModal [name="name"]').value = extracted.name;
             }
             if (extracted.license_number) {
-                document.querySelector('[name="drivers_license_number"]').value = extracted.license_number;
+                document.querySelector('#addCustomerModal [name="drivers_license_number"]').value = extracted.license_number;
             }
             if (extracted.date_of_birth) {
-                document.querySelector('[name="birthday"]').value = extracted.date_of_birth;
+                document.querySelector('#addCustomerModal [name="birthday"]').value = extracted.date_of_birth;
             }
             if (extracted.gender) {
-                document.querySelector('[name="gender"]').value = extracted.gender;
+                document.querySelector('#addCustomerModal [name="gender"]').value = extracted.gender;
             }
             if (extracted.eye_color) {
-                document.querySelector('[name="eye_color"]').value = extracted.eye_color;
+                document.querySelector('#addCustomerModal [name="eye_color"]').value = extracted.eye_color;
             }
             if (extracted.address) {
-                document.querySelector('[name="street_address"]').value = extracted.address;
+                document.querySelector('#addCustomerModal [name="street_address"]').value = extracted.address;
             }
             
             // Show success status
