@@ -942,3 +942,35 @@ def update_apache_camera_proxies():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@admin_bp.route('/price_sources')
+def price_sources():
+    from app.models.price_source import PriceSource
+    sources = PriceSource.query.all()
+    return render_template('admin/price_sources.html', sources=sources)
+
+@admin_bp.route('/price_sources/create', methods=['POST'])
+def create_price_source():
+    from app.models.price_source import PriceSource
+    data = request.get_json()
+    
+    source = PriceSource(
+        name=data['name'],
+        url=data['url'],
+        is_active=data.get('is_active', True)
+    )
+    
+    db.session.add(source)
+    db.session.commit()
+    
+    return jsonify({'success': True})
+
+@admin_bp.route('/price_sources/delete/<int:source_id>', methods=['POST'])
+def delete_price_source(source_id):
+    from app.models.price_source import PriceSource
+    source = PriceSource.query.get_or_404(source_id)
+    
+    db.session.delete(source)
+    db.session.commit()
+    
+    return jsonify({'success': True})
+
