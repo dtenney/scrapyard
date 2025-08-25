@@ -901,12 +901,24 @@ function extractLicenseData() {
         if (data.success) {
             // Fill form fields with extracted data
             const extracted = data.data;
-            if (extracted.name) document.querySelector('[name="name"]').value = extracted.name;
-            if (extracted.license_number) document.querySelector('[name="drivers_license_number"]').value = extracted.license_number;
-            if (extracted.date_of_birth) document.querySelector('[name="birthday"]').value = extracted.date_of_birth;
-            if (extracted.gender) document.querySelector('[name="gender"]').value = extracted.gender;
-            if (extracted.eye_color) document.querySelector('[name="eye_color"]').value = extracted.eye_color;
-            if (extracted.address) document.querySelector('[name="street_address"]').value = extracted.address;
+            if (extracted.name) {
+                document.querySelector('[name="name"]').value = extracted.name;
+            }
+            if (extracted.license_number) {
+                document.querySelector('[name="drivers_license_number"]').value = extracted.license_number;
+            }
+            if (extracted.date_of_birth) {
+                document.querySelector('[name="birthday"]').value = extracted.date_of_birth;
+            }
+            if (extracted.gender) {
+                document.querySelector('[name="gender"]').value = extracted.gender;
+            }
+            if (extracted.eye_color) {
+                document.querySelector('[name="eye_color"]').value = extracted.eye_color;
+            }
+            if (extracted.address) {
+                document.querySelector('[name="street_address"]').value = extracted.address;
+            }
             
             // Show success status
             const successDiv = document.createElement('div');
